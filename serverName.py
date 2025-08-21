@@ -1,26 +1,29 @@
-# --- Servidor ---
 import Pyro5.api
 
 @Pyro5.api.expose
 class Servidor:
     def __init__(self):
-        self.clientes = []
+        # guardamos las palabras registradas por cada cliente
+        self.respuestas = {}  # {cliente_id: palabra}
 
-    def registrar_cliente(self, cliente_uri):
-        cliente = Pyro5.api.Proxy(cliente_uri)
-        self.clientes.append(cliente)
+    def enviar_palabra(self, cliente_id, palabra):
+        # registramos la palabra del cliente
+        self.respuestas[cliente_id] = palabra
 
-    def enviar_a_todos(self, msg):
-        for c in self.clientes:
-            try:
-                c.recibir_mensaje(msg)
-            except:
-                print("Error con un cliente")
+        # devolvemos todas las palabras de los demás clientes
+        otras_respuestas = {cid: p for cid, p in self.respuestas.items() if cid != cliente_id}
+        return otras_respuestas
 
-daemon = Pyro5.api.Daemon()
-ns = Pyro5.api.locate_ns()
-uri = daemon.register(Servidor)
-ns.register("Servidor", uri)
 
-print("Servidor listo")
-daemon.requestLoop()
+def main():
+    daemon = Pyro5.api.Daemon()         # Crea el daemon
+    ns = Pyro5.api.locate_ns()          # Conectarse al NameServer
+    uri = daemon.register(Servidor)     # Registrar la clase
+    ns.register("ServidorPalabras", uri)
+
+    print("Servidor listo. Esperando clientes...")
+    daemon.requestLoop()
+
+
+if __name__ == "__main__":
+    main()

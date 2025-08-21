@@ -1,16 +1,29 @@
-# --- Cliente ---
 import Pyro5.api
+import uuid
 
-@Pyro5.api.expose
-class ClienteCallback:
-    def recibir_mensaje(self, msg):
-        print("Servidor dice:", msg)
+def main():
+    # Generamos un id único para cada cliente
+    cliente_id = str(uuid.uuid4())[:8]
 
-daemon = Pyro5.api.Daemon()
-uri = daemon.register(ClienteCallback)
+    # Conectarse al servidor
+    servidor = Pyro5.api.Proxy("PYRONAME:ServidorPalabras")
 
-servidor = Pyro5.api.Proxy("PYRONAME:Servidor")
-servidor.registrar_cliente(uri)  # me registro en el servidor
+    print(f"Cliente {cliente_id} conectado")
 
-print("Cliente listo...")
-daemon.requestLoop()
+    while True:
+        palabra = input("Escribe una palabra (o 'salir'): ").strip()
+        if palabra.lower() == "salir":
+            break
+
+        # Enviar palabra al servidor y recibir respuestas de los demás
+        respuestas = servidor.enviar_palabra(cliente_id, palabra)
+
+        if respuestas:
+            print("Respuestas de los demás clientes:")
+            for cid, p in respuestas.items():
+                print(f" - Cliente {cid}: {p}")
+        else:
+            print("Todavía no hay respuestas de otros clientes.")
+
+if __name__ == "__main__":
+    main()
