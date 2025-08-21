@@ -1,19 +1,26 @@
-# saved as greeting-server.py
+# --- Servidor ---
 import Pyro5.api
 
 @Pyro5.api.expose
-class GreetingMaker(object):
-    def get_fortune(self, name):
-        return "Hello, {0}. Here is your fortune message:\n" \
-               "Tomorrow's lucky number is 12345678.".format(name)
+class Servidor:
+    def __init__(self):
+        self.clientes = []
 
-# MODIFICACION PARA QUE ANDE
-# PYRO:obj_0e6c4e0861484d82bddc498db6db15c7@192.168.4.131:
-# host = "192.168.4.131", puerto = 9090 --> Para levantar servidor
-daemon = Pyro5.server.Daemon()         # make a Pyro daemon
-ns = Pyro5.api.locate_ns()             # find the name server
-uri = daemon.register(GreetingMaker)   # register the greeting maker as a Pyro object
-ns.register("example.greeting", uri)   # register the object with a name in the name server
+    def registrar_cliente(self, cliente_uri):
+        cliente = Pyro5.api.Proxy(cliente_uri)
+        self.clientes.append(cliente)
 
-print("Ready.")
-daemon.requestLoop() 
+    def enviar_a_todos(self, msg):
+        for c in self.clientes:
+            try:
+                c.recibir_mensaje(msg)
+            except:
+                print("Error con un cliente")
+
+daemon = Pyro5.api.Daemon()
+ns = Pyro5.api.locate_ns()
+uri = daemon.register(Servidor)
+ns.register("Servidor", uri)
+
+print("Servidor listo")
+daemon.requestLoop()

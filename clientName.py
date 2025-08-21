@@ -1,7 +1,16 @@
-# saved as greeting-client.py
+# --- Cliente ---
 import Pyro5.api
 
-name = input("What is your name? ").strip()
+@Pyro5.api.expose
+class ClienteCallback:
+    def recibir_mensaje(self, msg):
+        print("Servidor dice:", msg)
 
-greeting_maker = Pyro5.api.Proxy("PYRONAME:example.greeting")    # use name server object lookup uri shortcut
-print(greeting_maker.get_fortune(name))
+daemon = Pyro5.api.Daemon()
+uri = daemon.register(ClienteCallback)
+
+servidor = Pyro5.api.Proxy("PYRONAME:Servidor")
+servidor.registrar_cliente(uri)  # me registro en el servidor
+
+print("Cliente listo...")
+daemon.requestLoop()
