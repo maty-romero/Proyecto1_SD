@@ -6,8 +6,17 @@ Jugador
 - NickName
 
 Partida 
-- List<Categorias> 
-- 
+- List<Categorias>
+- Dict<ip: nickname:string> jugadores
+- NroRondas = 3
 
++ addJugador
 
-Categorias, nro rondas?? 
+Json Devuelto a Cliente
+{
+    "Categorias": ["Nombres", "Paises o ciudades", "Objetos"],
+    "jugadores": ["Manolo", "Goku123", "Hans"]
+    "rondas": 3
+}
+
+ 
