@@ -1,6 +1,8 @@
 import Pyro5.api
 
-servidor = Pyro5.api.Proxy("PYRONAME:ServidorPalabras@10.210.92.214:9090")
+ip = "10.61.16.214"
+
+servidor = Pyro5.api.Proxy("PYRONAME:ServidorPalabras@" +ip)
 
 while True:
     palabra = input("Escribe una palabra o ingrese 'salir': ").strip()

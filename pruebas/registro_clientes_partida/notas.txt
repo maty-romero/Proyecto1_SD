@@ -1,0 +1,13 @@
+Servidor registra cliente en partida y devuelve info basica para la espera en sala: 
+
+
+Jugador
+- Ip 
+- NickName
+
+Partida 
+- List<Categorias> 
+- 
+
+
+Categorias, nro rondas?? 

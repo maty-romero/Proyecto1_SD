@@ -20,8 +20,9 @@ class Servidor:
 
 def main():
     # Crear daemon en la IP accesible desde la red
-    daemon = Pyro5.api.Daemon(host="10.210.92.214")
-    ns = Pyro5.api.locate_ns(host="10.210.92.214", port=9090)
+    ip = "10.61.16.214"
+    daemon = Pyro5.api.Daemon(host=ip)
+    ns = Pyro5.api.locate_ns(host=ip, port=9090)
 
     # Registrar el objeto
     uri = daemon.register(Servidor())
