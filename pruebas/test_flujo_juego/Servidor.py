@@ -3,7 +3,7 @@ import socket
 import threading
 import time
 from GestorPartida import GestorPartida
-
+from test_flujo_juego.ComunicationHelper import ComunicationHelper
 
 def obtener_ip_local():
     """Obtiene la IP local de forma dinámica."""
@@ -25,27 +25,20 @@ def iniciar_servidor_nombres(host_ip: str):
 
 
 if __name__ == "__main__":
-    ip_servidor = obtener_ip_local()
-
-    ns_thread = threading.Thread(target=iniciar_servidor_nombres, args=(ip_servidor,))
-    ns_thread.daemon = True  # El hilo del NS terminará cuando el programa principal lo haga.
-    ns_thread.start()
-
-    time.sleep(1)  # tiempo para que el NS inicie
+    ip_servidor = ComunicationHelper.obtener_ip_local()
+    ComunicationHelper.iniciar_servidor_nombres_en_hilo(ip_servidor)
 
     daemon = Pyro5.api.Daemon(host=ip_servidor)
     ns = Pyro5.api.locate_ns()
-    # Descomentar la linea de abajo si se quiere un nuevo objeto por cliente
-    # uri = daemon.register(RegistroNodos, objectId="registro_nodos")
-    # La dos lineas de abajo disponibilizan un singleton para que todos los clientes compartan el mismo objeto
+
     objeto_registro_singleton = GestorPartida()
-    uri = daemon.register(objeto_registro_singleton, objectId="gestor.partida.objeto")
     nombre_logico = "gestor.partida"
-    ns.register(nombre_logico, uri)
+
+    uri = ComunicationHelper.registrar_objeto_en_ns(
+        objeto_registro_singleton,
+        nombre_logico,
+        daemon,
+        ns)
 
     print(f"[Servidor Lógico] Listo y escuchando en {ip_servidor}")
-    print(f"URI del objeto: {uri}")
-
     daemon.requestLoop()
-    # este codigo crea un servidor de nombres y un servidor lógico que registra nodos conectados
-    # y permite a los clientes obtener la lista de nodos registrados.
