@@ -1,0 +1,76 @@
+------------------------------------------
+** POSIBLES PATRONES DE DISEÑO PARA UTILZAR? **
+------------------------------------------
+
+- Observer / Publisher/Subscriber
+- Strategy
+
+------------------------------------------
+
+------------------------------------------
+** Funciones o Mensajes Tentativos a Implementar **
+------------------------------------------
+// LADO DEL CLIENTE:
+- Client - CheckUniqueNickName()
+- Client - SetServerName() - Levantar ServerName (uso de hilos)
+- Client - UnirseASala() - client recibe info basica partida (JSON)
+- Client - RegistrarCliente(URI) -- 'ConfirmarJugar',
+    -- Server guarda objetos remotos de clientes registrados o que confirmaron jugar
+
+------------------------------------------
+*** Metodos que puede ejecutar el server con objetos remotos de clientes **
+------------------------------------------
+* Cada una de las siguientes dispararía una pantalla el mostrar la informacion (CLI o GUI)
+
+- recibir_info_sala()
+- recibir_info_inicio_ronda() -> dispara mostrar en interfaz (CLI o GUI) lo necesario para jugar
+- recibir_info_fin_ronda() -> info para votaciones
+- recibir_info_
+---------------------
+// LADO DEL SERVIDOR:
+- Server - BroadcastToClients(json_string) -- Un Strategy?
+    -- Como el cliente "espera ese resultado" ??
+-
+
+
+------------------------------------------
+
+------------------------------------------
+** Pseudocodigo / Analisis Mensajes **
+------------------------------------------
+
+
+Client.getRemoteObject -- ServidorPartida
+
+Nickname = Input() -- IngresoEnCliente
+NickNameisUnique = remote.CheckUniqueNickname(): boolean -- NickNameUnico registrado hasta el momento
+while(!NickNameisUnique) => Input() -- nickName
+
+
+Client.LevantaNS({NickName}) -> Uso de Hilo (no bloqueo)
+uriClient = getURI(this)
+remote.UnirseSala(NickName) => client recibe info basica partida (JSON)
+    -- NickNames guardados en un Set, no un registro como tal
+# ejemplo URI -> PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850
+
+Client.RegistrarCliente(URI) -- Server.RegistrarCliente() -- Seria ConfirmarJugador en Partida
+    -- registro en memoria en Hash: "NickName" : remoteClientObject
+
+if(Jugadores.Lenght == N)
+    IniciarRonda() -- Ya se Inicializo la Partida al Momento de levantar el server como tal
+    -- Lo que sigue debajo
+
+-- Mostrar temporizador de 5seg en Cliente?
+Server.BroadCast(json_string)
+    return inforRonda_N a Clientes -- infoRonda = letra, categorias
+
+Client.EnviarRespuestasRonda()
+-- Como obtenemos las respuestas de jugadores que no terminaron antes ????
+    -- Server.getRespuestasClientes() ??
+Server.BroadCast(json_string)
+    return resultadosRonda a Clientes -- respuestasJugadores, nroRonda, etc
+
+Client.VotarRespuesta => Sockets??
+Client.JugarProximaRonda() --> Confirmacion igual que antes con la Sala
+
+--> ContinuarFlujo
