@@ -1,7 +1,27 @@
+import threading
+import time
+
 import Pyro5.api
 import sys
 
-from registro_clientes_partida.RegistroClientesPartida import RegistroClientesPartida
+from test_flujo_juego.ClienteJugador import ClienteJugador
+from test_flujo_juego.ComunicationHelper import ComunicationHelper
+
+
+def solicitar_nickname_valido(proxy_partida) -> str:
+    """Solicita al usuario un nickname único y válido para la partida."""
+    nickname = input("Para jugar, ingrese su NickName para la partida: ")
+    is_unique = proxy_partida.CheckNickNameIsUnique(nickname)
+
+    if not isinstance(is_unique, bool):
+        print("Debe ingresar un STRING válido. Ejecute nuevamente el script Cliente.")
+        sys.exit(1)
+
+    while not is_unique:
+        nickname = input("\nEl NickName ingresado ya está siendo utilizado. Ingrese otro: ")
+        is_unique = proxy_partida.CheckNickNameIsUnique(nickname)
+
+    return nickname
 
 
 def main():
@@ -17,22 +37,32 @@ def main():
     print("Conectado al servidor de registro.")
 
     # Check if NickName is Unique
-    nickname = input("Para jugar, Ingrese su NickName para la partida: ")
-    is_unique = proxy_partida.CheckNickNameIsUnique(nickname)
+    nickname = solicitar_nickname_valido(proxy_partida)
+    print(f"NickName confirmado: {nickname}")
 
-    # Manejar mejor la validacion
-    if(not isinstance(is_unique, bool)):
-        print("Debe ingresar un STRING! Ejecute de nuevo script")
-        sys.exit(1)
+    # Registrar objeto remoto del cliente en Servidor
 
-    while not is_unique:
-        nickname = input("\nEl NickName ingresado ya esta siendo utilizado! Ingrese otro: ")
-        is_unique = proxy_partida.CheckNickNameIsUnique(nickname)
+    ip_cliente = ComunicationHelper.obtener_ip_local()
+    objeto_cliente = ClienteJugador(nickname) # Crear objeto remoto del cliente
 
-    #print(f"El nickName es unico? => Server Responde: {is_unique}")
+    def daemon_loop(): # Crear Daemon y registrar objeto en NS usando CommunicationHelper
+        daemon = Pyro5.server.Daemon(host=ip_cliente)
+        ns = Pyro5.api.locate_ns()
+        # Uso de NickName para registro del objeto
+        uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, f"jugador.{nickname}", daemon, ns)
+        print(f"[Registro] Objeto CLIENTE '{nickname}' disponible en URI: {uri}")
+        daemon.requestLoop()
 
-    #respuesta_registro = proxy_registro.registrar_nodo_cliente(nickname)
-    #print(f"Respuesta del servidor: {respuesta_registro}")
+    hilo_daemon = threading.Thread(target=daemon_loop)
+    hilo_daemon.daemon = True
+    hilo_daemon.start()
+
+    time.sleep(3)  # Espera para que el hilo imprima el URI
+
+    print(f"✅ Cliente '{nickname}' listo para registrar!.")
+    # metodo remoto: GestorPartida.registrar_nodo_cliente(self, nickname: str, nombre_logico: str):
+    proxy_partida.registrar_nodo_cliente(nickname, f"jugador.{nickname}") # registro para broadcasting
+
 
 if __name__ == "__main__":
     main()

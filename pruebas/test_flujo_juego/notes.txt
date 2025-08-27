@@ -7,12 +7,18 @@
 
 ------------------------------------------
 
+********** ACLARACIONES **********
+- ** No se levanta otro ServerName sino que el cliente ejecuta Deamon y registra objeto
+    - Todo lo que se referencia como Levantar NameServer desde cliente en realidad es ejecutar deamon
+
+
+
 ------------------------------------------
 ** Funciones o Mensajes Tentativos a Implementar **
 ------------------------------------------
 // LADO DEL CLIENTE:
 - Client - CheckUniqueNickName()
-- Client - SetServerName() - Levantar ServerName (uso de hilos)
+- Client - SetServerName() - ** No se levanta otro ServerName sino que el cliente ejecuta Deamon y registra objeto
 - Client - UnirseASala() - client recibe info basica partida (JSON)
 - Client - RegistrarCliente(URI) -- 'ConfirmarJugar',
     -- Server guarda objetos remotos de clientes registrados o que confirmaron jugar
@@ -47,7 +53,7 @@ NickNameisUnique = remote.CheckUniqueNickname(): boolean -- NickNameUnico regist
 while(!NickNameisUnique) => Input() -- nickName
 
 
-Client.LevantaNS({NickName}) -> Uso de Hilo (no bloqueo)
+Client.EjecutarDEAMON({NickName}) -> Uso de Hilo (no bloqueo)
 uriClient = getURI(this)
 remote.UnirseSala(NickName) => client recibe info basica partida (JSON)
     -- NickNames guardados en un Set, no un registro como tal
