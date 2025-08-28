@@ -1,6 +1,6 @@
 import Pyro5.api
 
-ip = "10.61.16.214"
+ip = "10.15.0.51"
 
 servidor = Pyro5.api.Proxy("PYRONAME:ServidorPalabras@" +ip)
 

@@ -2,7 +2,7 @@
 ** POSIBLES PATRONES DE DISEÑO PARA UTILZAR? **
 ------------------------------------------
 
-- Observer / Publisher/Subscriber
+- Observer / Publisher/Subscriber 
 - Strategy
 
 ------------------------------------------

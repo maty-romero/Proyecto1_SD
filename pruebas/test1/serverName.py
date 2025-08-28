@@ -20,7 +20,7 @@ class Servidor:
 
 def main():
     # Crear daemon en la IP accesible desde la red
-    ip = "10.61.16.214"
+    ip = "10.15.0.214"
     daemon = Pyro5.api.Daemon(host=ip)
     ns = Pyro5.api.locate_ns(host=ip, port=9090)
 
