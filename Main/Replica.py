@@ -1,7 +1,7 @@
 from Nodo import Nodo
 from NodoServidor import Servidor
 
-class Replica(Servidor):
+class Replica(Nodo):
     def __init__(self, id, servidor_ref):
         super().__init__(id)
         self.servidor_ref = servidor_ref

@@ -10,7 +10,7 @@ import time
 import Pyro5.nameserver
 
 """FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
-class ServidorDeNombres:
+class ServidorNombres(Nodo):
 
     def verificar_nameserver(self):
         """Verifica si el servidor de nombres esta disponible"""
@@ -21,7 +21,7 @@ class ServidorDeNombres:
             print(f"No se pudo conectar al servidor de nombres: {e}")
             return False
 
-    def iniciar_subproceso_nameserver(self):
+    def iniciar_nameserver_subproceso(self):
         """Intenta iniciar el nameserver si no está disponible"""
         if self.verificar_nameserver():
             print("El servidor de nombres ya está ejecutándose")

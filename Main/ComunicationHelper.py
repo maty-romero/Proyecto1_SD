@@ -3,7 +3,6 @@ import Pyro5.api
 
 
 class ComunicationHelper:
-
     @staticmethod
     def obtener_ip_local() -> str:
         """Obtiene la IP local de forma dinámica."""

@@ -6,6 +6,12 @@ class Nodo:
         self.id = id
         self.estado = {}
 
+    def get_id_nodo(self):
+        return self.id
+
+    def set_id_nodo(self,id):
+        self.id=id
+
     def obtener_estado(self):
         return self.estado
     
