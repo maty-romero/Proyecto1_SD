@@ -1,0 +1,6 @@
+1) GetInfoRonda (en Partida) -> gestion nroRonda actual
+2) Funcionalidad asociada ronda --> Uso de GetLetraRandom 
+3) Confirmar Jugador --> If nroJugadores == N -> IniciarPartida() o Ronda() 
+
+Otros:
+a) Patron Strategy o Command para enviar_info a cliente ?? --> Analizar
