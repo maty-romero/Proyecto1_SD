@@ -1,4 +1,8 @@
 
+** Pendientes generales
+1) Plantear mensajes o comunicacion en general entre todos para repartir tareas?
+2) Integrar la parte de elias y dayana (ver de esto ultimo para no mezclar con Py6 todavia)
+
 *** Fixes pendientes de la integracion (los que me acuerdo)
 
 1) GetInfoRonda (en Partida) -> gestion nroRonda actual
