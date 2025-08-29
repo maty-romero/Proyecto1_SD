@@ -25,7 +25,7 @@ class GestorPartida:
         if(inicio_partida):
             # INICIAR_PARTIDA / JUGAR_RONDA
 
-            # Simulacion para 1 jugador 
+            # Simulacion para 1 jugador --> [Uso en Cliente] (Enviar info Ronda)
             #jugador = self.partida.get_jugador_partida(nickname)
             mensaje = self.partida.get_info_ronda()
             mensaje_json = dict_to_json(mensaje)
@@ -34,7 +34,7 @@ class GestorPartida:
 
 
     # Pendiente - DEBERIA SER UN BROADCASTING 
-    def enviar_info_ronda(self, nick_name: str, mensaje: str):
+    def enviar_info_ronda(self, nickname: str, mensaje: str):
         self.gui.show_message("*** Server envia mennsaje a Cliente ***")
         jugador_remoto = self.partida.get_jugador_partida(nickname)
         if(jugador_remoto is None):
@@ -47,17 +47,21 @@ class GestorPartida:
     def enviar_info_sala(self, nickname: str, mensaje: str):
         self.gui.show_message("*** Server envia mennsaje a Cliente ***")
         jugador_remoto = self.partida.get_jugador_partida(nickname)
+        self.gui.show_error(f"enviar_info_sala => jugador: {jugador_remoto}")
         if(jugador_remoto is None):
             self.gui.show_error(f"El Jugador {nickname} no esta en la partida!")
-
-        jugador_remoto.recibir_info_sala(mensaje) 
+        else:
+            jugador_remoto.recibir_info_sala(mensaje)
 
     # "Equivalente a => registrar_cliente"
-    def unirse_a_sala(self, nickname: str, nombre_logico: str):
-        proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{nombre_logico}")
-        self.gui.show_message(f"Registrando jugador: {nickname}, con nombre_logico: {nombre_logico}")
+    def unirse_a_sala(self, nickname: str, nombre_logico_jugador: str):
+        proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{nombre_logico_jugador}")
+        print(f"UNIRSE A SALA | PROXI_CLIENTE: {proxy_cliente}")
+        self.gui.show_message(f"Registrando jugador: {nickname}, con nombre_logico: {nombre_logico_jugador}")
 
-        self.partida.agregar_jugador_partida(nickname, proxy_cliente) # se agrega objeto remoto
+        result = self.partida.agregar_jugador_partida(nickname, proxy_cliente) # se agrega objeto remoto
+        if(result is None):
+            self.gui.show_error(f"El jugador {nickname} ya ha sido registrado")
 
         # devolver json info para la sala
         info_sala_json = dict_to_json(self.partida.get_info_sala())

@@ -7,7 +7,7 @@ class ConsoleGUI(AbstractGUI):
         print(f"[INFO] {message}")
 
     def get_input(self, prompt: str) -> str:
-        return input(f"{prompt}: ")
+        return input(f"{prompt}")
 
     def show_error(self, error: str) -> None:
         print(f"[ERROR] {error}")

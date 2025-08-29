@@ -17,7 +17,7 @@ class Partida:
         return True
 
     def agregar_jugador_partida(self, nickname: str, objeto_cliente_remoto):
-        if(not(nickname in self.jugadores)):
+        if(nickname in self.jugadores):
             return None # jugador ya registrado
         self.jugadores[nickname] = objeto_cliente_remoto 
             
