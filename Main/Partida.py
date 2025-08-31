@@ -3,7 +3,7 @@ import string
 
 class Partida:
     def __init__(self):
-        self.jugadores = {} # { "<nickname>" : objeto_remoto_cliente }
+        self.jugadores = {} # { "<nickname>" : nombre_logico }
         self.categorias = ["Nombres", "Paises o ciudades", "Objetos"]
         self.rondas = 3 # nro rondas
         self.rondaActual = 0; 
@@ -16,11 +16,12 @@ class Partida:
             return False
         return True
 
-    def agregar_jugador_partida(self, nickname: str, objeto_cliente_remoto):
+    def agregar_jugador_partida(self, nickname: str, nombre_logico:str):
         if(nickname in self.jugadores):
             return None # jugador ya registrado
-        self.jugadores[nickname] = objeto_cliente_remoto 
-            
+        self.jugadores[nickname] = nombre_logico
+
+        
     def eliminar_jugador_partida(self, nickname: str):
         if(not(nickname in self.jugadores)):
             return None 
@@ -30,6 +31,9 @@ class Partida:
         if(not(nickname in self.jugadores)):
             return None # no existe jugador
         return self.jugadores[nickname]
+    
+    def get_jugadores_partida(self):
+        return self.jugadores
 
     def get_letras_jugadas(self):
         return self.letras_jugadas
@@ -57,23 +61,27 @@ class Partida:
     def get_info_ronda(self):
         info = {
             "categorias": self.categorias,
-            "nro_ronda": -1,  
-            "letra_ronda": 'pendiente',
-            "letras_jugadas": 'pendiente'
+            "nro_ronda": self.rondaActual,  
+            "letra_ronda": self.letras_jugadas[-1],
+            "letras_jugadas": self.letras_jugadas
         }
         return info
     
      # PENDIENTE - Definir bien
     def confirmar_jugador_partida(self) -> bool:
-        # self.jugadores_confirmados+= 1
-        # return self.jugadores_confirmados == 3 
-        return True
+        self.jugadores_confirmados+= 1
+        #return self.jugadores_confirmados == 2 
+        if self.jugadores_confirmados == 2:
+            self.iniciar_partida()
+            return True
+        # return True
     
-    #     def iniciarJuego(self, nombre_Jugador):
-    #         self.clientes.append(nombre_Jugador)
-    #         return f"{nombre_Jugador} se ha unido al juego."
 
-    
+    #Lógica de la ronda
+    def iniciar_partida(self):
+        self.rondaActual = 1
+        letra = self.get_letra_random()
+
 
 
 
