@@ -25,6 +25,9 @@
 
 Pendientes:
 
+
+
+
 --  Resolver que hacer con la clase TuttiFrutti
 --  Resolver que hacer con la clase Cliente
 --  Resolver que hacer con la clase utilidades (es el equivalente a comunicationHelper - Utils)
@@ -32,3 +35,9 @@ Pendientes:
 --  Tiene sentido el singleton si se utiliza el NameServer como en nodo separado
 --  registro nodos clientes
 --  registro clientes partida
+
+--Info de ronda: broadcast con observer o notificacion
+
+
+
+
