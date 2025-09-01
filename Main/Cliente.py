@@ -18,7 +18,8 @@ class ClienteHelper:
     def solicitar_nickname_valido(self, proxy_partida) -> str:
         """Solicita al usuario un nickname único y válido para la partida."""
         nickname = self.gui.get_input("Para jugar, ingrese su NickName para la partida: ")
-        is_unique = proxy_partida.CheckNickNameIsUnique(nickname)
+        formated_nickname = nickname.lower().replace(" ", "")
+        is_unique = proxy_partida.CheckNickNameIsUnique(formated_nickname)
 
         if not isinstance(is_unique, bool):
             self.gui.show_message("Debe ingresar un STRING válido. Ejecute nuevamente el script Cliente.")
@@ -26,9 +27,9 @@ class ClienteHelper:
 
         while not is_unique:
             nickname = self.gui.get_input("\nEl NickName ingresado ya está siendo utilizado. Ingrese otro: ")
-            is_unique = proxy_partida.CheckNickNameIsUnique(nickname)
-
-        return nickname
+            formated_nickname = nickname.lower().replace(" ", "")
+            is_unique = proxy_partida.CheckNickNameIsUnique(formated_nickname)
+        return formated_nickname
 
     def mostrar_mensaje(self, mensaje: str):
         self.gui.show_message(mensaje)
@@ -78,30 +79,42 @@ def main():
     proxy_partida.unirse_a_sala(nickname, nombre_logico_jugador) # ejecuta envio_info_sala desde server
     # (Recibe info en consola cliente)
 
+# ---------------------------------------- Acá se empieza a jugar
+
     # Simulacion de cliente jugando --> prueba
-    info_ronda_json = proxy_partida.confirmar_jugador() # simulacion de confirmacion
-    print(f"INFO RONDA EN CLIENTE PARA JUGAR (JSON) {info_ronda_json}")
+    respuesta = proxy_partida.confirmar_jugador()
+    print("Respuesta del servidor:", respuesta)
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Cliente cerrado manualmente.")
 
 
-    infoRonda = json.loads(info_ronda_json, object_hook=lambda d: SimpleNamespace(**d))
-    print(f"Cliente Jugando Ronda: {infoRonda.nro_ronda}")
-    infoRonda.letra_ronda = 'A'
-    print(f"Letra Ronda: {infoRonda.letra_ronda}. Comienza la ronda!")
 
-    respuestasDict = {clave: "" for clave in infoRonda.categorias}
+    # info_ronda_json = proxy_partida.confirmar_jugador() # simulacion de confirmacion
+    # print(f"INFO RONDA EN CLIENTE PARA JUGAR (JSON) {info_ronda_json}")
 
-    for clave in respuestasDict:
-        respuesta = input(f"Ingrese respuesta para categoria[{clave}]: ")
-        # Validacion primer letra 
-        while respuesta[0] != infoRonda.letra_ronda:
-            print(f"Estamos jugando con la letra {infoRonda.letra_ronda}!")
-            respuesta = input(f"Ingrese respuesta para {clave}: ")
+
+    # infoRonda = json.loads(info_ronda_json, object_hook=lambda d: SimpleNamespace(**d))
+    # print(f"Cliente Jugando Ronda: {infoRonda.nro_ronda}")
+    # infoRonda.letra_ronda = 'A'
+    # print(f"Letra Ronda: {infoRonda.letra_ronda}. Comienza la ronda!")
+
+    # respuestasDict = {clave: "" for clave in infoRonda.categorias}
+
+    # for clave in respuestasDict:
+    #     respuesta = input(f"Ingrese respuesta para categoria[{clave}]: ")
+    #     # Validacion primer letra 
+    #     while respuesta.upper()[0] != infoRonda.letra_ronda:
+    #         print(f"Estamos jugando con la letra {infoRonda.letra_ronda}!")
+    #         respuesta = input(f"Ingrese respuesta para categoria [{clave}]: ")
             
-        respuestasDict[clave] = respuesta
+    #     respuestasDict[clave] = respuesta
 
-    json_respuestas = json.dumps(respuestasDict) # JSON
-    print(f"La respuestas del cliente son: {json_respuestas}")
-    print("\nPENDIENTE - Enviar respuestas a nodo server")
+    # json_respuestas = json.dumps(respuestasDict) # JSON
+    # print(f"La respuestas del cliente son: {json_respuestas}")
+    # print("\nPENDIENTE - Enviar respuestas a nodo server")
 
 if __name__ == "__main__":
     main()

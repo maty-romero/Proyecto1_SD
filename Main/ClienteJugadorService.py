@@ -19,3 +19,8 @@ class ClienteJugadorService:
         self.gui.show_message("**[recibir_info_sala]**")
         # Mostrar el mensaje recibido
         self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
+
+    def recibir_info_ronda(self,info: str):
+        self.gui.show_message("**[recibir_info_ronda]**")
+        # Mostrar el mensaje recibido
+        self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
