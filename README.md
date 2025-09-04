@@ -1,1 +1,8 @@
-# Proyecto1_SD
+# Proyecto1_SD - TutiFruti
+
+Integrantes
+- Jeremias
+- Fiorella
+- Dayana
+- Matias
+- Elias
