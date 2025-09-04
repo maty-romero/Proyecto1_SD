@@ -1,5 +1,5 @@
-from Nodo import Nodo
-from NodoServidor import Servidor
+from Main.Server.Nodo import Nodo
+
 
 class Replica(Nodo):
     def __init__(self, id, servidor_ref):

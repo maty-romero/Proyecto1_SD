@@ -1,0 +1,77 @@
+Collections:
+
+- Partidas
+{
+  "_id": "p001",
+  "fecha": "2025-09-03T22:59:00Z",
+  "rondas_jugadas": 3,
+  "letras_jugadas": ['F', 'L', 'M'],
+  "categorias": ["Fruta", "Animal", "País"],
+  "jugadores": ["nickname1", "nickname2"]
+  "ganador": "j001"
+}
+
+- EstructuraGeneral - Tentativa
+{
+  "partidaId": "p001",
+  "fecha": "2025-09-03T22:59:00Z",
+  "letra": "F",
+  "categorias": ["Fruta", "Animal", "País"],
+  "jugadores": [
+    {
+      "jugadorId": "j001",
+      "nombre": "Lucía",
+      "respuestas": [
+        {
+          "ronda": 1,
+          "categoria": "Fruta",
+          "texto": "Frutilla",
+          "valida": true,
+          "puntaje": 10
+        },
+        {
+          "ronda": 1,
+          "categoria": "Animal",
+          "texto": "Foca",
+          "valida": true,
+          "puntaje": 10
+        },
+        {
+          "ronda": 1,
+          "categoria": "País",
+          "texto": "Finlandia",
+          "valida": true,
+          "puntaje": 10
+        }
+      ]
+    },
+    {
+      "jugadorId": "j002",
+      "nombre": "Mateo",
+      "respuestas": [
+        {
+          "ronda": 1,
+          "categoria": "Fruta",
+          "texto": "Frambuesa",
+          "valida": true,
+          "puntaje": 10
+        },
+        {
+          "ronda": 1,
+          "categoria": "Animal",
+          "texto": "Foca",
+          "valida": false,
+          "puntaje": 5
+        },
+        {
+          "ronda": 1,
+          "categoria": "País",
+          "texto": "Francia",
+          "valida": true,
+          "puntaje": 10
+        }
+      ]
+    }
+  ]
+}
+

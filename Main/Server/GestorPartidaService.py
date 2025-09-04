@@ -1,6 +1,6 @@
 import json
 from Partida import Partida
-from AbstractGUI import AbstractGUI
+from Main.Common.AbstractGUI import AbstractGUI
 import Pyro5.api
 
 # funciones auxiliares 

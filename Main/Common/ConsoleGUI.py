@@ -1,6 +1,5 @@
 import os
-from typing import Optional
-from AbstractGUI import AbstractGUI  
+from Main.Common.AbstractGUI import AbstractGUI
 
 class ConsoleGUI(AbstractGUI):
     def show_message(self, message: str) -> None:

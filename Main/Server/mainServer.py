@@ -1,12 +1,9 @@
-from NodoServidor import Servidor
 from NodoServidorNombres import ServidorNombres
-from Nodo import Nodo
 import Pyro5.api
 from Pyro5 import errors
-from ComunicationHelper import ComunicationHelper
-from GestorPartida import GestorPartida
-from AbstractGUI import AbstractGUI
-from ConsoleGUI import ConsoleGUI
+from Main.Utils.ComunicationHelper import ComunicationHelper
+from Main.Server.GestorPartidaService import GestorPartida
+from Main.Common.ConsoleGUI import ConsoleGUI
 
 if __name__ == "__main__":
    # NodoServ = Nodo(1)#id cualquiera por lo pronto

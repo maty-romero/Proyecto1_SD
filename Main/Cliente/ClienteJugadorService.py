@@ -3,9 +3,8 @@
     remotos desde Server
 """
 import Pyro5.api
-import os
 
-from AbstractGUI import AbstractGUI
+from Main.Common.AbstractGUI import AbstractGUI
 
 @Pyro5.api.expose
 class ClienteJugadorService:

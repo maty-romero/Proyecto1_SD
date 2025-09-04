@@ -1,15 +1,13 @@
-import json
 import threading
 import time
-from types import SimpleNamespace
 
 import Pyro5.api
 import sys
 
 from ClienteJugadorService import ClienteJugadorService
-from ComunicationHelper import ComunicationHelper
-from AbstractGUI import AbstractGUI
-from ConsoleGUI import ConsoleGUI
+from Main.Utils.ComunicationHelper import ComunicationHelper
+from Main.Common.AbstractGUI import AbstractGUI
+from Main.Common.ConsoleGUI import ConsoleGUI
 
 class ClienteHelper:
     def __init__(self, gui: AbstractGUI):

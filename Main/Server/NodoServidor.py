@@ -1,10 +1,5 @@
-import Pyro5.api
-import subprocess #consultar que tan factible es, puede tambien crearse un .bat
-import time
-import sys
-from Nodo import Nodo
-from Pyro5 import errors
-from builtins import ConnectionRefusedError
+from Main.Server.Nodo import Nodo
+
 
 class Servidor(Nodo):
     def __init__(self, id):
