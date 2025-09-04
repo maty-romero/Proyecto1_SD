@@ -1,86 +1,65 @@
 import random
 import string
 
+from Main.Server import Ronda
+from Main.Server.Jugador import Jugador
+
+
 class Partida:
     def __init__(self):
-        self.jugadores = {} # { "<nickname>" : nombre_logico }
         self.categorias = ["Nombres", "Paises o ciudades", "Objetos"]
-        self.rondas = 3 # nro rondas
-        self.rondaActual = 0; 
-        self.letras = list(string.ascii_uppercase)  # ['A', 'B', ..., 'Z']
-        self.letras_jugadas = [] 
-        self.jugadores_confirmados = 0
+        self.rondas_maximas = 3 # mandar por constructor?
+        self.rondas_stack: list[Ronda] = [] # Pendiente - Actua como pila
+        self.jugadores = []
 
-    def is_nickname_disponible(self, nickname: str):
-        if nickname in self.jugadores:
-            return False
-        return True
+        """
+        stack = []
+        stack.append(1) # Push
+        stack[-1]       # Peek -- retrieve top but not modify
+        stack.pop()     # Pop -- retrieve top modifying
+        """
+    def get_ronda_mas_reciente(self):
+        return self.rondas_stack[-1]
 
-    def agregar_jugador_partida(self, nickname: str, nombre_logico:str):
-        if(nickname in self.jugadores):
-            return None # jugador ya registrado
-        self.jugadores[nickname] = nombre_logico
+    # Se asume que hay jugadores requeridos para jugar
+    def cargar_jugadores_partida(self, jugadores: list[Jugador]):
+        self.jugadores = jugadores
 
-        
-    def eliminar_jugador_partida(self, nickname: str):
-        if(not(nickname in self.jugadores)):
-            return None 
-        self.jugadores.pop(nickname) # existe jugador
-        
-    def get_jugador_partida(self, nickname: str):
-        if(not(nickname in self.jugadores)):
-            return None # no existe jugador
-        return self.jugadores[nickname]
-    
+    def get_jugador_mayor_puntaje(self):
+        pass
+
+    def iniciar_nueva_ronda(self): # Push in Stack
+        pass # Crear instancia Ronda y pasar por ctor args --> Uso de Append pensado uso de Stack
+
+    def get_letras_jugadas(self) -> list[str]:
+        pass # Recorrer Rondas y armar listas con letras jugadas
+
     def get_jugadores_partida(self):
         return self.jugadores
 
-    def get_letras_jugadas(self):
-        return self.letras_jugadas
-
-    def get_letra_random(self) -> str:
-        if not self.letras:
-            raise ValueError("No quedan letras disponibles")
-        
-        letra = random.choice(self.letras)
-        self.letras.remove(letra)  # Evita repetir
-        self.letras_jugadas.append(letra)
-        return letra
-
     # GETS INFO
-
     def get_info_sala(self):
+        nicknames = [jugador.nickname for jugador in self.jugadores]
         info = {
             "categorias": self.categorias,
-            "jugadores": list(self.jugadores.keys()),
-            "rondas": self.rondas
+            "jugadores": nicknames,
+            "rondas": len(self.rondas)
         }
-        return info;  
+        return info;
 
-    # PENDIENTE - NroRondaActual 
+    # PENDIENTE - NroRondaActual
     def get_info_ronda(self):
         info = {
             "categorias": self.categorias,
-            "nro_ronda": self.rondaActual,  
+            "nro_ronda": self.rondaActual,
             "letra_ronda": self.letras_jugadas[-1],
             "letras_jugadas": self.letras_jugadas
         }
         return info
+
     
-     # PENDIENTE - Definir bien
-    def confirmar_jugador_partida(self) -> bool:
-        self.jugadores_confirmados+= 1
-        #return self.jugadores_confirmados == 2 
-        if self.jugadores_confirmados == 2:
-            self.iniciar_partida()
-            return True
-        # return True
     
 
-    #Lógica de la ronda
-    def iniciar_partida(self):
-        self.rondaActual = 1
-        letra = self.get_letra_random()
 
 
 

@@ -1,0 +1,15 @@
+** Refactor / Patrones
+1) Observer --> broadcasting
+2) Repensar estructura de clases
+
+
+** Fixes Pendientes - ultima vez
+3) Confirmar Jugador --> If nroJugadores == N -> IniciarPartida() o Ronda()
+4) Implementar bien y desacoplar logica juego en el cliente.py
+5) Validar NickName -> sin espacios, convertir a minuscula, etc
+6) Enviar info Ronda - Revisar y deberia ser un broadcasting a todos los jugadores registrados
+7) Clear() en consola del cliente para jugar
+9) recibir_info_ronda -> metodo remoto en cliente
+
+** Notas - Refactor SalaDb
+1) [unirse_a_sala] Thread.sleep? con cronometro para mostrar que va a empezar partida?
