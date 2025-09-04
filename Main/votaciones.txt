@@ -1,0 +1,196 @@
+
+¿Cómo va a funcionar?
+
+
+Desglosando las reglas:Lista de votos
+
+-->Respuesta inválida:
+Si la mayoría de los votos es False, la respuesta es inválida (0 puntos).
+en caso de empate en votacion puntaje 0 y es invalida
+
+-->Respuesta válida:
+Si la mayoría de los votos es True, la respuesta es válida.
+Si una respuesta es única (es decir, ningún otro jugador la dio), el jugador recibe 10 puntos.
+Si una respuesta está repetida por otros jugadores, todos los jugadores con esa respuesta reciben 5 puntos.
+
+
+
+
+1)Votación de los jugadores: Los jugadores deben poder votar sobre las respuestas de los demás. Cada cliente enviará un voto (1 o 0) al servidor.
+
+2)Servidor calcula la validez de las respuestas:
+Si la mayoría de los votos son True, la respuesta es válida.
+Si hay empate, la respuesta es inválida.
+Si la respuesta es válida, se asignan puntos según si es única o repetida.
+3)Envío de resultados a todos los clientes: Después de 
+calcular la validez de la respuesta, el servidor debe enviar 
+la información a todos los clientes.
+
+
+
+
+
+
+[Letra J]
+[Categoría 1]
+Jugador 1 [       ] [] <-- x o check
+            * * * *
+
+0 -> negativo / false
+1 -> positivo / true
+
+0-->no es valido-->
+5-->Misma respuesta
+10--> solo las personas que respusta unica 
+Partida se guardan los jugadores en un diccionario
+{ "<nickname>" : nombre_logico }
+
+
+
+
+
+
+
+def calcular_puntajes(self):
+    puntajes = {jugador: 0 for jugador in self.respuestasDict.keys()}
+
+    for categoria, respuestas_jugadores in self.respuestasDict.items():
+        # Paso 1: evaluar votos
+        validas = {}
+        for jugador, respuesta in respuestas_jugadores.items():
+            votos = self.votosDict[categoria].get(jugador, [])
+            total_true = sum(1 for _, v in votos if v)
+            total_false = sum(1 for _, v in votos if not v)
+
+            if total_true > total_false:  # respuesta válida
+                validas[jugador] = respuesta
+            else:  # respuesta inválida
+                puntajes[jugador] += 0
+            
+            true > false --> respuesta válida
+            false > true --> respuesta inválida
+            true = false --> ???
+
+        # Paso 2: ver repeticiones entre las válidas
+        conteo_respuestas = {}
+        for respuesta in validas.values():
+            conteo_respuestas[respuesta] = conteo_respuestas.get(respuesta, 0) + 1
+
+        for jugador, respuesta in validas.items():
+            if conteo_respuestas[respuesta] == 1:
+                puntajes[jugador] += 10
+            else:
+                puntajes[jugador] += 5
+
+    return puntajes
+
+
+
+
+
+cat:Fruta  1 ronda
+Fiorella  Alacrán [1,1,0,0] <-- no es válida(TRUE) O  ES VALIDA? 
+Dayana  Ananá [1,1,1,0] <-- válida (TRUE)  5
+PEPE   Arándanos [1,1,1,1] <-- válida  10
+Mari   Anana[1,1,1,1]<--valido      5
+
+
+
+
+
+se crea un  diccionario de  votos:
+votosDict = {
+    "Categoria 1": {"jugador1": [1,0,1], "jugador2": []},
+    "Categoria 2": {"jugador1": [], "jugador2": []},
+}
+
+
+Se crea un diccionario de respuestas
+respuestasDict = {
+    "Categoria 1": {"jugador1": "respuesta A", "jugador2": "respuesta B"},
+    "Categoria 2": {"jugador1": "respuesta C", "jugador2": "respuesta D"},
+}
+
+respuestasDict = {clave: "" for clave in infoRonda.categorias} <-- se crea una diccionario con las claves 
+
+get_letra()
+
+        info = {
+            "categorias": self.categorias,
+            "nro_ronda": self.rondaActual,  
+            "letra_ronda": self.letras_jugadas[-1],
+            "letras_jugadas": self.letras_jugadas
+        }
+
+
+#Cliente 1
+respuestasDict = {
+    "Categoría 1": "Respuesta 1",
+    "Categoría 2": "Respuesta 2",
+}
+
+
+#Cliente 2
+respuestasDict = {
+    "Categoría 1": "Respuesta 1",
+    "Categoría 2": "Respuesta 2",
+}
+
+
+
+
+respuestasTotales = {
+    "Categoría 1" : {"Jugador1" : "Respuesta1", "Jugador2": "Respuesta1"}
+}
+
+
+
+
+
+# Respuestas y votos iniciales
+respuestasDict = {
+    "Categoria 1": {"Fiorella": "Alacrán", "Dayana": "Ananá", "PEPE": "Arándanos", "Mari": "Ananá"}
+}
+
+
+
+
+votosDict = {
+    "Categoria 1": {
+        "Fiorella": [1, 1, 0, 0],  # Votos de Fiorella: [True, True, False, False]
+        "Dayana": [1, 1, 1, 0],     # Votos de Dayana: [True, True, True, False]
+        "PEPE": [1, 1, 1, 1],       # Votos de PEPE: [True, True, True, True]
+        "Mari": [1, 1, 1, 1]        # Votos de Mari: [True, True, True, True]
+    }
+}
+
+
+
+Respuestas de la categoría "Frutas":
+Fiorella: Alacrán
+Dayana: Ananá
+PEPE: Arándanos
+Mari: Ananá
+
+
+¿Voto válido (1) o inválido (0) para Fiorella? 1
+
+¿Voto válido (1) o inválido (0) para Dayana? 1
+¿Voto válido (1) o inválido (0) para PEPE? 0
+¿Voto válido (1) o inválido (0) para Mari? 1
+
+
+
+VotosCliente1[1,1,0,1]
+VotosCliente2[1,1,0,1]
+
+votos[categoria][jugador] = [VotosCliente1(1), VotosCliente2(1)] --> Fiorella": [1, 1, 0, 0]  son Invalido puntaje:0
+
+votosDict = {
+    "Categoria 1": {
+        "Fiorella": [VotosCliente1(1), VotosCliente2(1)],  # Votos de Fiorella:
+        "Dayana": [1, 1, 1, 0],     # Votos de Dayana: [True, True, True, False]
+        "PEPE": [1, 1, 1, 1],       # Votos de PEPE: [True, True, True, True]
+        "Mari": [1, 1, 1, 1]        # Votos de Mari: [True, True, True, True]
+    }
+}
