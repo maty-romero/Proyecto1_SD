@@ -7,7 +7,7 @@ import Pyro5.api
 from Main.Common.AbstractGUI import AbstractGUI
 
 @Pyro5.api.expose
-class ClienteJugadorService:
+class ServicioCliente:
     def __init__(self, gui: AbstractGUI):
         self.gui = gui
 

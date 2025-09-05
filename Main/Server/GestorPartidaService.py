@@ -62,6 +62,12 @@ class GestorPartidaService:
         cant_jugadores_actual = len(self.publisher.getJugadores())
         if(cant_jugadores_actual >= self.jugadores_requeridos):
             self.iniciar_partida()
+
+    def confirmar_jugador(self, nickname: str):
+        #self.publisher.
+        pass
+
+
 """
     # PENDIENTE - INICIAR_PARTIDA / COMENZAR_RONDA_1
     def confirmar_jugador(self): # args: nickname ?? 

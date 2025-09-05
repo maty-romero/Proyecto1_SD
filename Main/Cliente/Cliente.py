@@ -4,7 +4,7 @@ import time
 import Pyro5.api
 import sys
 
-from ClienteJugadorService import ClienteJugadorService
+from ServicioCliente import ClienteJugadorService
 from Main.Utils.ComunicationHelper import ComunicationHelper
 from Main.Common.AbstractGUI import AbstractGUI
 from Main.Common.ConsoleGUI import ConsoleGUI

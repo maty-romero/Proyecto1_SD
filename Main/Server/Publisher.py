@@ -7,6 +7,7 @@ from Main.Server.Jugador import Jugador
 class Publisher:
     def __init__(self):
         self.jugadores: list[Jugador] = [] # List<Jugador>
+        self.jugadores_confirmados = list[Jugador] = []
 
     def suscribirJugador(self, nickname, nombre_logico):
         jugador = Jugador(nickname, nombre_logico)
@@ -27,6 +28,9 @@ class Publisher:
                 return jugador
         return None # no existe jugador
 
+    def confirmar_jugador(self) -> Jugador | None:
+        pass
+
     # Notificaciones a Clientes
 
     def notificar_info_sala(self, msg_dict: dict):
@@ -46,8 +50,6 @@ class Publisher:
         pass
 
     # Metodos 'Privados'
-
-
 
     def _get_proxy_jugador(self, nickname: str):
         jugador = self._buscar_jugador(nickname)
