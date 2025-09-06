@@ -18,8 +18,8 @@ class ServicioCliente:
             self.gui.clear()
         except Exception:
             pass
-        self.gui.show_message("**[recibir_info_sala]**")
-        self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
+        #self.gui.show_message("**[recibir_info_sala]**")
+        #self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
 
         # Delegar lógica al gestor (no hacer trabajo pesado aquí)
         # Ejecutamos en hilo para no bloquear el hilo del daemon de Pyro

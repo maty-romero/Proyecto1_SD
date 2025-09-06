@@ -22,20 +22,16 @@ class Publisher:
     def getJugadores(self):
         return self.jugadores
 
-    def buscar_jugador(self, nickname: str) -> Jugador | None:
-        for jugador in self.jugadores:
-            if jugador.nickname == nickname:
-                return jugador
-        return None # no existe jugador
-
     def confirmar_jugador(self) -> Jugador | None:
         pass
 
     # Notificaciones a Clientes
 
     def notificar_info_sala(self, msg_dict: dict):
-        # json = self._dict_to_json(msg_dict)
-        pass
+        json = Publisher._dict_to_json(msg_dict)
+        for jugador in self.jugadores: # Broadcasting
+            self._get_proxy_jugador(jugador.nickname).recibir_info_sala(json)
+
 
     def notificar_inicio_ronda(self, msg_dict: dict):
         pass
@@ -52,11 +48,18 @@ class Publisher:
     # Metodos 'Privados'
 
     def _get_proxy_jugador(self, nickname: str):
-        jugador = self._buscar_jugador(nickname)
+        jugador = self.buscar_jugador(nickname)
         if jugador is not None:
             proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{jugador.nombre_logico}")
             return proxy_cliente
 
+    def buscar_jugador(self, nickname: str) -> Jugador | None:
+        for jugador in self.jugadores:
+            if jugador.nickname == nickname:
+                return jugador
+        return None # no existe jugador
+
+    @staticmethod
     def _dict_to_json(info: dict) -> str:
         try:
             return json.dumps(info, indent=4, ensure_ascii=False)

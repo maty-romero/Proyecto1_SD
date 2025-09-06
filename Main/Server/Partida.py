@@ -43,9 +43,9 @@ class Partida:
         info = {
             "categorias": self.categorias,
             "jugadores": nicknames,
-            "rondas": len(self.rondas)
+            "rondas": len(self.rondas_stack)
         }
-        return info;
+        return info
 
     # PENDIENTE - NroRondaActual
     def get_info_ronda(self):
