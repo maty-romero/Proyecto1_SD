@@ -7,7 +7,7 @@ from Main.Server.Jugador import Jugador
 class Publisher:
     def __init__(self):
         self.jugadores: list[Jugador] = [] # List<Jugador>
-        self.jugadores_confirmados = list[Jugador] = []
+        self.jugadores_confirmados: list[Jugador] = []
 
     def suscribirJugador(self, nickname, nombre_logico):
         jugador = Jugador(nickname, nombre_logico)

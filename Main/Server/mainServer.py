@@ -1,8 +1,9 @@
 from NodoServidorNombres import ServidorNombres
 import Pyro5.api
+import Pyro5.server
 from Pyro5 import errors
 from Main.Utils.ComunicationHelper import ComunicationHelper
-from Main.Server.GestorPartidaService import GestorPartida
+from Main.Server.GestorPartidaService import GestorPartidaService
 from Main.Common.ConsoleGUI import ConsoleGUI
 
 if __name__ == "__main__":
@@ -15,7 +16,7 @@ if __name__ == "__main__":
         try:
             #Se busca ip local
             ip_servidor = ComunicationHelper.obtener_ip_local()
-            Gestor_Singleton = GestorPartida(ConsoleGUI())
+            Gestor_Singleton = GestorPartidaService(ConsoleGUI())
             daemon = Pyro5.server.Daemon(host=ip_servidor)
 
             #Se registra el gestor en el servidor de nombres

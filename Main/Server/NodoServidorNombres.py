@@ -27,9 +27,9 @@ class ServidorNombres(Nodo):
             return True
         print("Iniciando el servidor de Nombres...")
         try:
-            process = subprocess.Popen(
-                [sys.executable, "-m", "Pyro5.nameserver"],
-                creationflags=subprocess.CREATE_NEW_CONSOLE
+            subprocess.Popen(
+                [sys.executable, "-m", "Pyro5.nameserver"]
+                #creationflags=subprocess.CREATE_NEW_CONSOLE
             )
             time.sleep(3)
             return self.verificar_nameserver()
@@ -48,4 +48,4 @@ class ServidorNombres(Nodo):
         hilo = threading.Thread(target=ns_loop)
         hilo.daemon = True
         hilo.start()
-        time.sleep(1)  # Espera a que el NS esté listo
+        time.sleep(2)  # Espera a que el NS esté listo
