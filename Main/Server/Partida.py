@@ -38,12 +38,12 @@ class Partida:
         return self.jugadores
 
     # GETS INFO
-    def get_info_sala(self):
-        nicknames = [jugador.nickname for jugador in self.jugadores]
+    def get_info_sala(self, jugadores_sala: list[Jugador]):
+        nicknames = [jugador.nickname for jugador in jugadores_sala]
         info = {
             "categorias": self.categorias,
             "jugadores": nicknames,
-            "rondas": len(self.rondas_stack)
+            "rondas": self.rondas_maximas
         }
         return info
 

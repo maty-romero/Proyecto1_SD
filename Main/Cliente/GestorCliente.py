@@ -111,9 +111,9 @@ class GestorCliente:
         self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
 
     def confirmar_jugador_partida(self):
-        self.gui.show_message(f"Confirmando jugador: '{self.jugador_cliente.get_nickname()}'")
+        self.gui.show_message(f"Confirmando jugador: '{self.jugador_cliente.get_nickname()}'....")
         self.get_proxy_partida_singleton().confirmar_jugador(self.jugador_cliente.get_nickname())
-        self.gui.show_message(f"Jugador: '{self.jugador_cliente.get_nickname()}' Confirmado. Espere a que inicie la ronda.")
+        #self.gui.show_message(f"Jugador: '{self.jugador_cliente.get_nickname()}' Confirmado. Espere a que inicie la ronda.")
 
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):
@@ -124,7 +124,7 @@ class GestorCliente:
             self._last_response = f"{tipo}:{info}"
         # ejemplo: actualizar GUI (si la GUI necesita operar en hilo principal, coordiná eso)
         try:
-            self.gui.show_message(f"[Gestor] ({tipo}) {info}")
+            self.gui.show_message(f"[Gestor Cliente] ({tipo}) {info}")
         except Exception:
             pass
 

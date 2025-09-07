@@ -47,7 +47,7 @@ class GestorPartidaService:
             return f"[Error]: El Jugador {nickname} ya esta en la sala!"
 
         self.publisher.suscribirJugador(nickname, nombre_logico_jugador)
-        info_sala: dict = self.partida.get_info_sala()
+        info_sala: dict = self.partida.get_info_sala(self.publisher.getJugadores())
         self.publisher.notificar_info_sala(info_sala) # broadcasting
 
         # ** Thread.sleep? con cronometro para mostrar que va a empezar partida?
@@ -58,80 +58,21 @@ class GestorPartidaService:
         if result is None:
             self.gui.show_error("[salir_de_sala] Jugador {nickname} no existe en la sala")
             return None
+
     def _verificar_jugadores_suficientes(self):
-        cant_jugadores_actual = len(self.publisher.getJugadores())
+        cant_jugadores_actual = len(self.publisher.getJugadoresConfirmados())
         if(cant_jugadores_actual >= self.jugadores_requeridos):
             self.iniciar_partida()
 
     def confirmar_jugador(self, nickname: str):
-        #self.publisher.
-        pass
+        if(not self.publisher.jugador_esta_suscripto(nickname)):
+            self.gui.show_error(f"Jugador '{nickname}' no esta suscripto o registrado. Debe Registrarse primero!")
 
-
-"""
-    # PENDIENTE - INICIAR_PARTIDA / COMENZAR_RONDA_1
-    def confirmar_jugador(self): # args: nickname ?? 
-        inicio_partida: bool = self.partida.confirmar_jugador_partida()
-        if(inicio_partida):
-            # INICIAR_PARTIDA / JUGAR_RONDA
-            info_partida = dict_to_json(self.partida.get_info_ronda())
-            for nickname, _ in self.partida.get_jugadores_partida().items():
-                self.enviar_info_ronda(nickname, info_partida)
-            return {"status": "ok", "accion": "broadcast_info_ronda"}
-        return {"status": "esperando más jugadores"}
-
-            # Simulacion para 1 jugador --> [Uso en Cliente] (Enviar info Ronda)
-            #jugador = self.partida.get_jugador_partida(nickname)
-            # mensaje = self.partida.get_info_ronda()
-            # mensaje_json = dict_to_json(mensaje)
-            # return mensaje_json
-            #self.enviar_info_ronda()
-
-    # Pendiente - DEBERIA SER UN BROADCASTING 
-    def enviar_info_ronda(self, nickname: str, mensaje: str):
-        self.gui.show_message("*** Server envia mensaje a Cliente ***")
-        try:
-            nombre_logico_jugador = self.partida.get_jugador_partida(nickname)
-            jugador_remoto = Pyro5.api.Proxy(f"PYRONAME:{nombre_logico_jugador}")
-            jugador_remoto.recibir_info_ronda(mensaje)
-        # if(jugador_remoto is None):
-        #     self.gui.show_error(f"El Jugador {nickname} no esta en la partida!")
-
-        except Exception as e:
-            self.gui.show_error(f"No se pudo enviar info a {nickname}: {e}")
-
-
-    # PENDIENTE- Patron strategy o command para mandar info ?? 
-
-    def enviar_info_sala(self, nickname: str, mensaje: str):
-        self.gui.show_message("*** Server envia mennsaje a Cliente ***")
-        # jugador_remoto = self.partida.get_jugador_partida(nickname)
-        nombre_logico_jugador = self.partida.get_jugador_partida(nickname)
-        jugador_remoto = Pyro5.api.Proxy(f"PYRONAME:{nombre_logico_jugador}")
-        self.gui.show_error(f"enviar_info_sala => jugador: {jugador_remoto}")
-        if(jugador_remoto is None):
-            self.gui.show_error(f"El Jugador {nickname} no esta en la partida!")
-        else:
-            jugador_remoto.recibir_info_sala(mensaje)
-
-    # "Equivalente a => registrar_cliente"
-    def unirse_a_sala(self, nickname: str, nombre_logico_jugador: str):
-        proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{nombre_logico_jugador}")
-        print(f"UNIRSE A SALA | PROXY_CLIENTE: {proxy_cliente}")
-        self.gui.show_message(f"Registrando jugador: {nickname}, con nombre_logico: {nombre_logico_jugador}")
-
-        result = self.partida.agregar_jugador_partida(nickname, nombre_logico_jugador) # se agrega nombre logico
+        result = self.publisher.confirmar_jugador(nickname)
         if(result is None):
-            self.gui.show_error(f"El jugador {nickname} ya ha sido registrado")
+            self.gui.show_error(f"Jugador {nickname} ya ha sido confirmado!")
 
-        # devolver json info para la sala
-        info_sala_json = dict_to_json(self.partida.get_info_sala())
-
-        # prueba - borrar consola cliente e imprimir json info sala
-        self.enviar_info_sala(nickname, info_sala_json)
-        
-
-    
-
-    # def Funcion para enviar desde cliente a servidor las respuestas del jugador ganador
-"""
+        msg = {
+            "msg": f"Jugador: '{nickname}' Confirmado. Espere a que inicie la ronda."
+        }
+        self.publisher.notificar_confirmacion_jugador(nickname=nickname, msg_dict=msg)

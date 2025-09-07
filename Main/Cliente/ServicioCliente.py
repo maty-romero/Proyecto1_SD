@@ -26,10 +26,13 @@ class ServicioCliente:
         threading.Thread(target=self.gestor.on_info, args=("sala", info), daemon=True).start()
 
     def recibir_info_ronda(self, info: str):
-        self.gui.show_message("**[recibir_info_ronda]**")
-        self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
+        #self.gui.show_message("**[recibir_info_ronda]**")
+        #self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
 
         threading.Thread(target=self.gestor.on_info, args=("ronda", info), daemon=True).start()
+
+    def recibir_info_confirmar_jugador(self, info: str):
+        threading.Thread(target=self.gestor.on_info, args=("sala_confirmacion", info), daemon=True).start()
 
     def obtener_respuesta_memoria(self) -> str:
         # Metodo expuesto para que el server pida información del cliente

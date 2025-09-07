@@ -7,7 +7,7 @@ from Main.Server.Jugador import Jugador
 class Publisher:
     def __init__(self):
         self.jugadores: list[Jugador] = [] # List<Jugador>
-        self.jugadores_confirmados: list[Jugador] = []
+        self.nicknames_confirmados: set[str] = set() # List<nicknames>
 
     def suscribirJugador(self, nickname, nombre_logico):
         jugador = Jugador(nickname, nombre_logico)
@@ -22,8 +22,20 @@ class Publisher:
     def getJugadores(self):
         return self.jugadores
 
-    def confirmar_jugador(self) -> Jugador | None:
-        pass
+    def getJugadoresConfirmados(self) -> set():
+        return self.nicknames_confirmados
+
+    def confirmar_jugador(self, nickname: str) -> bool | None:
+        if (nickname is self.nicknames_confirmados):
+            return None  # Jugador ya confirmado
+        self.nicknames_confirmados.add(nickname)
+        return True
+
+    def jugador_esta_suscripto(self, nickname: str):
+        for jugador in self.jugadores:
+            if jugador.nickname == nickname:
+                return True
+        return False # Jugador no suscripto o registrado
 
     # Notificaciones a Clientes
 
@@ -32,6 +44,10 @@ class Publisher:
         for jugador in self.jugadores: # Broadcasting
             self._get_proxy_jugador(jugador.nickname).recibir_info_sala(json)
 
+    def notificar_confirmacion_jugador(self, nickname: str, msg_dict: dict):
+        json = Publisher._dict_to_json(msg_dict)
+        # notificacion solo a un cliente
+        self._get_proxy_jugador(nickname).recibir_info_confirmar_jugador(json)
 
     def notificar_inicio_ronda(self, msg_dict: dict):
         pass
