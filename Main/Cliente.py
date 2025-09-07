@@ -92,29 +92,5 @@ def main():
 
 
 
-    # info_ronda_json = proxy_partida.confirmar_jugador() # simulacion de confirmacion
-    # print(f"INFO RONDA EN CLIENTE PARA JUGAR (JSON) {info_ronda_json}")
-
-
-    # infoRonda = json.loads(info_ronda_json, object_hook=lambda d: SimpleNamespace(**d))
-    # print(f"Cliente Jugando Ronda: {infoRonda.nro_ronda}")
-    # infoRonda.letra_ronda = 'A'
-    # print(f"Letra Ronda: {infoRonda.letra_ronda}. Comienza la ronda!")
-
-    # respuestasDict = {clave: "" for clave in infoRonda.categorias}
-
-    # for clave in respuestasDict:
-    #     respuesta = input(f"Ingrese respuesta para categoria[{clave}]: ")
-    #     # Validacion primer letra 
-    #     while respuesta.upper()[0] != infoRonda.letra_ronda:
-    #         print(f"Estamos jugando con la letra {infoRonda.letra_ronda}!")
-    #         respuesta = input(f"Ingrese respuesta para categoria [{clave}]: ")
-            
-    #     respuestasDict[clave] = respuesta
-
-    # json_respuestas = json.dumps(respuestasDict) # JSON
-    # print(f"La respuestas del cliente son: {json_respuestas}")
-    # print("\nPENDIENTE - Enviar respuestas a nodo server")
-
 if __name__ == "__main__":
     main()

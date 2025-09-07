@@ -1,0 +1,30 @@
+**Importante!**
+Esta versión:
+
+ Hace uso del diagrama de clases del lado del servidor del draw.io "Diagrama Clases"
+    Clases agregadas: Jugador, Ronda, Respuesta
+
+ PERMITE a los jugadores VOTAR utilizando respuestas precargadas en Partida.py
+    - Vota 1 jugador por vez. Los otros quedan en espera.
+        Tiempo de 4 seg aprox para enviar respuestas y permitir votar al primer jugador luego de que se llega al num de jugadores min
+        Tiempo de 7 seg aprox para enviar respuestas y permitir votar a un segundo jugador luego de que el primer
+        jugador haya terminado de votar
+
+ **PENDIENTE** Evaluar si las respuestas son unicas o están repetidas y asignar PUNTAJE
+
+
+Partida.py
+ - Agregada una lista de Ronda
+ - Agregado crea_simula_rondas() para tener respuesta que evaluar
+ - Agregada temporalmente una lista de prueba de registro de jugadores no como str sino como obj
+
+
+GestorPartida.py
+ - Agregado iniciar_votacion_ronda(), lo puse en un método porque no estaba segura de ponerlo en confirmar_jugador()
+ - Agregado enviar_respuestas_ronda(), envía información de las respuestas de la última ronda jugada (tal vez demasiada info! habría que hacer otro método que devuelva lo necesario)
+ - Agregado registrar_votos(), recibe los votos del cliente, luego recorre cada jugador y categoría para registrar el voto en respuesta, finalmente evalua validez
+ - Agregado enviar_resultados_votacion()
+
+
+ClienteJugadorService.py
+ - Modificado recibir_info_ronda entonces recibe la info y permite votar, pero si solo se quiere mandar info sería un problema
