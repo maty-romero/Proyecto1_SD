@@ -1,0 +1,25 @@
+
+** Pendientes generales
+1) Plantear mensajes o comunicacion en general entre todos para repartir tareas?
+2) Integrar (ver de esto ultimo para no mezclar con Py6 todavia)
+3) Cambiar nombres a las clases para ser mas representativo ?
+4) Definir Estructura y responsabilidades - Nodo, ServidorNodo, ServidorNombres y Replica 
+
+*** Fixes pendientes de la integracion (los que me acuerdo)
+
+1) GetInfoRonda (en Partida) -> gestion nroRonda actual
+2) Funcionalidad asociada ronda --> Uso de GetLetraRandom 
+3) Confirmar Jugador --> If nroJugadores == N -> IniciarPartida() o Ronda() 
+4) Implementar bien y desacoplar logica juego en el cliente.py
+5) Validar NickName -> sin espacios, convertir a minuscula, etc
+6) Enviar info Ronda - Revisar y deberia ser un broadcasting a todos los jugadores registrados
+7) Clear() en consola del cliente para jugar
+8) IniciarPartida() y en general logica asociada a partida
+    - Puntos, ganador, json que hay devolver, etc
+9) recibir_info_ronda -> metodo remoto en cliente
+
+*** Otras cuestiones:
+a) Patron Strategy o Command para enviar_info a cliente ?? --> Analizar
+b) Patron Adapter u otro para adaptar mejor interfaz AbstractGUI con Py6 ? - Ver
+c) Observer para que los clientes se les notifique cambios? (enviar info sala / partida)
+d) Singleton en Servidor de nombres? 
