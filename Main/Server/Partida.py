@@ -6,14 +6,16 @@ from Main.Server.Jugador import Jugador
 
 
 class Partida:
-    def __init__(self):
-        self.categorias = ["Nombres", "Paises o ciudades", "Objetos"]
-        self.rondas_maximas = 3 # mandar por constructor?
+    def __init__(self,ronda_actual=None,estado_actual=None,cat=["Nombres", "Paises o ciudades", "Objetos"],max=3):
+        """ Puede utilizarse el constructor para restaurar una ronda de la base de datos"""
+        self.categorias = cat
+        self.rondas_maximas = max
         self.rondas_stack: list[Ronda] = [] # Pendiente - Actua como pila
         self.jugadores = []
-
+        self.ronda_actual = ronda_actual
+        self.estado_actual = estado_actual
         """
-        stack = []
+        stack = [] q
         stack.append(1) # Push
         stack[-1]       # Peek -- retrieve top but not modify
         stack.pop()     # Pop -- retrieve top modifying
