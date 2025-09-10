@@ -116,18 +116,19 @@ class GestorCliente:
 
     def unirse_a_sala(self):
         self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
-        json = self.get_proxy_partida_singleton().unirse_a_sala(
+        self.get_proxy_partida_singleton().unirse_a_sala(
             self.jugador_cliente.get_nickname(),
             self.jugador_cliente.get_nombre_logico()
         )
+        # notificacion y ejecucion en _on_info para setear respuesta
 
-        respuesta: RespuestaRemotaJSON = RespuestaRemotaJSON.deserializar(json)
-        print("AAAAAAAAAAAAAAa")
+        respuesta: RespuestaRemotaJSON = RespuestaRemotaJSON.deserializar(self._last_response)
         self.gui.show_message(respuesta.mensaje)
         if respuesta.exito:
-            self.gui.show_message(f"Jugadores en la sala: {respuesta.datos}")
-        #if not respuesta.exito:
-
+            self.gui.show_message("** INFO SALA **")
+            self.gui.show_message(f"Jugadores en la sala: {respuesta.datos['jugadores']}")
+            self.gui.show_message(f"Categorias: {respuesta.datos['categorias']}")
+            self.gui.show_message(f"Rondas a jugar: {respuesta.datos['rondas']}")
 
         #self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
 
@@ -142,7 +143,8 @@ class GestorCliente:
         # proteger estado con lock
         with self._state_lock:
             # podés guardar historial, mostrar en GUI, etc.
-            self._last_response = f"{tipo}:{info}"
+            self._last_response = info
+            #self._last_response = f"{tipo}:{info}"
         # ejemplo: actualizar GUI (si la GUI necesita operar en hilo principal, coordiná eso)
         try:
             self.gui.show_message(f"[Gestor Cliente] ({tipo}) {info}")
