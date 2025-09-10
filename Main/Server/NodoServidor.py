@@ -1,5 +1,4 @@
-from Main.Server.Nodo import Nodo
-
+from .Nodo import Nodo
 
 class Servidor(Nodo):
     def __init__(self, id):

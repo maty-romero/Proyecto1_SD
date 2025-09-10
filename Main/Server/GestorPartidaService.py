@@ -1,9 +1,10 @@
 import json
 
-from Main.Server.Publisher import Publisher
-from Partida import Partida
+from .Publisher import Publisher
+from .Partida import Partida
 from Main.Common.AbstractGUI import AbstractGUI
 import Pyro5.api
+
 
 # funciones auxiliares 
 
@@ -13,52 +14,12 @@ def dict_to_json(info: dict) -> str:
     except TypeError as e:
         raise ValueError(f"No se pudo convertir a JSON: {e}")
 
-
-'''----------------Alternativas estado de juego-----------------------------------------------------------------------------------------------------------------------------------------------------------'''
-#1
-from enum import Enum
-class EstadoJuego(Enum):
-    #Estados fuera de la ronda
-    ESPERANDO_JUGADORES = 1
-    FIN_JUEGO = 2
-
-    #Estados dentro de la ronda
-    EN_PREPARACION_RONDA = 3 #tal vez no haga falta
-    EN_RONDA = 4
-    EN_VOTACION = 5
-    MOSTRANDO_RESULTADOS = 6
-
-#2
-
-transiciones = {
-    "esperando_jugadores": ["en_ronda"],
-    "en_ronda": ["en_votacion"],
-    "en_votacion": ["resultados_ronda"],
-    "resultados_ronda": ["en_ronda", "resultados_partida"],
-    "resultados_partida": ["esperando_jugadores"]
-}
-    
-
-    # def __init__(self):
-    #     self.estado_actual = "esperando_jugadores"
-
-def cambiar_estado(self, nuevo_estado):
-    if nuevo_estado in self.transiciones[self.estado_actual]:
-        self.estado_actual = nuevo_estado
-    else:
-        raise ValueError(f"Transición inválida de {self.estado_actual} a {nuevo_estado}")
-'''---------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
-
-
 @Pyro5.api.expose
 class GestorPartidaService:
-    # Estados_Juego =EstadoJuego()
+    
     # if self.Partida.estado_actual == self.Estados_Juego.EN_RONDA:
     #     pass
-    # estados_Juego = [
-    # ["esperando_jugadores", "fin_juego"],      # estados fuera de ronda
-    # ["en_preparacion_ronda", "en_ronda", "en_votacion", "mostrando_resultados"]  # estados dentro de ronda
-    # ]
+
     def __init__(self, Gui: AbstractGUI):
         self.Publisher = Publisher()
         self.Partida = Partida()

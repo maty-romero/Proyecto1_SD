@@ -1,7 +1,7 @@
 import Pyro5
 import json
 
-from Main.Server.Jugador import Jugador
+from Main.Common.Jugador import Jugador
 
 
 class Publisher:

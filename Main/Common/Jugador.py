@@ -13,7 +13,6 @@ class Jugador():
             self.nombre_logico = f"jugador.{nickname.strip()}"
         else:
             self.nombre_logico = nombre_logico
-        
         self.puntaje_total = puntaje
 
     def get_nickname(self):

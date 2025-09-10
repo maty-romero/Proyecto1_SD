@@ -1,5 +1,4 @@
-from Main.Server.Jugador import Jugador
-
+from Main.Common.Jugador import Jugador
 
 class Partida:
     def __init__(self, categorias: list[str], jugadores: list[Jugador], nro_ronda: int):

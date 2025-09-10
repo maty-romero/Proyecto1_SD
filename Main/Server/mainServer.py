@@ -1,9 +1,9 @@
-from NodoServidorNombres import ServidorNombres
 import Pyro5.api
 import Pyro5.server
 from Pyro5 import errors
+from .NodoServidorNombres import ServidorNombres
 from Main.Utils.ComunicationHelper import ComunicationHelper
-from Main.Server.GestorPartidaService import GestorPartidaService
+from .GestorPartidaService import GestorPartidaService
 from Main.Common.ConsoleGUI import ConsoleGUI
 
 if __name__ == "__main__":

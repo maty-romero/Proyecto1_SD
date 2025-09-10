@@ -1,4 +1,4 @@
-from Main.Server.Nodo import Nodo
+from .Nodo import Nodo
 
 
 class Replica(Nodo):

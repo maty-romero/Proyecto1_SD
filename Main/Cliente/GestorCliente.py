@@ -3,7 +3,7 @@ import threading
 import time
 import Pyro5
 
-from Main.Cliente.JugadorCliente import JugadorCliente
+from Main.Common import Jugador
 from Main.Common.AbstractGUI import AbstractGUI
 from Main.Utils.ComunicationHelper import ComunicationHelper
 from Main.Cliente.ServicioCliente import ServicioCliente
@@ -49,7 +49,7 @@ class GestorCliente:
             is_unique = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
 
         self.gui.show_message(f"NickName '{nickname}' confirmado!")
-        self.jugador_cliente = JugadorCliente(nickname)
+        self.jugador_cliente = Jugador(nickname)
 
         # inicializar daemon del cliente (aquí pasamos self como gestor)
         self.inicializar_Deamon_Cliente(
