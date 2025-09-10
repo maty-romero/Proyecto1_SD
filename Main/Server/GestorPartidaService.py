@@ -1,6 +1,7 @@
 import json
 
 from Main.Server.Publisher import Publisher
+from Main.Utils.RespuestaRemotaJSON import RespuestaRemotaJSON
 from Partida import Partida
 from Main.Common.AbstractGUI import AbstractGUI
 import Pyro5.api
@@ -29,23 +30,40 @@ class GestorPartidaService:
     def finalizar_partida(self):
         pass
 
-    def CheckNickNameIsUnique(self, nickname: str) -> bool | str:
+    def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
+
         if (nickname == "" or is_not_string):
-            return "Error: NickName vacio o no es cadena!"
+            result = RespuestaRemotaJSON(
+                exito=False,
+                mensaje="NickName vacio o no es cadena")
+            return result.serializar()
+
         formated_nickname = nickname.lower().replace(" ", "")
+
         existe_jugador = self.publisher.buscar_jugador(formated_nickname)
         if existe_jugador is None: # no existe jugador usando ese nickname
-            return True
-        return False # nickname no disponible
+            result = RespuestaRemotaJSON(
+                exito=True, mensaje="NickName disponible")
+            return result.serializar()
+
+        # nickname no disponible
+        result = RespuestaRemotaJSON(
+            exito=False, mensaje="El nickname ya esta siendo utilizado")
+        return result.serializar()
 
     def unirse_a_sala(self, nickname: str, nombre_logico_jugador: str):
         # verificar si ya existe jugador en sala
         existe_jugador = self.publisher.buscar_jugador(nickname)
+        """
         if existe_jugador is not None:  # jugador ya registrado
             self.gui.show_error("[unirse_sala] Jugador {nickname} ya existe en sala!")
-            return f"[Error]: El Jugador {nickname} ya esta en la sala!"
+            result = RespuestaRemotaJSON(
+                exito=False, mensaje="El Jugador {nickname} ya esta en la sala!")
+            return result.serializar() # json
 
+            return f"[Error]: El Jugador {nickname} ya esta en la sala!"
+        """
         self.publisher.suscribirJugador(nickname, nombre_logico_jugador)
         info_sala: dict = self.partida.get_info_sala(self.publisher.getJugadores())
         self.publisher.notificar_info_sala(info_sala) # broadcasting

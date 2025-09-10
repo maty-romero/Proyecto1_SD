@@ -1,7 +1,7 @@
 from Main.Server.Jugador import Jugador
 
 
-class Partida:
+class Ronda:
     def __init__(self, categorias: list[str], jugadores: list[Jugador], nro_ronda: int):
         self.nro_ronda = nro_ronda
         self.finalizada: bool = False

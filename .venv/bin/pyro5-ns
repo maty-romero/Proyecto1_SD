@@ -1,0 +1,7 @@
+#!/home/hans/Documents/GitHub/Universidad/Proyecto1_SD/.venv/bin/python3
+import sys
+from Pyro5.nameserver import main
+if __name__ == '__main__':
+    if sys.argv[0].endswith('.exe'):
+        sys.argv[0] = sys.argv[0][:-4]
+    sys.exit(main())

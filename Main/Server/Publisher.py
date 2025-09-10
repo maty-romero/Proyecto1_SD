@@ -2,6 +2,7 @@ import Pyro5
 import json
 
 from Main.Server.Jugador import Jugador
+from Main.Utils.RespuestaRemotaJSON import RespuestaRemotaJSON
 
 
 class Publisher:
@@ -40,7 +41,10 @@ class Publisher:
     # Notificaciones a Clientes
 
     def notificar_info_sala(self, msg_dict: dict):
-        json = Publisher._dict_to_json(msg_dict)
+        #json = Publisher._dict_to_json(msg_dict)
+        json = RespuestaRemotaJSON(
+            exito=True, mensaje="Se ha unido un jugador a la sala", datos=msg_dict).serializar()
+
         for jugador in self.jugadores: # Broadcasting
             self._get_proxy_jugador(jugador.nickname).recibir_info_sala(json)
 

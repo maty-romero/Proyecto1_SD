@@ -7,6 +7,8 @@ from Main.Cliente.JugadorCliente import JugadorCliente
 from Main.Common.AbstractGUI import AbstractGUI
 from Main.Utils.ComunicationHelper import ComunicationHelper
 from Main.Cliente.ServicioCliente import ServicioCliente
+from Main.Utils.RespuestaRemotaJSON import RespuestaRemotaJSON
+
 
 class GestorCliente:
     def __init__(self, gui: AbstractGUI):
@@ -35,28 +37,38 @@ class GestorCliente:
         return self.proxy_partida
 
     def buscar_partida(self):
-        # implementar búsqueda o validación de nameserver si querés
-        pass
+        try:
+            ns = Pyro5.api.locate_ns()
+            uri = ns.lookup(self.nombre_logico_server)
+            self.gui.show_message(f"[Gestor] Partida encontrada (Deamon disponible) | URI: {uri}")
+            return True
+        except Pyro5.errors.NamingError:
+            self.gui.show_error("[Gestor] No se encontró una Partida activa. Espere a que alguien cree una!")
+            return False
 
-    def ingresar_nickname_valido(self) -> bool:
-        nickname = self.gui.get_input("Para jugar, ingrese su NickName para la partida: ")
+    def ingresar_nickname_valido(self):
+        nickname = self.gui.get_input("\nIngrese su NickName para la partida: ")
         formated_nickname = nickname.lower().replace(" ", "")
-        is_unique = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
 
-        while not is_unique:
-            nickname = self.gui.get_input("\nEl NickName ingresado ya está siendo utilizado. Ingrese otro: ")
+        respuesta = RespuestaRemotaJSON.deserializar(
+            self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+        )
+
+        while not respuesta.exito:
+            self.gui.show_error(f"{respuesta.mensaje}")
+            nickname = self.gui.get_input("\nIngrese su NickName para la partida: ")
             formated_nickname = nickname.lower().replace(" ", "")
-            is_unique = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+            respuesta = RespuestaRemotaJSON.deserializar(
+                self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+            )
 
-        self.gui.show_message(f"NickName '{nickname}' confirmado!")
         self.jugador_cliente = JugadorCliente(nickname)
 
-        # inicializar daemon del cliente (aquí pasamos self como gestor)
         self.inicializar_Deamon_Cliente(
             self.jugador_cliente.get_nickname(),
             self.jugador_cliente.get_nombre_logico()
         )
-        return True
+        self.gui.show_message(f"NickName '{nickname}' confirmado!")
 
     def inicializar_Deamon_Cliente(self, nickname: str, nombre_logico_jugador: str):
         ip_cliente = ComunicationHelper.obtener_ip_local()
@@ -104,11 +116,20 @@ class GestorCliente:
 
     def unirse_a_sala(self):
         self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
-        self.get_proxy_partida_singleton().unirse_a_sala(
+        json = self.get_proxy_partida_singleton().unirse_a_sala(
             self.jugador_cliente.get_nickname(),
             self.jugador_cliente.get_nombre_logico()
         )
-        self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
+
+        respuesta: RespuestaRemotaJSON = RespuestaRemotaJSON.deserializar(json)
+        print("AAAAAAAAAAAAAAa")
+        self.gui.show_message(respuesta.mensaje)
+        if respuesta.exito:
+            self.gui.show_message(f"Jugadores en la sala: {respuesta.datos}")
+        #if not respuesta.exito:
+
+
+        #self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
 
     def confirmar_jugador_partida(self):
         self.gui.show_message(f"Confirmando jugador: '{self.jugador_cliente.get_nickname()}'....")
@@ -136,54 +157,3 @@ class GestorCliente:
         # instanciar objeto de RondaCliente
         # al final obtener diccionario para mandar a servidor -> uso de RondaCliente.getRespuestasJugador
         pass
-
-
-
-    """ 
-    def get_jugador_cliente(self):
-        if self.jugador_cliente is None:
-            self.gui.show_message("Debe iniciar sesion ingresando un nickname!")
-            return None
-        return self.jugador_cliente
-    """
-
-"""
-def main():
-
-    # Simulacion de cliente jugando --> prueba
-    respuesta = proxy_partida.confirmar_jugador()
-    print("Respuesta del servidor:", respuesta)
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Cliente cerrado manualmente.")
-
-    # info_ronda_json = proxy_partida.confirmar_jugador() # simulacion de confirmacion
-    # print(f"INFO RONDA EN CLIENTE PARA JUGAR (JSON) {info_ronda_json}")
-
-    # infoRonda = json.loads(info_ronda_json, object_hook=lambda d: SimpleNamespace(**d))
-    # print(f"Cliente Jugando Ronda: {infoRonda.nro_ronda}")
-    # infoRonda.letra_ronda = 'A'
-    # print(f"Letra Ronda: {infoRonda.letra_ronda}. Comienza la ronda!")
-
-    # respuestasDict = {clave: "" for clave in infoRonda.categorias}
-
-    # for clave in respuestasDict:
-    #     respuesta = input(f"Ingrese respuesta para categoria[{clave}]: ")
-    #     # Validacion primer letra 
-    #     while respuesta.upper()[0] != infoRonda.letra_ronda:
-    #         print(f"Estamos jugando con la letra {infoRonda.letra_ronda}!")
-    #         respuesta = input(f"Ingrese respuesta para categoria [{clave}]: ")
-
-    #     respuestasDict[clave] = respuesta
-
-    # json_respuestas = json.dumps(respuestasDict) # JSON
-    # print(f"La respuestas del cliente son: {json_respuestas}")
-    # print("\nPENDIENTE - Enviar respuestas a nodo server")
-
-
-if __name__ == "__main__":
-    main()
-
-"""

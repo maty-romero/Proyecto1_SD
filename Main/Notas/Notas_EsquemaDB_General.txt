@@ -1,3 +1,23 @@
+** Python Enviroments
+- Having isolated sandboxes that keeps separate lib versions. Good Practice: a Pyenv for each project
+- We use venv to create, activate and deactivate virtual envs
+- Install venv
+    $ sudo apt install python3-venv
+- Create a virtual enviroment
+    $ python -m venv /path/to/new/virtual/environment
+    e.g $ python3 -m venv .venv
+- activate a virtual enviroment
+    $ source .venv/bin/activate
+- Deactivate enviroment
+    $ deactivate
+- Transfering enviroments (simple method) - copy packages versions into .txt
+    $ pip freeze > requirements.txt
+- Install packages from .txt (above)
+    $ python -m pip install -r requirements.txt
+- list pip packages installed (global or locally in virtual env)
+    $ pip list
+
+
 Collections:
 
 - Partidas
