@@ -1,7 +1,7 @@
 import json
 
-from .Publisher import Publisher
-from .Partida import Partida
+from Main.Server.Publisher import Publisher
+from Main.Server.Partida import Partida
 from Main.Common.AbstractGUI import AbstractGUI
 import Pyro5.api
 

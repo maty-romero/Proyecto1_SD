@@ -1,7 +1,7 @@
 import random
 import string
 
-from Main.Server import Ronda
+from Main.Server.Ronda import Partida
 from Main.Common.Jugador import Jugador
 from enum import Enum,auto
 

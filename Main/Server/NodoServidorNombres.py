@@ -1,7 +1,7 @@
 import Pyro5.api
 import subprocess #consultar que tan factible es, puede tambien crearse un .bat
 import sys
-from .Nodo import Nodo
+from Main.Server.Nodo import Nodo
 from Pyro5 import errors
 from builtins import ConnectionRefusedError
 import threading
