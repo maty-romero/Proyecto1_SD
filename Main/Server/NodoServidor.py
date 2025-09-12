@@ -1,8 +1,10 @@
 from Main.Server.Nodo import Nodo
+from Main.Server import ConexionServidor
+from Main.Server import GestorPartida
 
 class Servidor(Nodo):
-    def __init__(self, id):
-        super().__init__(id)
+    def __init__(self, id, Conexion = ConexionServidor(),Gestor= GestorPartida()):
+        super().__init__(id, Conexion)    
         self.replicas = [] # un servidor posee varias replicas
     
     def registrar_replica(self, replica):

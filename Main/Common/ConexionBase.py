@@ -1,0 +1,2 @@
+class ConexionBase:
+    pass

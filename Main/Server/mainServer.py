@@ -1,10 +1,8 @@
-import Pyro5.api
-import Pyro5.server
-from Pyro5 import errors
+from Main.Server.GestorPartida import GestorPartida
+from Main.Server.ConexionServidor import ConexionServidor
 from Main.Server.NodoServidorNombres import ServidorNombres
-from Main.Utils.ComunicationHelper import ComunicationHelper
-from Main.Server.GestorPartidaService import GestorPartidaService
 from Main.Common.ConsoleGUI import ConsoleGUI
+import Pyro5.errors as errors
 
 if __name__ == "__main__":
    # NodoServ = Nodo(1)#id cualquiera por lo pronto
@@ -14,21 +12,15 @@ if __name__ == "__main__":
 #--------------------------------------------Inicializacion del Servidor--------------------------------------------#
     if Serv.iniciar_nameserver_subproceso():
         try:
-            #Se busca ip local
-            ip_servidor = ComunicationHelper.obtener_ip_local()
-            Gestor_Singleton = GestorPartidaService(ConsoleGUI())
-            daemon = Pyro5.server.Daemon(host=ip_servidor)
+            Gestor_Singleton = GestorPartida(ConsoleGUI())
+            Conexion = ConexionServidor()
+            Conexion_servidor = ConexionServidor()
 
-            #Se registra el gestor en el servidor de nombres
-            uri = ComunicationHelper.registrar_objeto_en_ns(
-                Gestor_Singleton,
-                "gestor.partida",
-                daemon)
-            
-            print(f"URI:  {uri}")
-            print(f"[Servidor Lógico] Listo y escuchando en {ip_servidor}")
-            daemon.requestLoop()
-            #
+            if Conexion_servidor.inicializar_servidor(Gestor_Singleton, "gestor.partida"):
+                # Iniciar el loop del servidor
+                Conexion_servidor.iniciar_loop()
+            else:
+                print("Error al inicializar el servidor")
         except errors.NamingError:
             print(" Servidor de nombres no encontrado después de iniciarlo")
         except errors.CommunicationError:

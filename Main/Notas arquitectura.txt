@@ -1,0 +1,20 @@
+
+
+NodoServidor
+├── ConexionServidor (infraestructura de red)
+│   ├── ManejadorRPC
+│   ├── ManejadorSocket  
+│   ├── Publisher
+└── GestorPartida (lógica de negocio)
+
+NodoReplica
+├── ConexionReplica (cliente + servidor)
+│   ├── ManejadorRPC (para conectarse al servidor)
+│   └── ManejadorSocket (para heartbeat, sincronización)
+└── GestorReplica (lógica de replicación)
+
+NodoCliente  
+├── ConexionCliente (cliente puro)
+│   ├── ManejadorRPC (para llamadas al servidor)
+│   └── ManejadorSocket (para heartbeat, notificaciones)
+└── GestorCliente (UI + estado local)

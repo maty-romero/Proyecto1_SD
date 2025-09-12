@@ -1,0 +1,23 @@
+from Main.Utils.ComunicationHelper import ComunicationHelper
+import Pyro5.api 
+class ManejadorRPC:
+    def __init__(self):
+        self.daemon = None
+        self.uri = None
+        self.ip_servidor = None
+    
+    def inicializar_daemon(self, ip=None):
+        self.ip_servidor = ip or ComunicationHelper.obtener_ip_local()
+        self.daemon = Pyro5.server.Daemon(host=self.ip_servidor)
+        return self.daemon
+    
+    def registrar_en_nameserver(self, objeto, nombre_servicio):
+        self.uri = ComunicationHelper.registrar_objeto_en_ns(
+            objeto, nombre_servicio, self.daemon
+        )
+        return self.uri
+    
+    def iniciar_loop(self):
+        if self.daemon:
+            self.daemon.requestLoop()
+

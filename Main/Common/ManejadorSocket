@@ -1,0 +1,36 @@
+class ManejadorSocket:
+    def __init__(self):
+        self.socket_servidor = None
+        self.clientes_conectados = {}  # {cliente_id: socket_connection}
+        self.puerto_socket = None
+        self.ip_servidor = None
+    
+    def inicializar_servidor_socket(self, ip=None, puerto=None):
+        """Crea socket servidor para recibir conexiones"""
+        self.ip_servidor = ip or ComunicationHelper.obtener_ip_local()
+        self.puerto_socket = puerto or ComunicationHelper.obtener_puerto_libre()
+        
+        self.socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket_servidor.bind((self.ip_servidor, self.puerto_socket))
+        self.socket_servidor.listen(10)
+        return (self.ip_servidor, self.puerto_socket)
+    
+    def aceptar_conexiones(self):
+        """Loop para aceptar nuevas conexiones socket"""
+        while True:
+            cliente_socket, direccion = self.socket_servidor.accept()
+            cliente_id = f"{direccion[0]}:{direccion[1]}"
+            self.clientes_conectados[cliente_id] = cliente_socket
+            # Iniciar thread para manejar este cliente
+    
+    def enviar_a_cliente(self, cliente_id, datos):
+        """Envía datos por socket a cliente específico"""
+        if cliente_id in self.clientes_conectados:
+            socket_cliente = self.clientes_conectados[cliente_id]
+            socket_cliente.send(datos.encode())
+    
+    def conectar_a_servidor(self, ip_servidor, puerto_servidor):
+        """Como cliente: conecta a un servidor socket"""
+        cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cliente_socket.connect((ip_servidor, puerto_servidor))
+        return cliente_socket
