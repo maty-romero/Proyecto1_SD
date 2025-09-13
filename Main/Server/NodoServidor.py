@@ -12,15 +12,34 @@ interfcace IDataBase
 
 class NodoServidor
     - ConexionServidor
-    - DBHandler
+    - DBHandler: Interface
     - GestorPartida(IServicio: ConexionServidor, DBHandler)
 
 
 class ConexionServidor implements IServicio
+    - Uso Publisher
+    - Uso ManejadorRPC y ManejadorSocket
 
+    escucharCliente()
+        manejadorSocket.blaball
 
 class GestorPartida
     - uso de IServicio --> ejecucion metodos y notificaciones 
+
+    service.existe_jugador()
+    service.registrar_jugador(Jugador)
+    service.notificar_info_ronda()
+
+    unirse_partida()
+        service.iniciar_conexion_sincronia()
+    dbhandler.guardar_ronda()
+
+    checkearClienteVivo()
+        service.escucharCliente()
+
+
+Cliente.hearbeart()
+
 
 
 def __init__(self):
