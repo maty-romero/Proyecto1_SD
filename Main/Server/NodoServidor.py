@@ -2,9 +2,40 @@ from Main.Server.Nodo import Nodo
 from Main.Server import ConexionServidor
 from Main.Server import GestorPartida
 
+Interface IServicio (Notificaciones y Funcionalidad - Socket y/o Pyro)
+    - existe_jugador(nickname) --> Verifica dentro del publisher
+    - suscribir / registrar (Jugador) -> nickname, nombre_logico, ip, puerto, puntaje_total
+
+interfcace IDataBase
+    - CRUD? 
+
+
+class NodoServidor
+    - ConexionServidor
+    - DBHandler
+    - GestorPartida(IServicio: ConexionServidor, DBHandler)
+
+
+class ConexionServidor implements IServicio
+
+
+class GestorPartida
+    - uso de IServicio --> ejecucion metodos y notificaciones 
+
+
+def __init__(self):
+        self.gestor = GestorJuego()
+        self.manejadores = [ManejadorRPC(self.gestor)]
+        self.conexion = Conexion(self.manejadores)
+
+
 class Servidor(Nodo):
     def __init__(self, id, Conexion = ConexionServidor(),Gestor= GestorPartida()):
-        super().__init__(id, Conexion)    
+        super().__init__(id)    
+        self.Conexion = Conexion
+        self.Gestor = Gestor(publisher=self.Conexion.Publisher,
+                                      min_jugadores=min_jugadores)
+
         self.replicas = [] # un servidor posee varias replicas
     
     def registrar_replica(self, replica):

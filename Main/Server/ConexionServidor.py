@@ -7,12 +7,30 @@ from Main.Utils.ComunicationHelper import ComunicationHelper
 from Main.Common import ManejadorRPC, ManejadorSocket
 from Main.Server.Publisher import Publisher
 
+
+class ClienteConectado:
+    def __init__(self, id_cliente, socket, proxy, nick, ip):
+        self.id = id_cliente
+        self.socket = socket
+        self.proxy = proxy
+        self.nick = nick
+        self.ip = ip
+        self.confirmado = bool
+        self.timestamps = []  # Lista de timestamps de actividad
+        # Podrías agregar flags como autenticado, en_partida, etc.
+
+    # def enviar(self, mensaje):
+    #     self.socket.sendall(mensaje)
+
+
 class ConexionServidor(ConexionBase):
     def __init__(self):
         super().__init__()
         self.manejador_rpc = ManejadorRPC()        
         self.manejador_socket = ManejadorSocket()
-        self.publisher = Publisher()
+        self.clientes = []
+        self.Publisher = Publisher(self.clientes)
+        
     
     def registrar_objeto(self, gestor, nombre_servicio):
         # Usa ManejadorRPC para los detalles técnicos
@@ -20,7 +38,7 @@ class ConexionServidor(ConexionBase):
         uri = self.manejador_rpc.registrar_en_nameserver(gestor, nombre_servicio)
         
         # Configurar publisher con los clientes que se conecten
-        self.publisher.configurar_daemon(daemon)
+        self.Publisher.configurar_daemon(daemon)
         
         return uri is not None
 
@@ -54,7 +72,21 @@ class ConexionServidor(ConexionBase):
             print(f"Error al inicializar servidor: {e}")
             return False
 
+    #Metodos para persistencia de datos clientes
+    def registrar_cliente(self, id_cliente, socket, proxy, nick, ip):
+        #Se le asigna un puerto disponible, agregar logica
+        self.clientes[id_cliente] = ClienteConectado(id_cliente, socket, proxy, nick, ip)
 
+    def get_cliente(self, id_cliente):
+        return self.clientes.get(id_cliente)
+
+
+    # def enviar_a_cliente(self, id_cliente, mensaje):
+        
+    #     cliente = self.get_cliente(id_cliente)
+    #     ManejadorSocket.enviar_a_cliente(cliente.socket, mensaje)
+    #     if cliente:
+    #         cliente.enviar(mensaje)
 
 # class ConexionServidor:
 #     def __init__(self):

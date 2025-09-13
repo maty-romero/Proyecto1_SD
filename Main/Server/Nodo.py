@@ -7,7 +7,7 @@ class Nodo:
     def __init__(self, id, conexion: ConexionBase):
         self.id = id
         self.estado = {}
-        self.conexion = conexion
+        self.Conexion = conexion
 
     def get_id_nodo(self):
         return self.id
