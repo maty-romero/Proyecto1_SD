@@ -40,6 +40,11 @@ class Partida:
 
     def get_letras_jugadas(self):
         return self.letras_jugadas
+    
+    def get_nro_ronda(self):
+        return self.nro_rondas
+    def get_ronda_actual(self):
+        return self.rondaActual
 
     def get_letra_random(self) -> str:
         if not self.letras:
