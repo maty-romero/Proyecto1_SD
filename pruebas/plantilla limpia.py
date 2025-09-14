@@ -142,9 +142,7 @@ class Servidor(Nodo):
 class Dispatcher:
     def __init__(self):
         self.servicios = {}
-        #self.ServComms = None
-        #self.ServDB = None
-        #self.ServJuego = None
+        
 
     def registrar_servicio(self, nombre, servicio):
         self.servicios[nombre] = servicio
