@@ -1,4 +1,0 @@
-1) Configuracion modo conexion wifi --> Privada
-2) Modificaciones en Server, client y setting de ServerName (3) 
-3) ServerName comando: python -m Pyro5.nameserver --host <ip_host> --port 9090
-ejemplo: python -m Pyro5.nameserver --host 10.61.16.214 --port 9090

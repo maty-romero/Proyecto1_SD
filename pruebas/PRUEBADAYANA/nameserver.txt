@@ -1,2 +1,0 @@
-python -m Pyro5.nameserver -n localhost
-  para levanatar el nameserver tiene que levantarse primero esto
