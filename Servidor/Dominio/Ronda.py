@@ -1,4 +1,4 @@
-from Main.Server.Jugador import Jugador
+from Servidor.Dominio.Jugador import Jugador
 
 
 class Ronda:

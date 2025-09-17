@@ -3,19 +3,17 @@ import threading
 import time
 import Pyro5
 
-from Cliente.JugadorCliente import JugadorCliente
-from Common.AbstractGUI import AbstractGUI
-from Utils.ComunicationHelper import ComunicationHelper
-from Main.Cliente.ServicioCliente import ServicioCliente
-from Main.Utils.RespuestaRemotaJSON import RespuestaRemotaJSON
+from Cliente.Modelos.ServicioCliente import ServicioCliente
+from Cliente.Utils.ComunicationHelper import ComunicationHelper
+from Cliente.Utils.ConsoleLogger import ConsoleLogger
 
 
 class GestorCliente:
-    def __init__(self, gui: AbstractGUI):
-        self.gui = gui
+    def __init__(self):
         self.nombre_logico_server = "gestor.partida"
         self.proxy_partida = None
         self.jugador_cliente = None
+        self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
 
         # Estado interno
         self._last_response = None
@@ -31,8 +29,8 @@ class GestorCliente:
             try:
                 self.proxy_partida = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
             except Pyro5.errors.NamingError:
-                self.gui.show_error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
-                self.gui.show_message("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
+                self.logger.error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
+                self.logger.error("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
                 sys.exit(1)
         return self.proxy_partida
 
@@ -46,6 +44,13 @@ class GestorCliente:
             self.gui.show_error("[Gestor] No se encontró una Partida activa. Espere a que alguien cree una!")
             return False
 
+    def solicitar_acceso_sala(self):
+        respuesta = self.get_proxy_partida_singleton().solicitar_acceso()
+        self.logger.info(respuesta)
+
+        #solicitar_acceso
+
+    """
     def ingresar_nickname_valido(self):
         nickname = self.gui.get_input("\nIngrese su NickName para la partida: ")
         formated_nickname = nickname.lower().replace(" ", "")
@@ -69,7 +74,7 @@ class GestorCliente:
             self.jugador_cliente.get_nombre_logico()
         )
         self.gui.show_message(f"NickName '{nickname}' confirmado!")
-
+    """
     def inicializar_Deamon_Cliente(self, nickname: str, nombre_logico_jugador: str):
         ip_cliente = ComunicationHelper.obtener_ip_local()
         # Crear el objeto remoto y pasar el gestor (self)
@@ -114,6 +119,7 @@ class GestorCliente:
         except Exception:
             pass
 
+"""
     def unirse_a_sala(self):
         self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
         self.get_proxy_partida_singleton().unirse_a_sala(
@@ -159,3 +165,5 @@ class GestorCliente:
         # instanciar objeto de RondaCliente
         # al final obtener diccionario para mandar a servidor -> uso de RondaCliente.getRespuestasJugador
         pass
+
+"""

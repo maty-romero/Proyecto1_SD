@@ -1,8 +1,8 @@
 import random
 import string
 
-from Main.Server import Ronda
-from Main.Server.Jugador import Jugador
+from Servidor.Dominio.Jugador import Jugador
+from Servidor.Dominio.Ronda import Ronda
 
 
 class Partida:

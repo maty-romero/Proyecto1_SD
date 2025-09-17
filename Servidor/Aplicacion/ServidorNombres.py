@@ -11,6 +11,10 @@ from Servidor.Aplicacion.Nodo import Nodo
 
 """FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
 class ServidorNombres(Nodo):
+    def __init__(self, id):
+        super().__init__(id)
+        self.ns_proceso = None  # Guardamos el proceso
+
 
     def verificar_nameserver(self):
         """Verifica si el servidor de nombres esta disponible"""
@@ -22,24 +26,32 @@ class ServidorNombres(Nodo):
             return False
 
     def iniciar_nameserver_subproceso(self):
-        """Intenta iniciar el nameserver si no está disponible"""
         if self.verificar_nameserver():
             print("El servidor de nombres ya está ejecutándose")
             return True
+
         print("Iniciando el servidor de Nombres...")
         try:
-            subprocess.Popen(
-                [sys.executable, "-m", "Pyro5.nameserver"]
-                #creationflags=subprocess.CREATE_NEW_CONSOLE
+            self.ns_proceso = subprocess.Popen(
+                [sys.executable, "-m", "Pyro5.nameserver"],
+                #creationflags=subprocess.CREATE_NEW_CONSOLE  # Opcional: ventana separada
             )
             time.sleep(3)
             return self.verificar_nameserver()
         except Exception as e:
-            print(f" Error al iniciar el servidor de nombres: {e}")
+            print(f"Error al iniciar el servidor de nombres: {e}")
             return False
 
-    @staticmethod
-    def iniciar_nameserver_hilo(host_ip: str):
+    def detener_nameserver(self):
+        """Finaliza el proceso del NameServer si fue lanzado por este nodo."""
+        if self.ns_proceso and self.ns_proceso.poll() is None:
+            print("Deteniendo servidor de nombres...")
+            self.ns_proceso.terminate()
+            self.ns_proceso.wait()
+            print("SE HA DETENIDO --> Servidor de nombres.")
+
+
+    def iniciar_nameserver_hilo(self, host_ip: str):
         """Inicia el servidor de nombres en un hilo daemon."""
         def ns_loop():
             print(f"[Servidor de Nombres] Iniciando en {host_ip}...")

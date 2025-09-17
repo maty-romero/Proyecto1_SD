@@ -4,12 +4,10 @@
 """
 import Pyro5.api
 import threading
-from Main.Common.AbstractGUI import AbstractGUI
 
 @Pyro5.api.expose
 class ServicioCliente:
-    def __init__(self, gui: AbstractGUI, gestor):
-        self.gui = gui
+    def __init__(self, gestor):
         self.gestor = gestor  # referencia al GestorCliente
 
     def recibir_info_ronda(self, info: str):

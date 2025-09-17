@@ -1,22 +1,10 @@
-import json
 
-from Main.Server.Publisher import Publisher
-from Main.Utils.RespuestaRemotaJSON import RespuestaRemotaJSON
-from Partida import Partida
-from Main.Common.AbstractGUI import AbstractGUI
 import Pyro5.api
 
 from Servidor.Comunicacion.Dispacher import Dispatcher
+from Servidor.Dominio.Partida import Partida
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
-
-
-# funciones auxiliares
-
-def dict_to_json(info: dict) -> str:
-    try:
-        return json.dumps(info, indent=4, ensure_ascii=False)
-    except TypeError as e:
-        raise ValueError(f"No se pudo convertir a JSON: {e}")
+from Servidor.Utils.SerializeHelper import SerializeHelper
 
 
 @Pyro5.api.expose
@@ -28,20 +16,46 @@ class ServicioJuego:
         self.jugadores_requeridos = 4 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
 
+    """
+        ServicioJuego --> Entran las llamadas Pyro
+    
+        Servicios Registrados en NodoServidor --> Dispacher
+            - "comunicacion"
+            - "db"
+        Ejemplo de uso Dispacher: 
+            self.Dispatcher.manejar_llamada("comunicacion", "broadcast", "¡Hola a todos!")
+        Ejemplo de uso SerializeHelper:
+            json = SerializeHelper.serializar(exito=False, msg="", datos={"datos"})
+        
+    """
+    """
     def iniciar_partida(self):
+        # Comenzar Ronda y avisar a todos etc.
         pass
 
     def finalizar_partida(self):
+        # notificar y enviar info fin_partida
         pass
+    """
+
+    # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
+    def solicitar_acceso(self):
+        hay_lugar: bool = self.dispacher.manejar_llamada(
+            "comunicacion", # nombre_servicio
+            "hay_lugar_disponible", # nombre_metodo
+             self.jugadores_requeridos # args
+        )
+
+        if not hay_lugar:
+            return SerializeHelper.serializar(exito=False, msg="La sala esta llena, no puede unirse!")
+        # hay lugar
+        return SerializeHelper.serializar(exito=False, msg="Hay lugar disponible, puede unirse!")
 
     def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
 
         if (nickname == "" or is_not_string):
-            result = RespuestaRemotaJSON(
-                exito=False,
-                mensaje="NickName vacio o no es cadena")
-            return result.serializar()
+            return SerializeHelper.serializar(exito=False, msg="NickName vacio o no tiene formato valido")
 
         formated_nickname = nickname.lower().replace(" ", "")
 
