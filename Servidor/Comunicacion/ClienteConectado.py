@@ -14,10 +14,11 @@ class ClienteConectado:
         self.socket = ManejadorSocket( # sesion cliente
             ip_cliente=ip_cliente,
             puerto_cliente=puerto_cliente,
+            callback_mensaje= lambda msg: self._procesar_mensaje(msg),
             nickname_log=nickname
         )
         # Inyecta el callback como lambda
-        self.socket.callback_mensaje = lambda msg: self._procesar_mensaje(msg)
+        #self.socket.callback_mensaje =
 
 
     def _procesar_mensaje(self, mensaje: str):

@@ -17,20 +17,27 @@ class SesionClienteSocket:
         self._escuchando = False
         self.logger = ConsoleLogger(name=f"SesionClienteSocket[{nickname_log}]", level="INFO")
         self.logger.info("Nueva Instancia Sesion Socket en Cliente")
+        self.socket_listo_event = threading.Event() # para saber cuándo el socket está listo
 
     def iniciar(self):
-        self.logger.info("Iniciando socket...")
-        self.socket.bind((self.host, self.puerto))
-        self.socket.listen(1)
-        self.logger.info(f"Cliente esperando conexion en {self.host}:{self.puerto}")
-        self.conexion, addr = self.socket.accept()
-        self.logger.info(f"Servidor conectado desde {addr}")
-        self._escuchando = True
+        try:
+            self.logger.info("Iniciando socket...")
+            self.socket.bind((self.host, self.puerto))
+            self.socket.listen(1)
+            self.socket_listo_event.set() # Seteo evento para poder llamarlo desde GestorCliente
+            self.logger.info(f"Cliente esperando conexion en {self.host}:{self.puerto}")
+            self.conexion, addr = self.socket.accept()
+            self.logger.info(f"Servidor conectado desde {addr}")
+            self._escuchando = True
 
-        self.hilo_escucha = threading.Thread(target=self._escuchar, daemon=True)
-        self.hilo_escucha.start()
-        self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
-        self.hilo_heartbeat.start()
+            self.hilo_escucha = threading.Thread(target=self._escuchar, daemon=True)
+            self.hilo_escucha.start()
+            self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
+            self.hilo_heartbeat.start()
+        except Exception as e:
+            self.logger.error(f"Error al iniciar: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _escuchar(self):
         self.logger.info("Iniciando escucha constante...")
@@ -60,4 +67,5 @@ class SesionClienteSocket:
             self.conexion.close()
             self.conexion = None
         self.socket.close()
+
 

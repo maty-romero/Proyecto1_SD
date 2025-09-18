@@ -75,38 +75,19 @@ class GestorCliente:
         self.inicializar_Deamon_Cliente()
         self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
 
+        # espera a que sesion socket este listo
+        self.jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
+        self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
+
         self.logger.info(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
-        # registrar_cliente(json_infoConexion y Cliente)
+
+        # registro del cliente
         info_cliente = self.jugador_cliente.to_dict()  # dict con info relevante
-        self.logger.error(f"***** FLAG DE AVISO ****** {info_cliente}")
-
-        """
-        
-        #ServicioJuego.unirse_a_sala(self, info_cliente: dict)
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
-        self.logger.info(f"Solicitud acceso: {resultado_dict}")
-        """
+        self.logger.info(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
+        self.logger.info(f"InfoSala: {resultado_dict}")
 
 
-        """
-
-        self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
-        self.get_proxy_partida_singleton().unirse_a_sala(
-            self.jugador_cliente.get_nickname(),
-            self.jugador_cliente.get_nombre_logico()
-        )
-        # notificacion y ejecucion en _on_info para setear respuesta
-
-        respuesta: RespuestaRemotaJSON = RespuestaRemotaJSON.deserializar(self._last_response)
-        self.gui.show_message(respuesta.mensaje)
-        if respuesta.exito:
-            self.gui.show_message("** INFO SALA **")
-            self.gui.show_message(f"Jugadores en la sala: {respuesta.datos['jugadores']}")
-            self.gui.show_message(f"Categorias: {respuesta.datos['categorias']}")
-            self.gui.show_message(f"Rondas a jugar: {respuesta.datos['rondas']}")
-
-        # self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
-        """
 
     def ingresar_nickname_valido(self) -> str:
         nickname = input("\nIngrese su NickName para la partida: ")
