@@ -25,6 +25,17 @@ class SerializeHelper:
         obj = json.loads(raw_bytes.decode())
         return obj["exito"], obj["msg"], obj["datos"]
 
+    @staticmethod
+    def respuesta(exito: bool, msg: str, datos=None) -> dict:
+        """Devuelve una respuesta estandarizada como dict."""
+        if datos is None:
+            datos = {}
+        return {
+            "exito": exito,
+            "msg": msg,
+            "datos": datos
+        }
+
 
     """
         raw = Mensaje.serializar(True, "Conexión establecida", {"ip": "127.0.0.1", "puerto": 8080})

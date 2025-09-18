@@ -47,47 +47,89 @@ class ServicioJuego:
         )
 
         if not hay_lugar:
-            return SerializeHelper.serializar(exito=False, msg="La sala esta llena, no puede unirse!")
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg="La sala está llena, no puede unirse."
+            )
+
         # hay lugar
-        return SerializeHelper.serializar(exito=False, msg="Hay lugar disponible, puede unirse!")
+        return SerializeHelper.respuesta(
+            exito=True,
+            msg="Hay lugar disponible, puede unirse."
+        )
+
 
     def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
 
         if (nickname == "" or is_not_string):
-            return SerializeHelper.serializar(exito=False, msg="NickName vacio o no tiene formato valido")
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg="NickName vacio o no tiene formato valido"
+            )
 
         formated_nickname = nickname.lower().replace(" ", "")
 
-        existe_jugador = self.publisher.buscar_jugador(formated_nickname)
-        if existe_jugador is None: # no existe jugador usando ese nickname
-            result = RespuestaRemotaJSON(
-                exito=True, mensaje="NickName disponible")
-            return result.serializar()
+        is_nickname_disponible: bool = self.dispacher.manejar_llamada(
+            "comunicacion", # nombre_servicio
+            "is_nickname_disponible", # nombre_metodo
+             formated_nickname # args
+        )
 
         # nickname no disponible
-        result = RespuestaRemotaJSON(
-            exito=False, mensaje="El nickname ya esta siendo utilizado")
-        return result.serializar()
+        if not is_nickname_disponible:
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg="El nickname ingresado ya esta siendo utilizado"
+            )
+        # nickname ingresado esta disponible
+        return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
-    def unirse_a_sala(self, nickname: str, nombre_logico_jugador: str):
-        # verificar si ya existe jugador en sala
-        existe_jugador = self.publisher.buscar_jugador(nickname)
+    def unirse_a_sala(self, info_cliente: dict):
         """
-        if existe_jugador is not None:  # jugador ya registrado
-            self.gui.show_error("[unirse_sala] Jugador {nickname} ya existe en sala!")
-            result = RespuestaRemotaJSON(
-                exito=False, mensaje="El Jugador {nickname} ya esta en la sala!")
-            return result.serializar() # json
-
-            return f"[Error]: El Jugador {nickname} ya esta en la sala!"
+        1. Verificar si existe ya jugador en sala ???
+        2. Suscribir / Registrar Jugador
+        3. Conectarse al socket del Cliente (se hace al suscribir cliente)
+        4. Notificar entrada de nuevo a todos los jugadores (broadcast)
+        5. Obtener info Sala
+        6. Retornar info Sala via Pyro
         """
-        self.publisher.suscribirJugador(nickname, nombre_logico_jugador)
-        info_sala: dict = self.partida.get_info_sala(self.publisher.getJugadores())
-        self.publisher.notificar_info_sala(info_sala) # broadcasting
+        #ServicioComunicacion. suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente
+        try:
+            nickname = info_cliente['nickname']
+            nombre_logico = info_cliente['nombre_logico']
+            ip_cliente = info_cliente['ip']
+            puerto_cliente = info_cliente['puerto']
+            self.dispacher.manejar_llamada(
+                "comunicacion",  # nombre_servicio
+                "suscribir_cliente",  # nombre_metodo
+                nickname, nombre_logico, ip_cliente, puerto_cliente  # args
+            )
 
-        # ** Thread.sleep? con cronometro para mostrar que va a empezar partida?
-        self._verificar_jugadores_suficientes() # Si los hay inicia partida
+            # PENDIENTE
+            # Notificar entrada nuevo jugador - Broadcast Socket
+
+            # obtener info sala
+            nicknames_jugadores: list[str] = self.dispacher.manejar_llamada(
+                "comunicacion",  # nombre_servicio
+                "listado_nicknames",  # nombre_metodo
+            )
+
+            info_sala: dict = self.partida.get_info_sala()
+            info_sala['jugadores'] = nicknames_jugadores
+            # retorna infor de sala a quien se unió
+            return SerializeHelper.respuesta(
+                exito=True,
+                msg="Se ha unido a la sala exitosamente",
+                datos=info_sala
+            )
+            # PENDIENTE
+            # self._verificar_jugadores_suficientes()  # Si los hay inicia partida
+
+        except Exception as e:  # Catches any other exception
+            self.logger.error(f"Ocurrio un error al unirse a la sala: {e}")
+
+
 
     def salir_de_sala(self, nickname: str):
         result = self.publisher.desuscribirJugador(nickname)

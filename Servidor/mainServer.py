@@ -26,32 +26,60 @@ if __name__ == "__main__":
 
     if opcion == "1":
         if Serv.iniciar_nameserver_subproceso():
-            print("NameServer iniciado correctamente.")
+            try:
+                print("[MAIN DENTRO DE IF]")
+                ip_servidor = ComunicationHelper.obtener_ip_local()
+                nodoPrincipal = NodoServidor(1)
+
+                Gestor_Singleton = nodoPrincipal.ServicioJuego
+                daemon = Pyro5.server.Daemon(host=ip_servidor)
+
+                uri = ComunicationHelper.registrar_objeto_en_ns(
+                    Gestor_Singleton,
+                    "gestor.partida",
+                    daemon)
+
+                print(f"URI:  {uri}")
+                print(f"[Servidor Lógico] Listo y escuchando en {ip_servidor}")
+                daemon.requestLoop()
+
+            except errors.NamingError:
+                print("Servidor de nombres no encontrado después de iniciarlo")
+            except errors.CommunicationError:
+                print("Error de comunicación con el Servidor de nombres")
+            except Exception as e:
+                print(f"Error inesperado: {e}")
+
+            #print("NameServer iniciado correctamente.")
         else:
-            print("No se pudo iniciar el NameServer.")
+            print("[Main] No se pudo iniciar el NameServer.")
             sys.exit(1)
 
     # --------------------------------------------Inicialización del Servidor--------------------------------------------#
-    try:
-        ip_servidor = ComunicationHelper.obtener_ip_local()
-        nodoPrincipal = NodoServidor(1)
+    """
+    if Serv.verificar_nameserver():
+        try:
+            ip_servidor = ComunicationHelper.obtener_ip_local()
+            nodoPrincipal = NodoServidor(1)
 
-        Gestor_Singleton = nodoPrincipal.ServicioJuego
-        daemon = Pyro5.server.Daemon(host=ip_servidor)
+            Gestor_Singleton = nodoPrincipal.ServicioJuego
+            daemon = Pyro5.server.Daemon(host=ip_servidor)
 
-        uri = ComunicationHelper.registrar_objeto_en_ns(
-            Gestor_Singleton,
-            "gestor.partida",
-            daemon)
+            uri = ComunicationHelper.registrar_objeto_en_ns(
+                Gestor_Singleton,
+                "gestor.partida",
+                daemon)
 
-        print(f"URI:  {uri}")
-        print(f"[Servidor Lógico] Listo y escuchando en {ip_servidor}")
-        daemon.requestLoop()
+            print(f"URI:  {uri}")
+            print(f"[Servidor Lógico] Listo y escuchando en {ip_servidor}")
+            daemon.requestLoop()
 
-    except errors.NamingError:
-        print("Servidor de nombres no encontrado después de iniciarlo")
-    except errors.CommunicationError:
-        print("Error de comunicación con el Servidor de nombres")
-    except Exception as e:
-        print(f"Error inesperado: {e}")
-
+        except errors.NamingError:
+            print("Servidor de nombres no encontrado después de iniciarlo")
+        except errors.CommunicationError:
+            print("Error de comunicación con el Servidor de nombres")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
+    else:
+        print("[Main] No se pudo iniciar el Servidor de nombres")
+    """

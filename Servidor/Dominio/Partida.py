@@ -39,11 +39,9 @@ class Partida:
         return self.jugadores
 
     # GETS INFO
-    def get_info_sala(self, jugadores_sala: list[Jugador]):
-        nicknames = [jugador.nickname for jugador in jugadores_sala]
+    def get_info_sala(self) -> dict:
         info = {
             "categorias": self.categorias,
-            "jugadores": nicknames,
             "rondas": self.rondas_maximas
         }
         return info

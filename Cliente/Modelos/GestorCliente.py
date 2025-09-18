@@ -3,26 +3,28 @@ import threading
 import time
 import Pyro5
 
+from Cliente.Modelos.JugadorCliente import JugadorCliente
 from Cliente.Modelos.ServicioCliente import ServicioCliente
+from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Servidor.Utils.SerializeHelper import SerializeHelper
 
 
 class GestorCliente:
     def __init__(self):
+        self.logger = ConsoleLogger(name="GestorCliente", level="INFO")
         self.nombre_logico_server = "gestor.partida"
         self.proxy_partida = None
         self.jugador_cliente = None
-        self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
 
-        # Estado interno
+        # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
         self._state_lock = threading.Lock()
 
         # referencias al daemon local del cliente
         self._daemon = None
         self._daemon_thread = None
-        self._nombre_logico_jugador = None
 
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
@@ -38,89 +40,56 @@ class GestorCliente:
         try:
             ns = Pyro5.api.locate_ns()
             uri = ns.lookup(self.nombre_logico_server)
-            self.gui.show_message(f"[Gestor] Partida encontrada (Deamon disponible) | URI: {uri}")
+            self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
             return True
         except Pyro5.errors.NamingError:
-            self.gui.show_error("[Gestor] No se encontró una Partida activa. Espere a que alguien cree una!")
+            self.logger.error(f"No se encontró una Partida activa. Espere a que alguien cree una!")
             return False
 
     def solicitar_acceso_sala(self):
-        respuesta = self.get_proxy_partida_singleton().solicitar_acceso()
-        self.logger.info(respuesta)
+        self.logger.info("Solicitando acceso a servidor remoto")
+        resultado_dict = self.get_proxy_partida_singleton().solicitar_acceso()
+        self.logger.info(f"Solicitud acceso: {resultado_dict}")
+        return resultado_dict
 
-        #solicitar_acceso
-
-    """
-    def ingresar_nickname_valido(self):
-        nickname = self.gui.get_input("\nIngrese su NickName para la partida: ")
-        formated_nickname = nickname.lower().replace(" ", "")
-
-        respuesta = RespuestaRemotaJSON.deserializar(
-            self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-        )
-
-        while not respuesta.exito:
-            self.gui.show_error(f"{respuesta.mensaje}")
-            nickname = self.gui.get_input("\nIngrese su NickName para la partida: ")
-            formated_nickname = nickname.lower().replace(" ", "")
-            respuesta = RespuestaRemotaJSON.deserializar(
-                self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-            )
-
-        self.jugador_cliente = JugadorCliente(nickname)
-
-        self.inicializar_Deamon_Cliente(
-            self.jugador_cliente.get_nickname(),
-            self.jugador_cliente.get_nombre_logico()
-        )
-        self.gui.show_message(f"NickName '{nickname}' confirmado!")
-    """
-    def inicializar_Deamon_Cliente(self, nickname: str, nombre_logico_jugador: str):
-        ip_cliente = ComunicationHelper.obtener_ip_local()
-        # Crear el objeto remoto y pasar el gestor (self)
-        objeto_cliente = ServicioCliente(self.gui, self)
-
-        # nombre lógico con prefijo "jugador.<nickname>"
-        self._nombre_logico_jugador = f"jugador.{nickname}"
-
-        def daemon_loop():
-            # Crear y guardar el daemon para poder apagarlo despues
-            self._daemon = Pyro5.api.Daemon(host=ip_cliente)
-            try:
-                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, self._nombre_logico_jugador, self._daemon)
-                self.gui.show_message(f"[Registro] Objeto CLIENTE '{nickname}' disponible en URI: {uri}")
-            except Exception as e:
-                self.gui.show_error(f"No se pudo registrar el objeto en NS: {e}")
-                # aun así arrancamos el requestLoop para aceptar conexiones directas si corresponde
-            # loop de requests (bloqueante)
-            self._daemon.requestLoop()
-
-        # arrancar daemon en hilo de fondo
-        self._daemon_thread = threading.Thread(target=daemon_loop, daemon=True)
-        self._daemon_thread.start()
-
-        # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
-        time.sleep(1)
-
-    def stop_daemon_cliente(self):
-        # apagar daemon y limpiar registro en NS
-        if self._daemon:
-            try:
-                self._daemon.shutdown()
-            except Exception:
-                pass
-        if self._daemon_thread:
-            self._daemon_thread.join(timeout=2)
-
-        # opcional: remover del nameserver
-        try:
-            ns = Pyro5.api.locate_ns()
-            ns.remove(self._nombre_logico_jugador)
-        except Exception:
-            pass
-
-"""
     def unirse_a_sala(self):
+        """
+            solicitar_acceso -> verificar y mostrar en pantalla.
+            ingresar nicknameValido
+            inicializar deamon Cliente
+            abrir Socket Cliente
+            registrar_cliente(json_infoConexion y Cliente)
+            respuesta Server a Cliente -  via socket
+            Mostrar info Sala
+        """
+        resu_dict = self.solicitar_acceso_sala()
+        if not resu_dict['exito']:
+            self.logger.info(resu_dict['msg'])
+            sys.exit() # no puede jugar
+
+        # ingreso nickname
+        nickname_valido = self.ingresar_nickname_valido()
+        self.logger.info(f"NickName '{nickname_valido}' disponible!")
+        # inicializacion deamon Cliente y sesion de socket
+        self.jugador_cliente = JugadorCliente(nickname_valido)
+        self.inicializar_Deamon_Cliente()
+        self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
+
+        self.logger.info(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
+        # registrar_cliente(json_infoConexion y Cliente)
+        info_cliente = self.jugador_cliente.to_dict()  # dict con info relevante
+        self.logger.error(f"***** FLAG DE AVISO ****** {info_cliente}")
+
+        """
+        
+        #ServicioJuego.unirse_a_sala(self, info_cliente: dict)
+        resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
+        self.logger.info(f"Solicitud acceso: {resultado_dict}")
+        """
+
+
+        """
+
         self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
         self.get_proxy_partida_singleton().unirse_a_sala(
             self.jugador_cliente.get_nickname(),
@@ -136,8 +105,93 @@ class GestorCliente:
             self.gui.show_message(f"Categorias: {respuesta.datos['categorias']}")
             self.gui.show_message(f"Rondas a jugar: {respuesta.datos['rondas']}")
 
-        #self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
+        # self.gui.show_message(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
+        """
 
+    def ingresar_nickname_valido(self) -> str:
+        nickname = input("\nIngrese su NickName para la partida: ")
+        formated_nickname = nickname.lower().replace(" ", "")
+
+        resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+
+        while not resu_dict['exito']:
+            print(f"\n**{resu_dict['msg']}")
+            nickname = input("\nIngrese su NickName para la partida: ")
+            formated_nickname = nickname.lower().replace(" ", "")
+            resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+
+        return formated_nickname
+
+    # Sesiones o Servicios Cliente a Utilizar
+
+    def iniciar_sesion_socket_en_hilo(self, puerto: int):
+        try:
+            self.jugador_cliente.sesion_socket = SesionClienteSocket(
+                puerto_fijo=puerto,
+                callback_mensaje=self._procesar_mensaje_socket,
+                nickname_log=self.jugador_cliente.get_nickname()
+            )
+
+            hilo_socket = threading.Thread(
+                target=self.jugador_cliente.sesion_socket.iniciar,
+                daemon=True
+            )
+            hilo_socket.start()
+
+        except Exception as e:
+            self.logger.error(f"[iniciar_sesion_socket_en_hilo] Ex: {e}")
+
+        #self.jugador_cliente.sesion_socket.iniciar()
+
+    # Funcion CallBack para Socket
+    def _procesar_mensaje_socket(self, mensaje: str):
+        # lógica para manejar mensajes entrantes por socket
+        print(f"[Socket] Mensaje recibido: {mensaje}")
+
+    def inicializar_Deamon_Cliente(self):
+        ip_cliente = ComunicationHelper.obtener_ip_local()
+        objeto_cliente = ServicioCliente(self)  # Se crea objeto remoto y se pasa el gestor (self)
+
+        # nom_logico ya definido con prefijo "jugador.<nickname>"
+        nombre_logico: str= self.jugador_cliente.get_nombre_logico()
+
+        def daemon_loop():
+            # Crear y guardar el daemon para poder apagarlo despues
+            self._daemon = Pyro5.api.Daemon(host=ip_cliente)
+            try:
+                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon)
+                self.logger.info(f"[Deamon] Objeto CLIENTE '{self.jugador_cliente.get_nickname()}' disponible en URI: {uri}")
+            except Exception as e:
+                self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
+                # aun así arrancamos el requestLoop para aceptar conexiones directas si corresponde
+
+            self._daemon.requestLoop() # loop de requests (bloqueante)
+
+        # arrancar daemon en hilo de fondo
+        self._daemon_thread = threading.Thread(target=daemon_loop, daemon=True)
+        self._daemon_thread.start()
+
+        # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
+        time.sleep(2)
+
+    def stop_daemon_cliente(self):
+        # apagar daemon y limpiar registro en NS
+        if self._daemon:
+            try:
+                self._daemon.shutdown()
+            except Exception:
+                pass
+        if self._daemon_thread:
+            self._daemon_thread.join(timeout=2)
+
+        # opcional: remover del nameserver
+        try:
+            ns = Pyro5.api.locate_ns()
+            ns.remove(self.jugador_cliente.get_nombre_logico())
+        except Exception:
+            pass
+
+"""
     def confirmar_jugador_partida(self):
         self.gui.show_message(f"Confirmando jugador: '{self.jugador_cliente.get_nickname()}'....")
         self.get_proxy_partida_singleton().confirmar_jugador(self.jugador_cliente.get_nickname())

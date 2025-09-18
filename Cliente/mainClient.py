@@ -3,7 +3,7 @@ from Cliente.Modelos.GestorCliente import GestorCliente
 if __name__ == "__main__":
     # Uso de gestorCliente Para Jugar
     gestor = GestorCliente()
-    gestor.solicitar_acceso_sala()
+    gestor.unirse_a_sala()
     
     """
     existe_partida = gestor.buscar_partida()

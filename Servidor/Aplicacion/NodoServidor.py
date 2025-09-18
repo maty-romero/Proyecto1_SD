@@ -15,7 +15,7 @@ class NodoServidor(Nodo):
         self.Dispatcher.registrar_servicio("db", self.ServDB)
 
         self.ServicioJuego = ServicioJuego(self.Dispatcher)
-        self.Dispatcher.registrar_servicio("juego", self.ServJuego) # Ver si se usa este servicio
+        #self.Dispatcher.registrar_servicio("juego", self.ServicioJuego) # Ver si se usa este servicio
 
     def iniciar_servicio(self):
         pass

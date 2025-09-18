@@ -1,11 +1,22 @@
+from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
+
+
 class JugadorCliente:
     def __init__(self, nickname: str):
         self.nickname = nickname
         self.nombre_logico = f"jugador.{nickname}"
-        # otros atributos
+        self.sesion_socket: SesionClienteSocket = None  # se inyecta desde el controlador
 
     def get_nickname(self):
         return self.nickname
 
     def get_nombre_logico(self):
         return self.nombre_logico
+
+    def to_dict(self) -> dict:
+        return {
+            'nickname': self.nickname,
+            'nombre_logico': self.nombre_logico,
+            'ip': self.sesion_socket.host,
+            'puerto': self.sesion_socket.puerto
+        }

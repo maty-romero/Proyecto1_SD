@@ -15,10 +15,16 @@ class ServicioComunicacion:
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
         # hilo que maneja verificacion clientes vivos
-        threading.Thread(target=self.loop_verificacion(), daemon=True).start()
+        #threading.Thread(target=self.loop_verificacion(), daemon=True).start()
+
+    def listado_nicknames(self) -> list[str]:
+        return [cliente.nickname for cliente in self.clientes]
 
     def hay_lugar_disponible(self, max_jugadores: int) -> bool:
         return len(self.clientes) < max_jugadores
+
+    def is_nickname_disponible(self, nickname: str) -> bool:
+        return not any(cliente.nickname == nickname for cliente in self.clientes)
 
     def loop_verificacion(self):
         while True:
@@ -49,8 +55,8 @@ class ServicioComunicacion:
     # Metodos de Suscripcion
     def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente):
         cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente)
+        cliente.socket.conectar() # inicio sesion por socket
         self.clientes.append(cliente)
-        # self.clientes[id_cliente] = manejador_socket
 
     def desuscribir_cliente(self, nickname):
         #self.clientes.pop(id_cliente, None)

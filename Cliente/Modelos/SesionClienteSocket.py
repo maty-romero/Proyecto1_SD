@@ -5,8 +5,8 @@ import time
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.ComunicationHelper import ComunicationHelper
 
-class ClienteSocket:
-    def __init__(self, puerto_fijo: int, callback_mensaje,nickname_log: str):
+class SesionClienteSocket:
+    def __init__(self, puerto_fijo: int, callback_mensaje, nickname_log: str):
         self.host = ComunicationHelper.obtener_ip_local()
         self.puerto = puerto_fijo
         self.callback_mensaje = callback_mensaje # funcion que se ejecuta cuando ocurre un evento
@@ -15,9 +15,11 @@ class ClienteSocket:
         self.hilo_escucha = None
         self.hilo_heartbeat = None
         self._escuchando = False
-        self.logger = ConsoleLogger(name=f"ClienteSocket[{nickname_log}]", level="INFO")
+        self.logger = ConsoleLogger(name=f"SesionClienteSocket[{nickname_log}]", level="INFO")
+        self.logger.info("Nueva Instancia Sesion Socket en Cliente")
 
     def iniciar(self):
+        self.logger.info("Iniciando socket...")
         self.socket.bind((self.host, self.puerto))
         self.socket.listen(1)
         self.logger.info(f"Cliente esperando conexion en {self.host}:{self.puerto}")
@@ -31,6 +33,7 @@ class ClienteSocket:
         self.hilo_heartbeat.start()
 
     def _escuchar(self):
+        self.logger.info("Iniciando escucha constante...")
         while self._escuchando:
             try:
                 data = self.conexion.recv(1024)
@@ -44,12 +47,14 @@ class ClienteSocket:
     def _enviar_heartbeat(self):
         while self._escuchando:
             try:
+                self.logger.info("Enviando HEARTBEAT...")
                 self.conexion.sendall(b"HEARTBEAT")
                 time.sleep(30)  # cada 30 seg
             except OSError:
                 break
 
     def cerrar(self):
+        self.logger.info("Cerrando Session por Socket...")
         self._escuchando = False
         if self.conexion:
             self.conexion.close()

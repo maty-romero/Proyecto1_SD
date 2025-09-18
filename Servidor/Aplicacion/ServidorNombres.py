@@ -34,10 +34,19 @@ class ServidorNombres(Nodo):
         try:
             self.ns_proceso = subprocess.Popen(
                 [sys.executable, "-m", "Pyro5.nameserver"],
-                #creationflags=subprocess.CREATE_NEW_CONSOLE  # Opcional: ventana separada
+                #creationflags=subprocess.CREATE_NEW_CONSOLE
             )
             time.sleep(3)
             return self.verificar_nameserver()
+            # Espera activa hasta que el NS esté disponible
+            # for _ in range(10):
+            #     if self.verificar_nameserver():
+            #         return True
+            #     time.sleep(1)
+
+            #print("Timeout esperando al NameServer.")
+            return False
+
         except Exception as e:
             print(f"Error al iniciar el servidor de nombres: {e}")
             return False
