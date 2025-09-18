@@ -59,7 +59,7 @@ class GestorCliente:
             inicializar deamon Cliente
             abrir Socket Cliente
             registrar_cliente(json_infoConexion y Cliente)
-            respuesta Server a Cliente -  via socket
+            respuesta Server a Cliente -  via Pyro (Mismo return de ServicioJuego)
             Mostrar info Sala
         """
         resu_dict = self.solicitar_acceso_sala()
@@ -87,6 +87,15 @@ class GestorCliente:
         self.logger.info(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
         self.logger.info(f"InfoSala: {resultado_dict}")
 
+        # REFACTORIZAR POR ALGO MEJOR - Tal vez con eventos?
+        try:
+            self.logger.error("**** Iniciando loop cliente ****")
+            self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.jugador_cliente.sesion_socket.cerrar()
+            print("Sesión cerrada por interrupción.")
 
 
     def ingresar_nickname_valido(self) -> str:
@@ -127,6 +136,7 @@ class GestorCliente:
     # Funcion CallBack para Socket
     def _procesar_mensaje_socket(self, mensaje: str):
         # lógica para manejar mensajes entrantes por socket
+        "if mensaje == 'notificacion => self.accion() ..."
         print(f"[Socket] Mensaje recibido: {mensaje}")
 
     def inicializar_Deamon_Cliente(self):
