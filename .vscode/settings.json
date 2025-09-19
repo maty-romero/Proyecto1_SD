@@ -1,0 +1,6 @@
+//Archivo de configuracion de VSCode para soportar PyCharm
+
+{
+    "python.analysis.extraPaths": ["./"],  
+    "python.envFile": "${workspaceFolder}/.env"
+}

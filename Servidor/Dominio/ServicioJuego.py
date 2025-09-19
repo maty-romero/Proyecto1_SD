@@ -13,8 +13,9 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
-        self.jugadores_requeridos = 4 # pasar por constructor?
+        self.jugadores_min = 4 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
+        self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
 
     """
         ServicioJuego --> Entran las llamadas Pyro
@@ -43,7 +44,7 @@ class ServicioJuego:
         hay_lugar: bool = self.dispacher.manejar_llamada(
             "comunicacion", # nombre_servicio
             "hay_lugar_disponible", # nombre_metodo
-             self.jugadores_requeridos # args
+             self.jugadores_min # args
         )
 
         if not hay_lugar:
@@ -83,6 +84,8 @@ class ServicioJuego:
                 msg="El nickname ingresado ya esta siendo utilizado"
             )
         # nickname ingresado esta disponible
+        self.Jugadores[formated_nickname] = False # False = no confirmado
+
         return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
     def unirse_a_sala(self, info_cliente: dict):
@@ -106,9 +109,7 @@ class ServicioJuego:
                 nickname, nombre_logico, ip_cliente, puerto_cliente  # args
             )
 
-            # PENDIENTE
-            # Notificar entrada nuevo jugador - Broadcast Socket
-
+            #Registra a Jugador en un array local
             # obtener info sala
             nicknames_jugadores: list[str] = self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
@@ -139,18 +140,29 @@ class ServicioJuego:
 
     def _verificar_jugadores_suficientes(self):
         cant_jugadores_actual = len(self.publisher.getJugadoresConfirmados())
-        if(cant_jugadores_actual >= self.jugadores_requeridos):
+        if(cant_jugadores_actual >= self.jugadores_min):
             self.iniciar_partida()
 
     def confirmar_jugador(self, nickname: str):
-        if(not self.publisher.jugador_esta_suscripto(nickname)):
-            self.gui.show_error(f"Jugador '{nickname}' no esta suscripto o registrado. Debe Registrarse primero!")
-
-        result = self.publisher.confirmar_jugador(nickname)
-        if(result is None):
-            self.gui.show_error(f"Jugador {nickname} ya ha sido confirmado!")
-
-        msg = {
-            "msg": f"Jugador: '{nickname}' Confirmado. Espere a que inicie la ronda."
-        }
-        self.publisher.notificar_confirmacion_jugador(nickname=nickname, msg_dict=msg)
+        #si no existe devuelve un error
+        if nickname not in self.Jugadores:
+            self.logger.warning(f"[confirmar_jugador] Jugador {nickname.capitalize()} no existe en la sala, no puede ser confirmado")
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg=f"Jugador {nickname.capitalize()} no existe en la sala"
+            )
+        elif self.Jugadores[nickname] == True:
+            self.logger.warning(f"[confirmar_jugador] Jugador {nickname.capitalize()} ya estaba confirmado")
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg=f"Jugador {nickname.capitalize()} ya estaba confirmado"
+            ) 
+        else:
+            self.logger.info(f"[confirmar_jugador] Jugador {nickname.capitalize()} confirmado")
+            self.Jugadores[nickname] = True # Confirmado
+            return SerializeHelper.respuesta(
+                exito=True,
+                msg=f"{nickname.capitalize()} has confirmado exitosamente, Esperando a los demas Jugadores..."
+            )
+        #Opcional, agregar mensaje por socket. por jugador, aunque lo mejor es dejarlo para cuando inicie la ronda a todos
+    

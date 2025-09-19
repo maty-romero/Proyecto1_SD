@@ -16,7 +16,7 @@ class GestorCliente:
         self.logger = ConsoleLogger(name="GestorCliente", level="INFO")
         self.nombre_logico_server = "gestor.partida"
         self.proxy_partida = None
-        self.jugador_cliente = None
+        self.Jugador_cliente = None
 
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
@@ -25,6 +25,8 @@ class GestorCliente:
         # referencias al daemon local del cliente
         self._daemon = None
         self._daemon_thread = None
+
+
 
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
@@ -68,34 +70,36 @@ class GestorCliente:
             sys.exit() # no puede jugar
 
         # ingreso nickname
+        breakpoint()
+        
         nickname_valido = self.ingresar_nickname_valido()
         self.logger.info(f"NickName '{nickname_valido}' disponible!")
         # inicializacion deamon Cliente y sesion de socket
-        self.jugador_cliente = JugadorCliente(nickname_valido)
+        self.Jugador_cliente = JugadorCliente(nickname_valido)
         self.inicializar_Deamon_Cliente()
         self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
-
         # espera a que sesion socket este listo
-        self.jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
+        self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
 
-        self.logger.info(f"Jugador '{self.jugador_cliente.get_nickname()}' uniendose a la sala...")
+        self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
 
         # registro del cliente
-        info_cliente = self.jugador_cliente.to_dict()  # dict con info relevante
+        info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
-        self.logger.info(f"Jugador '{self.jugador_cliente.get_nickname()}' se ha unido a la sala!")
+        self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
         self.logger.info(f"InfoSala: {resultado_dict}")
+        
 
         # REFACTORIZAR POR ALGO MEJOR - Tal vez con eventos?
-        try:
-            self.logger.error("**** Iniciando loop cliente ****")
-            self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            self.jugador_cliente.sesion_socket.cerrar()
-            print("Sesión cerrada por interrupción.")
+        # try:
+        #     self.logger.error("**** Iniciando loop cliente ****")
+        #     self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
+        #     while True:
+        #         time.sleep(1)
+        # except KeyboardInterrupt:
+        #     self.jugador_cliente.sesion_socket.cerrar()
+        #     print("Sesión cerrada por interrupción.")
 
 
     def ingresar_nickname_valido(self) -> str:
@@ -116,14 +120,14 @@ class GestorCliente:
 
     def iniciar_sesion_socket_en_hilo(self, puerto: int):
         try:
-            self.jugador_cliente.sesion_socket = SesionClienteSocket(
+            self.Jugador_cliente.sesion_socket = SesionClienteSocket(
                 puerto_fijo=puerto,
                 callback_mensaje=self._procesar_mensaje_socket,
-                nickname_log=self.jugador_cliente.get_nickname()
+                nickname_log=self.Jugador_cliente.get_nickname()
             )
 
             hilo_socket = threading.Thread(
-                target=self.jugador_cliente.sesion_socket.iniciar,
+                target=self.Jugador_cliente.sesion_socket.iniciar,
                 daemon=True
             )
             hilo_socket.start()
@@ -144,14 +148,14 @@ class GestorCliente:
         objeto_cliente = ServicioCliente(self)  # Se crea objeto remoto y se pasa el gestor (self)
 
         # nom_logico ya definido con prefijo "jugador.<nickname>"
-        nombre_logico: str= self.jugador_cliente.get_nombre_logico()
+        nombre_logico: str= self.Jugador_cliente.get_nombre_logico()
 
         def daemon_loop():
             # Crear y guardar el daemon para poder apagarlo despues
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
                 uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon)
-                self.logger.info(f"[Deamon] Objeto CLIENTE '{self.jugador_cliente.get_nickname()}' disponible en URI: {uri}")
+                self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
             except Exception as e:
                 self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
                 # aun así arrancamos el requestLoop para aceptar conexiones directas si corresponde
@@ -178,16 +182,17 @@ class GestorCliente:
         # opcional: remover del nameserver
         try:
             ns = Pyro5.api.locate_ns()
-            ns.remove(self.jugador_cliente.get_nombre_logico())
+            ns.remove(self.Jugador_cliente.get_nombre_logico())
         except Exception:
             pass
 
-"""
-    def confirmar_jugador_partida(self):
-        self.gui.show_message(f"Confirmando jugador: '{self.jugador_cliente.get_nickname()}'....")
-        self.get_proxy_partida_singleton().confirmar_jugador(self.jugador_cliente.get_nickname())
-        #self.gui.show_message(f"Jugador: '{self.jugador_cliente.get_nickname()}' Confirmado. Espere a que inicie la ronda.")
 
+    def confirmar_jugador_partida(self):
+        self.gui.show_message(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
+        msg = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
+        self.gui.show_message(msg['msg'])
+
+"""
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):
         # llamado por ServicioCliente cuando llega un evento

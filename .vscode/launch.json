@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Cliente.mainClient",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/Cliente/mainClient.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
