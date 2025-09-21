@@ -1,8 +1,8 @@
 from PyQt6 import QtWidgets
+
 from Vistas.testVistas.SalaView import Ui_SalaView
 
-
-class ControladorSala:
+class ControladorSalaView:
 
     def __init__(self):
         # Inicializa la ventana principal
