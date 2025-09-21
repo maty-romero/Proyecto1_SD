@@ -70,7 +70,7 @@ class GestorCliente:
             sys.exit() # no puede jugar
 
         # ingreso nickname
-        breakpoint()
+        # breakpoint()
         
         nickname_valido = self.ingresar_nickname_valido()
         self.logger.info(f"NickName '{nickname_valido}' disponible!")
@@ -138,10 +138,28 @@ class GestorCliente:
         #self.jugador_cliente.sesion_socket.iniciar()
 
     # Funcion CallBack para Socket
-    def _procesar_mensaje_socket(self, mensaje: str):
-        # lógica para manejar mensajes entrantes por socket
-        "if mensaje == 'notificacion => self.accion() ..."
-        print(f"[Socket] Mensaje recibido: {mensaje}")
+    def _procesar_mensaje_socket(self, mensaje):
+        try:
+            exito, msg, datos = SerializeHelper.deserializar(mensaje)
+
+            if not exito:
+                self.logger.warning(f"[Socket] Error recibido: {msg}")
+                return
+
+            self.logger.info(f"[Socket] Mensaje recibido: {msg}")
+
+            # Procesar según tipo de mensaje
+            if msg == "nueva_ronda":
+                #self._actualizar_estado_ronda(datos)
+                self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
+            elif msg == "fin_partida":
+                #self._cerrar_partida(datos)
+                pass
+            else:
+                self.logger.error(f"[Socket] Mensaje desconocido: {msg}")
+
+        except Exception as e:
+            self.logger.error(f"[Socket] Error al procesar mensaje: {e}")
 
     def inicializar_Deamon_Cliente(self):
         ip_cliente = ComunicationHelper.obtener_ip_local()
@@ -186,11 +204,22 @@ class GestorCliente:
         except Exception:
             pass
 
-
     def confirmar_jugador_partida(self):
-        self.gui.show_message(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
-        msg = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
-        self.gui.show_message(msg['msg'])
+
+        self.logger.info(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
+        respuesta = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
+        self.logger.info(f"[Confirmacion Jugador]: {respuesta['msg']}")
+
+        try:
+            self.logger.error("**** Iniciando loop cliente ****")
+            self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.jugador_cliente.sesion_socket.cerrar()
+            print("Sesión cerrada por interrupción.")
+
+
 
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---

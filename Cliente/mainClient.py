@@ -5,10 +5,11 @@ if __name__ == "__main__":
     gestor = GestorCliente()
     existe_partida = gestor.buscar_partida()
     if (existe_partida):
-        gestor.ingresar_nickname_valido()
-        gestor.logger.info("FINALIZO EL UNIRSE A SALA")
-        gestor.logger.info(gestor.Jugador_cliente)
-        gestor.confirmar_jugador_partida(gestor.Jugador_cliente.get_nickname())
+        #gestor.ingresar_nickname_valido()
+        #gestor.logger.info("FINALIZO EL UNIRSE A SALA")
+        #gestor.logger.info(gestor.Jugador_cliente)
+        gestor.unirse_a_sala()
+        gestor.confirmar_jugador_partida()
     
     """
     existe_partida = gestor.buscar_partida()
