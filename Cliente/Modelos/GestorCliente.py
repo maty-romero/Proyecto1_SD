@@ -38,14 +38,31 @@ class GestorCliente:
                 sys.exit(1)
         return self.proxy_partida
 
-    def buscar_partida(self):
+    def buscar_partida(self, ns_host=None):
         try:
-            ns = Pyro5.api.locate_ns()
+            if ns_host:
+                self.logger.info(f"Buscando NS en {ns_host} (búsqueda directa)...")
+                ns = Pyro5.api.locate_ns(host=ns_host)
+            else:
+                self.logger.info("Buscando NS por broadcast...")
+                ns = Pyro5.api.locate_ns()
+
+            self.logger.info(f"NameServer encontrado: {ns}")
+            # opcional: ver qué hay registrado
+            try:
+                regs = ns.list()
+                self.logger.info(f"Registrados en NS: {list(regs.keys())}")
+            except Exception:
+                self.logger.debug("No pude listar registros NS (permisos o comunicación).")
+
             uri = ns.lookup(self.nombre_logico_server)
-            self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
+            self.logger.info(f"Partida encontrada | URI: {uri}")
             return True
         except Pyro5.errors.NamingError:
-            self.logger.error(f"No se encontró una Partida activa. Espere a que alguien cree una!")
+            self.logger.error(f"No se encontró una Partida con nombre '{self.nombre_logico_server}'")
+            return False
+        except Exception as e:
+            self.logger.error("Error general buscando NS/lookup: %s", e)
             return False
 
     def solicitar_acceso_sala(self):
