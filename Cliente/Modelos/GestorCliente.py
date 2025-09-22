@@ -1,3 +1,4 @@
+import socket
 import sys
 import threading
 import time
@@ -77,6 +78,22 @@ class GestorCliente:
         # inicializacion deamon Cliente y sesion de socket
         self.Jugador_cliente = JugadorCliente(nickname_valido)
         self.inicializar_Deamon_Cliente()
+
+        """
+        # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
+        # Obtener puerto libre
+        s_temp = socket.socket()
+        s_temp.bind(('localhost', 0))
+        puerto_libre = s_temp.getsockname()[1]
+        s_temp.close()
+        self.logger.info(f"|SIMULACION N CLIENTES| => Cliente '{nickname_valido}' escuchando en puerto {puerto_libre}")
+
+        # Iniciar sesión socket en puerto dinámico
+        self.iniciar_sesion_socket_en_hilo(puerto_libre)
+        # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
+        --> comentar: self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
+        """
+
         self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
         # espera a que sesion socket este listo
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
@@ -141,11 +158,11 @@ class GestorCliente:
     def _procesar_mensaje_socket(self, mensaje):
         try:
             exito, msg, datos = SerializeHelper.deserializar(mensaje)
-
+            """
             if not exito:
                 self.logger.warning(f"[Socket] Error recibido: {msg}")
                 return
-
+            """
             self.logger.info(f"[Socket] Mensaje recibido: {msg}")
 
             # Procesar según tipo de mensaje
@@ -156,7 +173,7 @@ class GestorCliente:
                 #self._cerrar_partida(datos)
                 pass
             else:
-                self.logger.error(f"[Socket] Mensaje desconocido: {msg}")
+                self.logger.warning(f"[Socket] Otro Mensaje: {msg}")
 
         except Exception as e:
             self.logger.error(f"[Socket] Error al procesar mensaje: {e}")

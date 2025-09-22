@@ -7,7 +7,6 @@ from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 
-
 class ServicioComunicacion:
     def __init__(self):
         # self.dispatcher = dispatcher
@@ -15,7 +14,7 @@ class ServicioComunicacion:
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
         # hilo que maneja verificacion clientes vivos
-        #threading.Thread(target=self.loop_verificacion(), daemon=True).start()
+        threading.Thread(target=self.loop_verificacion, daemon=True).start()
 
     def listado_nicknames(self) -> list[str]:
         return [cliente.nickname for cliente in self.clientes]
@@ -29,7 +28,7 @@ class ServicioComunicacion:
     def loop_verificacion(self):
         while True:
             self.verificar_clientes()
-            time.sleep(15)  # cada 10 segundos
+            time.sleep(2)  # cada 2 segundos
 
     def broadcast(self, mensaje: str):
         for cliente in self.clientes:
@@ -48,10 +47,11 @@ class ServicioComunicacion:
                 cliente.socket.cerrar()
                 json = SerializeHelper.serializar(
                     exito=False,
-                    msg=f"{cliente.nickname} se ha desconectado"
+                    msg=f"El jugador '{cliente.nickname}' se ha desconectado"
                 )
                 self.broadcast(json)
         self.clientes = clientes_activos # nos quedamos con clientes vivos
+        self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
 
     # Metodos de Suscripcion
     def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente):
