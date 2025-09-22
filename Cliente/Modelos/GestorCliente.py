@@ -26,8 +26,6 @@ class GestorCliente:
         self._daemon = None
         self._daemon_thread = None
 
-
-
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
             try:

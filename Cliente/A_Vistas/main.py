@@ -1,8 +1,8 @@
 # main.py
 from PyQt6.QtWidgets import QApplication
 from MainWindow import MainWindow
-from SalaView import SalaView
-from RondaView import RondaView
+from Cliente.A_Vistas.VistaSala import SalaView
+from Cliente.A_Vistas.VistaRonda import RondaView
 
 """
     Comando: pyuic6 <dssa>.ui -o <saas>.py
