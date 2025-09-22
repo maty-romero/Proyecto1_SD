@@ -17,9 +17,10 @@ class ControladorRonda:
     def mostrar_info_ronda(self):
         info = self.gestor_cliente.get_info_sala()#info= ronda y categorias
         categorias = info['categorias']
-        ronda=info['ronda']
+        #ronda=info['rondas']
         label_categorias = self.vista.obtener_categorias() 
         for categoria, label in zip(categorias,label_categorias):
             label.setText(categoria)
+        
 
         

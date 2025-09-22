@@ -24,7 +24,6 @@ class ControladorSalaView:
         self.vista.setNombreJugador(str(nickname))
         
         self.mostrar_info_sala()
-
         self.MainWindow.show()
 
     
@@ -44,7 +43,8 @@ class ControladorSalaView:
         self.vista.setEstadoSala("Esperando jugadores...")# estado Dinamico
         
         dict_jugadores = self.gestor_cliente.proxy_partida.ver_jugadores_partida()
-        jugadores = "\n".join(dict_jugadores.keys())
+        #jugadores = "\n".join(dict_jugadores.keys())
+        jugadores = ",".join(dict_jugadores.keys())
         self.vista.setListaJugadores(jugadores)
     
     

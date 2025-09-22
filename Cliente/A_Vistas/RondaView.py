@@ -27,13 +27,37 @@ class Ui_RondaView(object):
         self.label.setObjectName("label")
         
         self.nroronda_label = QtWidgets.QLabel(parent=MainWindow)
-        self.nroronda_label.setGeometry(QtCore.QRect(560, 0, 271, 121))
+        self.nroronda_label.setGeometry(QtCore.QRect(430, 0, 200, 121))  # Ajusté la posición
+        font = QtGui.QFont()
+        font.setFamily("Verdana")
+        font.setPointSize(30)  # Reducido el tamaño de la fuente a 35
+        font.setBold(True)
+        self.nroronda_label.setFont(font)
+        self.nroronda_label.setObjectName("nroronda_label")
+        
+        
+        # Etiqueta "Letra:"
+        self.lettra_texto_label = QtWidgets.QLabel(parent=MainWindow)
+        self.lettra_texto_label.setGeometry(QtCore.QRect(650, 0, 100, 121))  # Posicionada junto a la ronda
+        font = QtGui.QFont()
+        font.setFamily("Verdana")
+        font.setPointSize(20)
+        font.setBold(True)
+        self.lettra_texto_label.setFont(font)
+        self.lettra_texto_label.setObjectName("lettra_texto_label")
+
+        # Etiqueta para mostrar la letra aleatoria
+        self.letra_label = QtWidgets.QLabel(parent=MainWindow)
+        self.letra_label.setGeometry(QtCore.QRect(760, 0, 80, 121))  # Posicionada junto a "Letra:"
         font = QtGui.QFont()
         font.setFamily("Verdana")
         font.setPointSize(50)
         font.setBold(True)
-        self.nroronda_label.setFont(font)
-        self.nroronda_label.setObjectName("nroronda_label")
+        self.letra_label.setFont(font)
+        self.letra_label.setObjectName("letra_label")
+        
+        
+        
         self.enviar_respuestas_btn = QtWidgets.QPushButton(parent=MainWindow)
         self.enviar_respuestas_btn.setGeometry(QtCore.QRect(420, 610, 261, 61))
         font = QtGui.QFont()
@@ -41,33 +65,9 @@ class Ui_RondaView(object):
         font.setPointSize(14)
         font.setBold(True)
         
-        
-        
-        # Nueva etiqueta para mostrar el texto "Letra:"
-        self.lettra_texto_label = QtWidgets.QLabel(parent=MainWindow)
-        self.lettra_texto_label.setGeometry(QtCore.QRect(1080, 160, 80, 50))  # Alineado junto a ronda_label
-        font = QtGui.QFont()
-        font.setFamily("Verdana")
-        font.setPointSize(15)
-        font.setBold(True)
-        self.lettra_texto_label.setFont(font)
-        self.lettra_texto_label.setObjectName("lettra_texto_label")
 
-        # Nueva etiqueta para mostrar la letra aleatoria
-        self.letra_label = QtWidgets.QLabel(parent=MainWindow)
-        self.letra_label.setGeometry(QtCore.QRect(1160, 160, 50, 50))  # Alineado junto a lettra_texto_label
-        font = QtGui.QFont()
-        font.setFamily("Verdana")
-        font.setPointSize(15)
-        font.setBold(True)
-        self.letra_label.setFont(font)
-        self.letra_label.setObjectName("letra_label")
-
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
         
-        
-        
+        # Botón "STOP!"
         self.enviar_respuestas_btn.setFont(font)
         self.enviar_respuestas_btn.setObjectName("enviar_respuestas_btn")
         self.input_categoria1 = QtWidgets.QLineEdit(parent=MainWindow)
@@ -119,6 +119,7 @@ class Ui_RondaView(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Form"))
@@ -143,7 +144,7 @@ class Ui_RondaView(object):
         
         
     def set_numero_ronda(self,ronda, totalRondas):
-        self.nroronda_label.setText({ronda}/{totalRondas})
+        self.nroronda_label.setText(f"{ronda}/{totalRondas}")
         
     
     def setLetraAleatoria(self, letra):
