@@ -15,7 +15,6 @@ class Ronda:
 
     # PENDIENTE --> Completar Clase RONDA y Clase Respuesta
 
-
     def get_letra_random(self):
         letras = list(string.ascii_uppercase)
         if len(self.letras_jugadas) <= 0:
@@ -30,6 +29,20 @@ class Ronda:
         #self.letras_jugadas.append(letra)  # Guardar la letra jugada
         return letra
 
+
+    def to_dict(self):
+        return {
+            "nro_ronda": self.nro_ronda,
+            "letra_ronda": self.letra_ronda,
+            "finalizada": self.finalizada,
+            "respuestas": {
+                jugador: {
+                    categoria: resp.to_dict()
+                    for categoria, resp in categorias.items()
+                }
+                for jugador, categorias in self.dictRespuestas.items()
+            }
+        }
     """
     def iniciar_partida(self):
         self.rondaActual = 1

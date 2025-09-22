@@ -100,21 +100,63 @@ class Ui_SalaView(object):
         self.jugadores_label.setFont(font)
         self.jugadores_label.setObjectName("jugadores_label")
         self.estado_sala_label = QtWidgets.QLabel(parent=MainWindow)
-        self.estado_sala_label.setGeometry(QtCore.QRect(720, 510, 271, 100))
+        self.estado_sala_label.setGeometry(QtCore.QRect(340, 540, 400, 100))
         font = QtGui.QFont()
         font.setFamily("Verdana")
-        font.setPointSize(15)
+        font.setPointSize(10)
         font.setBold(True)
         font.setItalic(True)
         self.estado_sala_label.setFont(font)
         self.estado_sala_label.setObjectName("estado_sala_label")
+
+        # Label estático para "Jugadores Requeridos"
+        self.label1_6 = QtWidgets.QLabel(parent=MainWindow)
+        self.label1_6.setGeometry(QtCore.QRect(50, 440, 241, 61))
+        font = QtGui.QFont()
+        font.setFamily("Verdana")
+        font.setPointSize(15)
+        font.setBold(True)
+        self.label1_6.setFont(font)
+        self.label1_6.setObjectName("label1_6")
+
+        # Label para el dato de "Jugadores Requeridos"
+        self.jugadores_requeridos_label = QtWidgets.QLabel(parent=MainWindow)
+        self.jugadores_requeridos_label.setGeometry(QtCore.QRect(320, 440, 100, 61))
+        font = QtGui.QFont()
+        font.setFamily("Verdana")
+        font.setPointSize(15)
+        font.setBold(True)
+        self.jugadores_requeridos_label.setFont(font)
+        self.jugadores_requeridos_label.setObjectName("jugadores_requeridos_label")
+
+        # # Label estático para "Jugadores Restantes"
+        # self.label1_7 = QtWidgets.QLabel(parent=MainWindow)
+        # self.label1_7.setGeometry(QtCore.QRect(50, 500, 241, 61))
+        # font = QtGui.QFont()
+        # font.setFamily("Verdana")
+        # font.setPointSize(15)
+        # font.setBold(True)
+        # self.label1_7.setFont(font)
+        # self.label1_7.setObjectName("label1_7")
+
+        # # Label para el dato de "Jugadores Restantes"
+        # self.jugadores_restantes_label = QtWidgets.QLabel(parent=MainWindow)
+        # self.jugadores_restantes_label.setGeometry(QtCore.QRect(250, 500, 100, 61))
+        # font = QtGui.QFont()
+        # font.setFamily("Verdana")
+        # font.setPointSize(15)
+        # font.setBold(True)
+        # self.jugadores_restantes_label.setFont(font)
+        # self.jugadores_restantes_label.setObjectName("jugadores_restantes_label")
+
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Form"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Sala"))
         self.label.setText(_translate("MainWindow", "TUTIFRUTTI"))
         self.confirmar_jugador_btn.setText(_translate("MainWindow", "Estoy Listo!"))
         self.label1.setText(_translate("MainWindow", "Jugador:"))
@@ -125,8 +167,19 @@ class Ui_SalaView(object):
         self.categorias_label.setText(_translate("MainWindow", "<Listado_Categorias>"))
         self.label1_5.setText(_translate("MainWindow", "Jugadores en Sala: "))
         self.jugadores_label.setText(_translate("MainWindow", "<Listado_Jugadores>"))
-        self.estado_sala_label.setText(_translate("MainWindow", "<Msg_Estado_Sala>"))
+        self.estado_sala_label.setText(_translate("MainWindow", "'Presiona 'Estoy listo!' para unirte al juego'"))
 
+        self.label1_6.setText(_translate("MainWindow", "Jugadores requeridos: "))
+        self.jugadores_requeridos_label.setText(_translate("MainWindow", "<Min>"))
+        # self.label1_7.setText(_translate("MainWindow", "Jugadores restantes:"))
+        # self.jugadores_restantes_label.setText(_translate("MainWindow", "<X>"))
+
+
+    def setJugadoresRestantes(self,jug_rest):
+        self.jugadores_restantes_label.setText(jug_rest)
+
+    def setJugadoresRequeridos(self,jug_req):
+        self.jugadores_requeridos_label.setText(jug_req)
 
     def setNombreJugador(self, nombre):
         self.nickname_label.setText(nombre)
@@ -149,3 +202,9 @@ class Ui_SalaView(object):
 
     def getUnirSala(self):
         return self.confirmar_jugador_btn
+    
+    def setJugadoresRequeridos(self,jugadores):
+        self.jugadores_requeridos_label.setText(jugadores)
+
+    # def setJugadoresRestantes(self,jugadores):
+    #     self.jugadores_restantes_label.setText(jugadores)

@@ -32,6 +32,9 @@ class ServicioJuego:
             json = SerializeHelper.serializar(exito=False, msg="", datos={"datos"})
         
     """
+    
+    def get_jugadores_minimos(self):
+        return  self.jugadores_min
 
     def iniciar_partida(self):
         # Comenzar Ronda y avisar a todos etc.

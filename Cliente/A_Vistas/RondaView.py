@@ -18,16 +18,16 @@ class Ui_RondaView(object):
         MainWindow.setMaximumSize(QtCore.QSize(1080, 720))
         #ETIQUETA RONDA
         self.label = QtWidgets.QLabel(parent=MainWindow)
-        self.label.setGeometry(QtCore.QRect(280, 0, 271, 121))
+        self.label.setGeometry(QtCore.QRect(40, 0, 200, 121))
         font = QtGui.QFont()
         font.setFamily("Verdana")
-        font.setPointSize(50)
+        font.setPointSize(40)
         font.setBold(True)
         self.label.setFont(font)
         self.label.setObjectName("label")
         
         self.nroronda_label = QtWidgets.QLabel(parent=MainWindow)
-        self.nroronda_label.setGeometry(QtCore.QRect(430, 0, 200, 121))  # Ajusté la posición
+        self.nroronda_label.setGeometry(QtCore.QRect(250, 0, 150, 121))  # Ajusté la posición
         font = QtGui.QFont()
         font.setFamily("Verdana")
         font.setPointSize(30)  # Reducido el tamaño de la fuente a 35
@@ -38,20 +38,20 @@ class Ui_RondaView(object):
         
         # Etiqueta "Letra:"
         self.lettra_texto_label = QtWidgets.QLabel(parent=MainWindow)
-        self.lettra_texto_label.setGeometry(QtCore.QRect(650, 0, 100, 121))  # Posicionada junto a la ronda
+        self.lettra_texto_label.setGeometry(QtCore.QRect(750, 0, 190, 121))  # Posicionada junto a la ronda
         font = QtGui.QFont()
         font.setFamily("Verdana")
-        font.setPointSize(20)
+        font.setPointSize(40)
         font.setBold(True)
         self.lettra_texto_label.setFont(font)
         self.lettra_texto_label.setObjectName("lettra_texto_label")
 
         # Etiqueta para mostrar la letra aleatoria
         self.letra_label = QtWidgets.QLabel(parent=MainWindow)
-        self.letra_label.setGeometry(QtCore.QRect(760, 0, 80, 121))  # Posicionada junto a "Letra:"
+        self.letra_label.setGeometry(QtCore.QRect(940, 0, 80, 121))  # Posicionada junto a "Letra:"
         font = QtGui.QFont()
         font.setFamily("Verdana")
-        font.setPointSize(50)
+        font.setPointSize(40)
         font.setBold(True)
         self.letra_label.setFont(font)
         self.letra_label.setObjectName("letra_label")
@@ -122,7 +122,7 @@ class Ui_RondaView(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Form"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Ronda"))
         self.label.setText(_translate("MainWindow", "Ronda"))
         self.nroronda_label.setText(_translate("MainWindow", "<1/3>"))
         self.enviar_respuestas_btn.setText(_translate("MainWindow", "STOP!"))

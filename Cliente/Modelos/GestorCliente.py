@@ -2,6 +2,7 @@ import sys
 import threading
 import time
 import Pyro5
+from PyQt6.QtCore import QObject, pyqtSignal
 
 from Cliente.Modelos.JugadorCliente import JugadorCliente
 from Cliente.Modelos.ServicioCliente import ServicioCliente
@@ -10,6 +11,11 @@ from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 
+class GuiInvoker(QObject):
+    nueva_ronda_signal = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
 class GestorCliente:
     def __init__(self):
@@ -26,6 +32,23 @@ class GestorCliente:
         self._daemon = None
         self._daemon_thread = None
 
+        #Referencia al controlador 
+        self.controlador_actual = None
+        self._gui_invoker = GuiInvoker()
+        self._gui_invoker.nueva_ronda_signal.connect(self._on_gui_nueva_ronda)
+
+    def set_controlador_actual(self, controlador):
+        self.controlador_actual = controlador
+
+    def _on_gui_nueva_ronda(self):
+        try:
+            if self.controlador_actual and hasattr(self.controlador_actual, "mostrar_vista_ronda"):
+                self.logger.info("Invocando mostrar_vista_ronda() desde hilo GUI")
+                self.controlador_actual.mostrar_vista_ronda()
+            else:
+                self.logger.error("No hay controlador_actual con mostrar_vista_ronda al recibir nueva_ronda")
+        except Exception as e:
+            self.logger.error(f"Error en _on_gui_nueva_ronda: {e}")
 
 
     def get_proxy_partida_singleton(self):
@@ -79,7 +102,7 @@ class GestorCliente:
         # inicializacion deamon Cliente y sesion de socket
         self.Jugador_cliente = JugadorCliente(nickname_valido)
         self.inicializar_Deamon_Cliente()
-        self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
+        self.iniciar_sesion_socket_en_hilo(5556)  # puerto fijo para todos los clientes?
         # espera a que sesion socket este listo
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
@@ -107,7 +130,7 @@ class GestorCliente:
     
     #usamos en controladorSalaView
     def ingresar_nickname_valido(self,formated_nickname) -> str:
-        # nickname = input("\nIngrese su NickName para la partida: ") #### ACÁ PIDE EL INPUT DEL CLIENTE
+        # nickname = input("\nIngrese su NickName para la partida: ")
         # formated_nickname = nickname.lower().replace(" ", "")
         #Mandamos acá el nickname ya formateado desde el ControladorNickname
         resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
@@ -144,26 +167,31 @@ class GestorCliente:
         #self.jugador_cliente.sesion_socket.iniciar()
 
     # Funcion CallBack para Socket
-    def _procesar_mensaje_socket(self, mensaje):
+    def _procesar_mensaje_socket(self, mensaje): #Manda la señal para iniciar una ronda
         try:
             exito, msg, datos = SerializeHelper.deserializar(mensaje)
-
             if not exito:
                 self.logger.warning(f"[Socket] Error recibido: {msg}")
                 return
-
             self.logger.info(f"[Socket] Mensaje recibido: {msg}")
-
             # Procesar según tipo de mensaje
             if msg == "nueva_ronda":
+                #utilizar el metodo del controlador que inicie la ronda
+                # Llamar al método en el hilo principal de Qt
+                self.logger.info("Se recibió nueva_ronda -> emitiendo señal al GUI")
+                self._gui_invoker.nueva_ronda_signal.emit()
+
                 #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
             elif msg == "fin_partida":
                 #self._cerrar_partida(datos)
                 pass
+            elif msg == "jugador_confirmado":
+                jugadores = datos['jugador']
+                if self.controlador_actual:
+                    self.controlador_actual.actualizar_lista_jugadores(jugadores)
             else:
                 self.logger.error(f"[Socket] Mensaje desconocido: {msg}")
-
         except Exception as e:
             self.logger.error(f"[Socket] Error al procesar mensaje: {e}")
 
@@ -211,24 +239,28 @@ class GestorCliente:
             pass
 
     def confirmar_jugador_partida(self):
-
         self.logger.info(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
         respuesta = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
         self.logger.info(f"[Confirmacion Jugador]: {respuesta['msg']}")
 
-        try:
-            self.logger.error("**** Iniciando loop cliente ****")
-            self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            self.jugador_cliente.sesion_socket.cerrar()
-            print("Sesión cerrada por interrupción.")
+
+        # try:
+        #     self.logger.error("**** Iniciando loop cliente ****")
+        #     self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
+        #     while True:
+        #         time.sleep(1)
+        # except KeyboardInterrupt:
+        #     self.jugador_cliente.sesion_socket.cerrar()
+        #     print("Sesión cerrada por interrupción.")
 
 
 
     def get_info_sala(self):
-        return self.get_proxy_partida_singleton().get_sala()
+        info_sala = self.get_proxy_partida_singleton().get_sala()
+        return info_sala
+    
+    def get_jugadores_minimos(self):
+        return self.get_proxy_partida_singleton().get_jugadores_minimos()
 
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---

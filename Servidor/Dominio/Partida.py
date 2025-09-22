@@ -1,3 +1,5 @@
+import random
+import string
 
 from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Ronda import Ronda
@@ -6,21 +8,13 @@ class Partida:
     def __init__(self):
         self.categorias = ["Nombres","Animal","Color","Paises o ciudades","Objetos"]
         self.rondas_maximas = 3  # mandar por constructor?
-        self.rondas = [] 
-        self.rondaActual = 0
+        self.nro_ronda_actual = 0
         self.letras = list(string.ascii_uppercase)  # ['A', 'B', ..., 'Z']
-        self.rondas_stack: list[Ronda] = []  # Pendiente - Actua como pila
         self.jugadores = []
+        self.ronda_actual : Ronda = None
+        self.letras_jugadas: list[str] = []
 
-        """
-        stack = []
-        stack.append(1) # Push
-        stack[-1]       # Peek -- retrieve top but not modify
-        stack.pop()     # Pop -- retrieve top modifying
-        """
-
-    def get_ronda_mas_reciente(self):
-        return self.rondas_stack[-1]
+     
 
     # Se asume que hay jugadores requeridos para jugar
     def cargar_jugadores_partida(self, jugadores: list[Jugador]):

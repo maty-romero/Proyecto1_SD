@@ -31,7 +31,6 @@ class ControladorNickName:
                 self.gestor_cliente.unirse_a_sala(formated_nickname)
                 self.gestor_cliente.logger.info("FINALIZO EL UNIRSE A SALA")
                 self.gestor_cliente.logger.info(self.gestor_cliente.Jugador_cliente)
-                # self.gestor_cliente.confirmar_jugador_partida()
 
                 self.MainWindow.close()
                 self.controladorSala = ControladorSalaView(self.gestor_cliente)
