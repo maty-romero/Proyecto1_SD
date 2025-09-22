@@ -131,7 +131,6 @@ class ServicioJuego:
             self.logger.error(f"Ocurrio un error al unirse a la sala: {e}")
 
 
-
     def salir_de_sala(self, nickname: str):
         result = self.publisher.desuscribirJugador(nickname)
         if result is None:
@@ -143,6 +142,17 @@ class ServicioJuego:
         if(cant_jugadores_actual >= self.jugadores_min):
             self.iniciar_partida()
 
+    def ver_jugadores_partida(self):
+        # return SerializeHelper.respuesta(
+        #     exito=True,
+        #     msg= self.Jugadores
+        # )
+        return self.Jugadores
+    
+    def get_sala(self):
+        return self.partida.get_info_sala()
+
+####
     def confirmar_jugador(self, nickname: str):
         #si no existe devuelve un error
         if nickname not in self.Jugadores:

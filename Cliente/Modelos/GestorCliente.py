@@ -54,7 +54,7 @@ class GestorCliente:
         self.logger.info(f"Solicitud acceso: {resultado_dict}")
         return resultado_dict
 
-    def unirse_a_sala(self):
+    def unirse_a_sala(self, formated_nickname):
         """
             solicitar_acceso -> verificar y mostrar en pantalla.
             ingresar nicknameValido
@@ -70,9 +70,11 @@ class GestorCliente:
             sys.exit() # no puede jugar
 
         # ingreso nickname
-        breakpoint()
+        # breakpoint()
+        nickname_valido = formated_nickname
         
-        nickname_valido = self.ingresar_nickname_valido()
+        #nickname_valido = self.ingresar_nickname_valido(formated_nickname)
+
         self.logger.info(f"NickName '{nickname_valido}' disponible!")
         # inicializacion deamon Cliente y sesion de socket
         self.Jugador_cliente = JugadorCliente(nickname_valido)
@@ -102,19 +104,23 @@ class GestorCliente:
         #     print("Sesión cerrada por interrupción.")
 
 
-    def ingresar_nickname_valido(self) -> str:
-        nickname = input("\nIngrese su NickName para la partida: ")
-        formated_nickname = nickname.lower().replace(" ", "")
-
+    
+    #usamos en controladorSalaView
+    def ingresar_nickname_valido(self,formated_nickname) -> str:
+        # nickname = input("\nIngrese su NickName para la partida: ") #### ACÁ PIDE EL INPUT DEL CLIENTE
+        # formated_nickname = nickname.lower().replace(" ", "")
+        #Mandamos acá el nickname ya formateado desde el ControladorNickname
         resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-
-        while not resu_dict['exito']:
-            print(f"\n**{resu_dict['msg']}")
-            nickname = input("\nIngrese su NickName para la partida: ")
-            formated_nickname = nickname.lower().replace(" ", "")
-            resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-
-        return formated_nickname
+        return resu_dict # Devuelve un diccionario con 'exito' y 'msg'
+        # while not resu_dict['exito']:
+        #     print(f"\n**{resu_dict['msg']}")
+        #     #nickname = input("\nIngrese su NickName para la partida: ")
+        #     formated_nickname = nickname.lower().replace(" ", "")
+        #     resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+            
+        #     return {'exito': False, 'msg': resu_dict['msg']}  # Retorna el error para que lo maneje el controlador
+        # return {'exito': True, 'msg': "Nickname disponible"}  
+        #return formated_nickname
 
     # Sesiones o Servicios Cliente a Utilizar
 
@@ -191,6 +197,9 @@ class GestorCliente:
         self.gui.show_message(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
         msg = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
         self.gui.show_message(msg['msg'])
+
+    def get_info_sala(self):
+        return self.get_proxy_partida_singleton().get_sala()
 
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---

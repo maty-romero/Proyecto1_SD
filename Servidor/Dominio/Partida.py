@@ -7,8 +7,11 @@ from Servidor.Dominio.Ronda import Ronda
 
 class Partida:
     def __init__(self):
-        self.categorias = ["Nombres", "Paises o ciudades", "Objetos"]
+        self.categorias = ["Nombres","Animal","Color","Paises o ciudades","Objetos"]
         self.rondas_maximas = 3  # mandar por constructor?
+        self.rondas = [] 
+        self.rondaActual = 0
+        self.letras = list(string.ascii_uppercase)  # ['A', 'B', ..., 'Z']
         self.rondas_stack: list[Ronda] = []  # Pendiente - Actua como pila
         self.jugadores = []
 
@@ -36,7 +39,7 @@ class Partida:
         pass  # Recorrer Rondas y armar listas con letras jugadas
 
     def get_jugadores_partida(self):
-        return self.jugadores
+        return self.jugadores   # Retorna la lista de jugadores en la partida
 
     # GETS INFO
     def get_info_sala(self) -> dict:

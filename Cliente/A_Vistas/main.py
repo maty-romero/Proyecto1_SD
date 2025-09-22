@@ -24,8 +24,8 @@ from RondaView import RondaView
     8. Cada vista maneja o inyecta los datos necesarios 
 """
 
-app = QApplication([])
-window = MainWindow()
-window.inject_view(SalaView) # RondaView, SalaView, etc...
-window.show()
-app.exec()
+# app = QApplication([])
+# window = MainWindow()
+# window.inject_view(Ui_MainWindow) # RondaView, SalaView, etc...
+# window.show()
+# app.exec()
