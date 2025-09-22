@@ -33,9 +33,9 @@ class ServidorNombres(Nodo):
 
         print("Iniciando el servidor de Nombres...")
         try:
-            #ip_servidor = ComunicationHelper.obtener_ip_local()  # tu IP LAN
+            ip_servidor = ComunicationHelper.obtener_ip_local()  # tu IP LAN
             self.ns_proceso = subprocess.Popen(
-                [sys.executable, "-m", "Pyro5.nameserver", "--host", "0.0.0.0"],
+                [sys.executable, "-m", "Pyro5.nameserver", "--host", ip_servidor],
             )
             time.sleep(3)
             return self.verificar_nameserver()
