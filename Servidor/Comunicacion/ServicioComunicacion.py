@@ -34,6 +34,7 @@ class ServicioComunicacion:
     def broadcast(self, mensaje: str):
         for cliente in self.clientes:
             if cliente.esta_vivo():
+                self.logger.info(f"Enviando mensaje a cliente'{cliente.nickname}' mediante [SOCKET]")
                 cliente.socket.enviar(mensaje)
 
     def verificar_clientes(self):
