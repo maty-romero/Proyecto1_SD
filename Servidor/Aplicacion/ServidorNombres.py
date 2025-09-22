@@ -7,7 +7,6 @@ import threading
 import time
 import Pyro5.nameserver
 
-from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.Nodo import Nodo
 
 """FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
@@ -33,9 +32,9 @@ class ServidorNombres(Nodo):
 
         print("Iniciando el servidor de Nombres...")
         try:
-            ip_servidor = ComunicationHelper.obtener_ip_local()  # tu IP LAN
             self.ns_proceso = subprocess.Popen(
-                [sys.executable, "-m", "Pyro5.nameserver", "--host", ip_servidor],
+                [sys.executable, "-m", "Pyro5.nameserver"],
+                #creationflags=subprocess.CREATE_NEW_CONSOLE
             )
             time.sleep(3)
             return self.verificar_nameserver()
