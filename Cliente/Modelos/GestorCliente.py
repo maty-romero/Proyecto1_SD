@@ -237,6 +237,10 @@ class GestorCliente:
     
     def get_jugadores_minimos(self):
         return self.get_proxy_partida_singleton().get_jugadores_minimos()
+    
+    def get_jugadores_en_sala(self):
+        jugadores = self.get_proxy_partida_singleton().ver_jugadores_partida()
+        return jugadores
 
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---

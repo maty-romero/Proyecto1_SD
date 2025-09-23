@@ -121,6 +121,9 @@ class ServicioJuego:
         # nickname ingresado esta disponible
         self.Jugadores[formated_nickname] = False # False = no confirmado
 
+        print(f"Desde ServicioJuego, el nickname es: {formated_nickname}")
+        print(f"Desde ServicioJuego, la lista de jugadores es {self.Jugadores}")
+
         return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
     def unirse_a_sala(self, info_cliente: dict):
@@ -179,10 +182,6 @@ class ServicioJuego:
 
 
     def ver_jugadores_partida(self):
-        # return SerializeHelper.respuesta(
-        #     exito=True,
-        #     msg= self.Jugadores
-        # )
         return self.Jugadores
     
     def get_sala(self):

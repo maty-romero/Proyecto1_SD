@@ -75,9 +75,13 @@ class VistaRonda(QWidget):
         main_layout.addWidget(self.enviar_respuestas_btn, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
 
     # --- Métodos de acceso / actualización ---
-    def obtener_categorias(self):
+    def obtener_categorias_input(self):
         """Devuelve la lista de QLineEdit de las categorías"""
         return self.inputs
+
+    def obtener_categorias_label(self):
+        """Devuelve la lista de QLabel de las categorías"""
+        return self.labels_categorias
 
     def set_numero_ronda(self, ronda, totalRondas):
         self.nroronda_label.setText(f"{ronda}/{totalRondas}")

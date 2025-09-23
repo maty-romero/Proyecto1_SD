@@ -91,3 +91,6 @@ class VistaSala(QWidget):
 
     def getUnirSala(self):
         return self.confirmar_jugador_btn
+    
+    def setJugadoresRequeridos(self,canti_jugadores):
+        return self.jugadores_requeridos_label.setText(canti_jugadores)

@@ -29,7 +29,7 @@ class ControladorRonda:
             self.vista.setLetraAleatoria(info['letra'])
 
         # Actualizar categorías
-        inputs_categorias = self.vista.obtener_categorias()
+        inputs_categorias = self.vista.obtener_categorias_label()
         for categoria_text, input_widget in zip(categorias, inputs_categorias):
             input_widget.setText(categoria_text)
 
