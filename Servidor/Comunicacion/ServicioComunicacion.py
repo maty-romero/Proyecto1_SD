@@ -63,6 +63,24 @@ class ServicioComunicacion:
         #self.clientes.pop(id_cliente, None)
         pass
 
+    def respuestas_memoria_clientes_ronda(self):
+        """
+            for in proxyCliente.obtener respuestas
+            return dict:
+            {
+                nickname1: {
+                    'categoria1': 'respuesta'
+                    'categoria2': 'respuesta'
+                },
+                nickname2: {
+                    'categoria1': 'respuesta'
+                    'categoria1': 'respuesta'
+                },
+            }
+        """
+        pass
+
+
     """
     def enviar_a_cliente(self, id_cliente, mensaje):
         pass

@@ -13,7 +13,6 @@ class ServicioCliente:
     def recibir_info_ronda(self, info: str):
         threading.Thread(target=self.gestor.on_info, args=("ronda", info), daemon=True).start()
 
-
     def obtener_respuesta_memoria(self) -> str:
         # Metodo expuesto para que el server pida información del cliente
         return self.gestor.provide_response()

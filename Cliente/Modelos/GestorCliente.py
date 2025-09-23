@@ -169,6 +169,8 @@ class GestorCliente:
             if msg == "nueva_ronda":
                 #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
+            if msg == "fin_ronda":
+                self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
             elif msg == "fin_partida":
                 #self._cerrar_partida(datos)
                 pass

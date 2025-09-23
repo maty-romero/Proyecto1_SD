@@ -1,4 +1,4 @@
-from Main.Cliente.Respuesta import Respuesta
+from Cliente.Modelos.Respuesta import Respuesta
 
 
 class RondaCliente:
