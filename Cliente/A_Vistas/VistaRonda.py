@@ -25,24 +25,29 @@ class VistaRonda(QWidget):
 
         # Label "Ronda"
         self.label = QLabel("Ronda")
-        font = QFont("Verdana", 50, QFont.Weight.Bold)
+        self.label.setGeometry(QtCore.QRect(40, 0, 200, 121))
+        font = QFont("Verdana", 40, QFont.Weight.Bold)
         self.label.setFont(font)
         header_layout.addWidget(self.label)
 
         # Número de ronda
         self.nroronda_label = QLabel("1/3")
-        font_ronda = QFont("Verdana", 30, QFont.Weight.Bold)
+        self.nroronda_label.setGeometry(QtCore.QRect(250, 0, 150, 121))  # Ajusté la posición
+        font_ronda = QFont("Verdana", 40, QFont.Weight.Bold)
         self.nroronda_label.setFont(font_ronda)
+        font_ronda.setPointSize(40)  # Reducido el tamaño de la fuente a 35
         header_layout.addWidget(self.nroronda_label)
 
         # Letra aleatoria
         self.lettra_texto_label = QLabel("Letra:")
-        font_letra_text = QFont("Verdana", 20, QFont.Weight.Bold)
+        self.lettra_texto_label.setGeometry(QtCore.QRect(750, 0, 190, 121))  # Posicionada junto a la ronda
+        font_letra_text = QFont("Verdana", 40, QFont.Weight.Bold)
         self.lettra_texto_label.setFont(font_letra_text)
         header_layout.addWidget(self.lettra_texto_label)
 
         self.letra_label = QLabel("R")
-        font_letra = QFont("Verdana", 50, QFont.Weight.Bold)
+        self.letra_label.setGeometry(QtCore.QRect(940, 0, 80, 121))  # Posicionada junto a "Letra:"
+        font_letra = QFont("Verdana", 40, QFont.Weight.Bold)
         self.letra_label.setFont(font_letra)
         header_layout.addWidget(self.letra_label)
 

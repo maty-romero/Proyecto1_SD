@@ -15,7 +15,7 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 3 # pasar por constructor?
+        self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
         self.lock_confirmacion = Lock()
@@ -32,6 +32,8 @@ class ServicioJuego:
             json = SerializeHelper.serializar(exito=False, msg="", datos={"datos"})
         
     """
+    def get_jugadores_minimos(self):
+        return  self.jugadores_min
 
     def iniciar_partida(self):
         # Inicia la 1ra Ronda
