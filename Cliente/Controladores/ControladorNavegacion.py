@@ -44,6 +44,7 @@ class ControladorNavegacion:
         if eleccion == "nickname":
             self.main_window.stack.setCurrentIndex(self.vistaNickname_Index)
         elif eleccion == "sala":
+            self.controlador_sala.mostrar_info_sala()  # Esto es para "actualizar" la vista de sala con los datos reales
             self.main_window.stack.setCurrentIndex(self.vistaSala_Index)
         elif eleccion == "ronda":
             self.main_window.stack.setCurrentIndex(self.vistaRonda_Index)

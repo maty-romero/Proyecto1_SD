@@ -54,7 +54,7 @@ class VistaSala(QWidget):
         self.jugadores_label.setFont(font_label)
 
         self.estado_sala_label = QLabel("<Msg_Estado_Sala>", parent=self)
-        self.estado_sala_label.setGeometry(QtCore.QRect(720, 510, 271, 100))
+        self.estado_sala_label.setGeometry(QtCore.QRect(500, 510, 500, 100))
         estado_font = QtGui.QFont("Verdana", 15, QtGui.QFont.Weight.Bold)
         estado_font.setItalic(True)
         self.estado_sala_label.setFont(estado_font)

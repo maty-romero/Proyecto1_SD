@@ -4,6 +4,7 @@ import threading
 import time
 import Pyro5
 
+from Cliente.Controladores.ControladorNavegacion import ControladorNavegacion
 from Cliente.Modelos.JugadorCliente import JugadorCliente
 from Cliente.Modelos.ServicioCliente import ServicioCliente
 from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
@@ -17,7 +18,7 @@ class GestorCliente:
         self.logger = ConsoleLogger(name="GestorCliente", level="INFO")
         self.nombre_logico_server = "gestor.partida"
         self.proxy_partida = None
-        self.Jugador_cliente = None
+        self.Jugador_cliente: JugadorCliente = None
 
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
@@ -26,6 +27,12 @@ class GestorCliente:
         # referencias al daemon local del cliente
         self._daemon = None
         self._daemon_thread = None
+
+        # referencias a controladores
+        self.controlador_navegacion = None
+
+    def registrar_controlador_navegador(self, controlador: ControladorNavegacion):
+        self.controlador_navegacion = controlador
 
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
@@ -79,22 +86,23 @@ class GestorCliente:
         self.Jugador_cliente = JugadorCliente(nickname_valido)
         self.inicializar_Deamon_Cliente()
 
-        """
+
         # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
         # Obtener puerto libre
         s_temp = socket.socket()
         s_temp.bind(('localhost', 0))
         puerto_libre = s_temp.getsockname()[1]
         s_temp.close()
-        self.logger.info(f"|SIMULACION N CLIENTES| => Cliente '{nickname_valido}' escuchando en puerto {puerto_libre}")
+        self.logger.warning(f"|SIMULACION N CLIENTES| => Cliente '{nickname_valido}' escuchando en puerto {puerto_libre}")
 
         # Iniciar sesión socket en puerto dinámico
         self.iniciar_sesion_socket_en_hilo(puerto_libre)
         # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
+        """
         --> comentar: self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
         """
 
-        self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
+        #self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
         # espera a que sesion socket este listo
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
@@ -104,8 +112,8 @@ class GestorCliente:
         # registro del cliente
         info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
-        self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
-        self.logger.info(f"InfoSala: {resultado_dict}")
+        self.logger.warning(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
+        self.logger.warning(f"InfoSala: {resultado_dict}")
         
 
         # REFACTORIZAR POR ALGO MEJOR - Tal vez con eventos?
@@ -126,6 +134,9 @@ class GestorCliente:
         # formated_nickname = nickname.lower().replace(" ", "")
         #Mandamos acá el nickname ya formateado desde el ControladorNickname
         resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
+        #if resu_dict['exito']:
+            #self.Jugador_cliente = JugadorCliente(formated_nickname)
+
         return resu_dict # Devuelve un diccionario con 'exito' y 'msg'
         # while not resu_dict['exito']:
         #     print(f"\n**{resu_dict['msg']}")
@@ -168,12 +179,17 @@ class GestorCliente:
                 return
             """
             self.logger.info(f"[Socket] Mensaje recibido: {msg}")
-
+            if msg == "nuevo_jugador_sala":
+                self.logger.warning("Recepcion mje Socket: nuevo_jugador_sala")
+                nickname = datos.get("nickname", "¿?")
+                mensaje_estado = f"Se ha unido '{nickname}' a la sala"
+                self.controlador_navegacion.controlador_sala.cambiar_estado_sala(mensaje_estado)
             # Procesar según tipo de mensaje
-            if msg == "nueva_ronda":
+            elif msg == "nueva_ronda":
                 #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
-            if msg == "fin_ronda":
+                self.controlador_navegacion.mostrar('ronda')
+            elif msg == "fin_ronda":
                 self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
             elif msg == "fin_partida":
                 #self._cerrar_partida(datos)
@@ -228,10 +244,9 @@ class GestorCliente:
             pass
 
     def confirmar_jugador_partida(self):
-        self.gui.show_message(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
+        self.logger.info(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
         msg = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
-        self.gui.show_message(msg['msg'])
-
+        self.logger.info(msg['msg'])
     def get_info_sala(self):
         return self.get_proxy_partida_singleton().get_sala()
 

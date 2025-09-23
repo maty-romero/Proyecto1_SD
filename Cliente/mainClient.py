@@ -58,6 +58,7 @@ if __name__ == "__main__":
     controlador_sala.setNavegacion(controlador_navegacion)
     controlador_ronda.setNavegacion(controlador_navegacion)
 
+    gestor.registrar_controlador_navegador(controlador_navegacion) # Para referncias a cambios
     # Mostrar vista inicial
     controlador_navegacion.mostrar("nickname")
 

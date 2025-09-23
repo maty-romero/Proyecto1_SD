@@ -2,12 +2,17 @@ from PyQt6 import QtWidgets
 #from Modelos.GestorCliente import GestorCliente
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.Controladores.ControladorSala import ControladorSala
+from Cliente.Modelos.JugadorCliente import JugadorCliente
+from Cliente.Utils.ConsoleLogger import ConsoleLogger
+
 
 class ControladorNickName:
     def __init__(self, vista: 'VistaNickname', gestor_cliente):
         self.vista = vista
         self.navegacion = None
         self.gestor_cliente = gestor_cliente
+        self.logger = ConsoleLogger(name="ControladorNickName", level="INFO")
+        self.nickname_valido = None
 
         # Conectar señal del botón Ingresar
         self.vista.getIngresarbtn().clicked.connect(self.ingresarPartida)
@@ -34,9 +39,8 @@ class ControladorNickName:
             # Mostrar mensaje de éxito
             self.vista.aviso_nickName_exitoso(formated_nickname)
             # Unirse a la sala
+            self.nickname_valido = formated_nickname
             self.gestor_cliente.unirse_a_sala(formated_nickname)
-             # Navegar a la sala
-            self.navegacion.mostrar("sala")
             # Actualizar el nombre en la vista de sala
             self.navegacion.controlador_sala.actualizar_nombre_jugador()
             self.gestor_cliente.logger.info("FINALIZO EL UNIRSE A SALA")
