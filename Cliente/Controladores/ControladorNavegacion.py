@@ -47,5 +47,8 @@ class ControladorNavegacion:
             self.main_window.stack.setCurrentIndex(self.vistaSala_Index)
         elif eleccion == "ronda":
             self.main_window.stack.setCurrentIndex(self.vistaRonda_Index)
+        elif eleccion == "resultados":
+            pass
+            #self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
