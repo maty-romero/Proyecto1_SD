@@ -47,9 +47,14 @@ class ControladorNavegacion:
             self.controlador_sala.mostrar_info_sala() #Esto es para "actualizar" la vista de sala con los datos reales
             self.main_window.stack.setCurrentIndex(self.vistaSala_Index)
         elif eleccion == "ronda":
+            self.controlador_ronda.mostrar_info_ronda() #Lo mismo que pasó con sala
             self.main_window.stack.setCurrentIndex(self.vistaRonda_Index)
         elif eleccion == "resultados":
             pass
             #self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
+    
+    def obtener_respuestas_ronda(self):
+        # Llama al método del controlador de ronda
+        return self.controlador_ronda.obtener_respuestas()

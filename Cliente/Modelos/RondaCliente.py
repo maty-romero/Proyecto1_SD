@@ -16,4 +16,16 @@ class RondaCliente:
     # retorna la informacion de la ronda (respuestas de ese jugador
     # en la ronda que se esta jugando) - respuestas en memoria en cliente
     def getRespuestasJugador(self) -> dict:
-        pass
+        return {
+            "nickname": self.nickname_jugador,
+            "categorias": self.categorias_ronda,
+            "respuestas": {
+                resp.categoria_respuesta: resp.respuesta_texto for resp in self.respuestas
+            }
+        }
+
+
+    def agregarRespuesta(self, respuesta):
+        self.respuestas.append(respuesta)
+    
+    

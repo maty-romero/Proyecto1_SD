@@ -15,7 +15,7 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 2 # pasar por constructor?
+        self.jugadores_min = 1 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
         self.lock_confirmacion = Lock()
@@ -61,7 +61,10 @@ class ServicioJuego:
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
+        print("Obtve las respuestas de los clientes!!!! en ServicioJuego")
         # return respuestas todos los jugadores a los clientes
+
+
         json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json)
         self.dispacher.manejar_llamada(
             "comunicacion",
@@ -69,10 +72,13 @@ class ServicioJuego:
             json)
         # REFINAR
 
+        print(respuestas_clientes)
+
     def finalizar_partida(self):
         # notificar / enviar info fin_partida
         pass
 
+    
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):
@@ -180,12 +186,23 @@ class ServicioJuego:
     def _verificar_jugadores_suficientes(self) -> bool:
         return len(list(filter(bool, self.Jugadores.values()))) >= self.jugadores_min
 
-
     def ver_jugadores_partida(self):
         return self.Jugadores
     
     def get_sala(self):
         return self.partida.get_info_sala()
+    
+    def get_info_ronda_actual(self):
+        return self.partida.ronda_actual.info_ronda()
+    
+    def recibir_stop(self):
+        with self.lock_confirmacion:
+            if self.partida.ronda_actual.get_estado_ronda():
+                return # Ya se finalizó la ronda, ignora llamadas extra
+            self.partida.ronda_actual.set_estado_ronda(True)
+            print("Ahora voy a recibir las respuestas de la ronda")
+            self.enviar_respuestas_ronda()
+            print("Se finalizó la ronda!")
 
 ####
     def confirmar_jugador(self, nickname: str):

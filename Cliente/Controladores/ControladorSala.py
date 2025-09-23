@@ -26,6 +26,7 @@ class ControladorSala:
 
     def ir_a_ronda(self):
         """Navega a la vista de Ronda usando el controlador de navegación"""
+        self.gestor_cliente.confirmar_jugador_partida()
         self.navegacion.mostrar("ronda")
         #Acá no debería ir directo a ronda sino que debería actualizar el estado de la sala y esperar a los otros jugadores
 
