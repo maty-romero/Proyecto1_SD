@@ -56,7 +56,7 @@ class SesionClienteSocket:
             try:
                 self.logger.info("Enviando HEARTBEAT...")
                 self.conexion.sendall(b"HEARTBEAT")
-                time.sleep(30)  # cada 30 seg
+                time.sleep(2)  # cada 30 seg
             except OSError:
                 break
 

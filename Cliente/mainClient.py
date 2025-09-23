@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # Crear gestor de cliente
     gestor = GestorCliente()
-
+    
     # Crear vistas
     vista_nickname = VistaNickname()
     vista_sala = VistaSala()
@@ -62,13 +62,6 @@ if __name__ == "__main__":
     controlador_navegacion.mostrar("nickname")
 
     sys.exit(app.exec())
-
-    # existe_partida = gestor.buscar_partida()
-    # if (existe_partida):
-    #     # gestor.ingresar_nickname_valido() ##Este método se invoca en el ControladorNickname, pasandole por parámetro el nombre formateado
-    #     gestor.logger.info("FINALIZO EL UNIRSE A SALA")
-    #     gestor.logger.info(gestor.Jugador_cliente)
-    #     gestor.confirmar_jugador_partida(gestor.Jugador_cliente.get_nickname())
     
     """
     existe_partida = gestor.buscar_partida()

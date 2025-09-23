@@ -1,11 +1,13 @@
+import threading
+from threading import Lock, Thread
 
 import Pyro5.api
 
 from Servidor.Comunicacion.Dispacher import Dispatcher
+from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Partida import Partida
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
-
 
 @Pyro5.api.expose
 class ServicioJuego:
@@ -13,9 +15,10 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 4 # pasar por constructor?
+        self.jugadores_min = 3 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
+        self.lock_confirmacion = Lock()
 
     """
         ServicioJuego --> Entran las llamadas Pyro
@@ -29,11 +32,23 @@ class ServicioJuego:
             json = SerializeHelper.serializar(exito=False, msg="", datos={"datos"})
         
     """
-    """
+
     def iniciar_partida(self):
         # Comenzar Ronda y avisar a todos etc.
-        pass
+        # Iniciar y extraer info de Ronda
+        # Notificar a todos inicio ronda - Socket (aviso y datos)
+        jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
+        self.partida.cargar_jugadores_partida(jugadores)
+        self.partida.iniciar_nueva_ronda()
+        info_ronda: dict = self.partida.get_info_ronda()
+        json =SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
+        self.dispacher.manejar_llamada(
+            "comunicacion",
+            "broadcast",
+            json)
 
+
+    """
     def finalizar_partida(self):
         # notificar y enviar info fin_partida
         pass
@@ -124,23 +139,24 @@ class ServicioJuego:
                 msg="Se ha unido a la sala exitosamente",
                 datos=info_sala
             )
-            # PENDIENTE
-            # self._verificar_jugadores_suficientes()  # Si los hay inicia partida
 
         except Exception as e:  # Catches any other exception
             self.logger.error(f"Ocurrio un error al unirse a la sala: {e}")
 
 
     def salir_de_sala(self, nickname: str):
+        pass
+        """
         result = self.publisher.desuscribirJugador(nickname)
         if result is None:
             self.gui.show_error("[salir_de_sala] Jugador {nickname} no existe en la sala")
             return None
+        """
 
-    def _verificar_jugadores_suficientes(self):
-        cant_jugadores_actual = len(self.publisher.getJugadoresConfirmados())
-        if(cant_jugadores_actual >= self.jugadores_min):
-            self.iniciar_partida()
+
+    def _verificar_jugadores_suficientes(self) -> bool:
+        return len(list(filter(bool, self.Jugadores.values()))) >= self.jugadores_min
+
 
     def ver_jugadores_partida(self):
         # return SerializeHelper.respuesta(
@@ -154,25 +170,42 @@ class ServicioJuego:
 
 ####
     def confirmar_jugador(self, nickname: str):
-        #si no existe devuelve un error
-        if nickname not in self.Jugadores:
-            self.logger.warning(f"[confirmar_jugador] Jugador {nickname.capitalize()} no existe en la sala, no puede ser confirmado")
-            return SerializeHelper.respuesta(
-                exito=False,
-                msg=f"Jugador {nickname.capitalize()} no existe en la sala"
-            )
-        elif self.Jugadores[nickname] == True:
-            self.logger.warning(f"[confirmar_jugador] Jugador {nickname.capitalize()} ya estaba confirmado")
-            return SerializeHelper.respuesta(
-                exito=False,
-                msg=f"Jugador {nickname.capitalize()} ya estaba confirmado"
-            ) 
-        else:
-            self.logger.info(f"[confirmar_jugador] Jugador {nickname.capitalize()} confirmado")
-            self.Jugadores[nickname] = True # Confirmado
-            return SerializeHelper.respuesta(
-                exito=True,
-                msg=f"{nickname.capitalize()} has confirmado exitosamente, Esperando a los demas Jugadores..."
-            )
-        #Opcional, agregar mensaje por socket. por jugador, aunque lo mejor es dejarlo para cuando inicie la ronda a todos
-    
+        # lock -> evitar condicion de carrera
+        with self.lock_confirmacion:
+            if nickname not in self.Jugadores:
+                self.logger.warning(f"[confirmar_jugador] Jugador {nickname} no existe en la sala")
+                return SerializeHelper.respuesta(
+                    exito=False,
+                    msg=f"Jugador {nickname} no existe en la sala"
+                )
+
+            if self.Jugadores[nickname] is True:
+                self.logger.warning(f"[confirmar_jugador] Jugador {nickname} ya estaba confirmado")
+                return SerializeHelper.respuesta(
+                    exito=False,
+                    msg=f"Jugador {nickname} ya estaba confirmado"
+                )
+
+            # Confirmar jugador
+            self.Jugadores[nickname] = True
+            self.logger.info(f"[confirmar_jugador] Jugador {nickname} confirmado")
+
+            # Verificar si se puede iniciar la partida
+            jugadores_suficientes = self._verificar_jugadores_suficientes()
+            if jugadores_suficientes:
+                hilo = threading.Thread(target=self.iniciar_partida, daemon=True)
+                hilo.start()
+                #self.iniciar_partida() # Notificacion mediante Sockets
+                return SerializeHelper.respuesta(
+                    exito=True,
+                    msg=f"{nickname} confirmado correctamente. ¡La partida comienza!",
+                )
+            else:
+                return SerializeHelper.respuesta(
+                    exito=True,
+                    msg=f"{nickname} confirmado correctamente. Esperando a los demás...",
+                )
+
+            #Opcional, agregar mensaje por socket. por jugador, aunque lo mejor es dejarlo
+            # para cuando inicie la ronda a todos
+

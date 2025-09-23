@@ -29,7 +29,10 @@ class ManejadorSocket:
 
     def enviar(self, mensaje: str):
         try:
-            self.socket.sendall(mensaje.encode())
+            if isinstance(mensaje, bytes):
+                self.socket.sendall(mensaje)  # ya está codificado
+            else:
+                self.socket.sendall(mensaje.encode())  # codificamos si es str
         except Exception as e:
             self.logger.error(f"Error al enviar mensaje: {e}")
 

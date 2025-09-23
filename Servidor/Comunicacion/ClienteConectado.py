@@ -37,6 +37,6 @@ class ClienteConectado:
         if not self.timestamp:
             return False
         # timestamp menor a 35 seg ? False => Se asume que murio
-        return datetime.utcnow() - self.timestamp < timedelta(seconds=35)
+        return datetime.utcnow() - self.timestamp < timedelta(seconds=10)
 
 
