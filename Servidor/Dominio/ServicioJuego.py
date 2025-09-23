@@ -34,25 +34,43 @@ class ServicioJuego:
     """
 
     def iniciar_partida(self):
-        # Comenzar Ronda y avisar a todos etc.
-        # Iniciar y extraer info de Ronda
-        # Notificar a todos inicio ronda - Socket (aviso y datos)
+        # Inicia la 1ra Ronda
+        self.partida.iniciar_nueva_ronda() # Ronda 1
+
         jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
         self.partida.cargar_jugadores_partida(jugadores)
-        self.partida.iniciar_nueva_ronda()
+
         info_ronda: dict = self.partida.get_info_ronda()
-        json =SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
+        json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
         self.dispacher.manejar_llamada(
             "comunicacion",
             "broadcast",
             json)
 
+    def enviar_respuestas_ronda(self):
+        # Aviso a Clientes que termino la ronda
+        json = SerializeHelper.serializar(exito=True, msg="fin_ronda")
+        self.dispacher.manejar_llamada(
+            "comunicacion",
+            "broadcast",
+            json)
 
-    """
+        # obtenerRespuesMemoriaClientes
+        respuestas_clientes: dict = self.dispacher.manejar_llamada(
+            "comunicacion",
+            "respuestas_memoria_clientes_ronda")
+        # return respuestas todos los jugadores a los clientes
+        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json)
+        self.dispacher.manejar_llamada(
+            "comunicacion",
+            "broadcast",
+            json)
+        # REFINAR
+
     def finalizar_partida(self):
-        # notificar y enviar info fin_partida
+        # notificar / enviar info fin_partida
         pass
-    """
+
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):
