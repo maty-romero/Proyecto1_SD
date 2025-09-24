@@ -43,6 +43,9 @@ class GestorCliente:
                 self.logger.error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
                 self.logger.error("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
                 sys.exit(1)
+
+        # Reclamar propiedad del proxy en el hilo actual
+        self.proxy_partida._pyroClaimOwnership()
         return self.proxy_partida
 
     def buscar_partida(self):
@@ -192,6 +195,8 @@ class GestorCliente:
                 self.controlador_navegacion.mostrar('ronda')
             elif msg == "fin_ronda":
                 self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
+            elif msg == "inicio_votacion":
+                self.logger.warning(f"inicio_votacion => datos: {datos}")
             elif msg == "fin_partida":
                 #self._cerrar_partida(datos)
                 pass

@@ -20,24 +20,30 @@ from Cliente.Controladores.ControladorRonda import ControladorRonda
 from Cliente.Controladores.ControladorSala import ControladorSala
 
 class ControladorNavegacion:
-    def __init__(self, main_window,controlador_nickname,controlador_sala,controlador_ronda,vistaNickname, vistaSala, vistaRonda):
+    def __init__(self, main_window,controlador_nickname,
+                 controlador_sala,controlador_ronda, vistaNickname,
+                 vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones):
         self.main_window = main_window
 
         # Guardar referencias a controladores
         self.controlador_nickname = controlador_nickname
         self.controlador_sala = controlador_sala
         self.controlador_ronda = controlador_ronda
+        self.controlador_votaciones = controlador_votaciones
 
         # Guardar referencias a vistas
         self.vistaNickname = vistaNickname
         self.vistaSala = vistaSala
         self.vistaRonda = vistaRonda
+        self.vistaVotaciones = vistaVotaciones
 
         # Agregar vistas al stack
         self.vistaNickname_Index = self.main_window.stack.addWidget(self.vistaNickname)
         self.vistaSala_Index = self.main_window.stack.addWidget(self.vistaSala)
         self.vistaRonda_Index = self.main_window.stack.addWidget(self.vistaRonda)
-      # --- Métodos de navegación ---
+        self.vistaVotaciones_Index = self.main_window.stack.addWidget(self.vistaVotaciones)
+
+    # --- Métodos de navegación ---
       #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
     
     def mostrar(self, eleccion: str):
@@ -49,6 +55,9 @@ class ControladorNavegacion:
         elif eleccion == "ronda":
             self.controlador_ronda.mostrar_info_ronda() #Lo mismo que pasó con sala
             self.main_window.stack.setCurrentIndex(self.vistaRonda_Index)
+        elif eleccion == "votaciones":
+            self.controlador_votaciones.mostrar_info_votaciones()  # Lo mismo que pasó con sala
+            self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
             pass
             #self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)

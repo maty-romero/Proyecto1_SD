@@ -54,8 +54,8 @@ class ControladorSala:
             LINEA PROVISORIA PARA PROBAR CON MULTIPLES CLIENTES EN UNA MISMA MAQUINA 
             (UTILIZANDO SIMULACION DE MULTIPLES CLIENTES EN UNIRSE SALA - GESTOR CLIENTE)
         """
-        self.gestor_cliente.proxy_partida._pyroClaimOwnership()
-        jugadores_conectados: list[str] = self.gestor_cliente.proxy_partida.obtener_jugadores_en_partida()
+        #self.gestor_cliente.proxy_partida._pyroClaimOwnership()
+        jugadores_conectados: list[str] = self.gestor_cliente.get_proxy_partida_singleton().obtener_jugadores_en_partida()
         jugadores_str = ", ".join(jugadores_conectados)
         self.vista.setListaJugadores(jugadores_str)
 
