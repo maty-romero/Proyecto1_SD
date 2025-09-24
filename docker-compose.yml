@@ -1,17 +1,18 @@
+version: '3.8'
 services:
-  nodo_principal:
+  nameserver:
     build:
-      context: ./Servidor
-      dockerfile: Dockerfile.nodo
-    container_name: nodo_principal
+      context: .                # la raíz del proyecto
+      dockerfile: /ServidorNombres/Dockerfile
+    container_name: name_server
+    ports:
+      - "9090:9090"
     networks:
       - backend
-    ports:
-      - "27017:27017"
-      - "9090:9090"
-    command: >
-      bash -c "mongod --bind_ip_all --replSet rs0 --dbpath /data/db --logpath /var/log/mongod.log & 
-      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done; 
-      exec python3 -m Servidor.mainServer"
+
+
+networks:
+  backend:
+    driver: bridge
 
   # resto del docker-compose

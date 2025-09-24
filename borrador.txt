@@ -1,3 +1,18 @@
+  nodo_principal:
+    build:
+      context: ./Servidor
+      dockerfile: Dockerfile.nodo
+    container_name: nodo_principal
+    networks:
+      - backend
+    ports:
+      - "27017:27017"
+      - "9090:9090"
+    command: >
+      bash -c "mongod --bind_ip_all --replSet rs0 --dbpath /data/db --logpath /var/log/mongod.log &
+      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done;
+      exec python3 -m Servidor.mainServer"
+
 nodo_replica1:
     build:
       context: ./Servidor
