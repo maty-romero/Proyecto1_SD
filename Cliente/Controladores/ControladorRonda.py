@@ -49,14 +49,16 @@ class ControladorRonda:
     
     def obtener_respuestas(self):
         respuestas = [input_widget.text() for input_widget in self.vista.obtener_categorias_input()]
-        info = self.gestor_cliente.get_info_ronda_act()
+        proxy_para_pedir_info = self.gestor_cliente.get_proxy_partida()
+        proxy_para_pedir_info._pyroClaimOwnership()
+        info = proxy_para_pedir_info.get_info_ronda_actual()
         categorias = info.get('categorias', [])
-
         nickname = self.gestor_cliente.Jugador_cliente.to_dict()['nickname']
         ronda = RondaCliente(categorias, nickname )
         for cat, res in zip(categorias, respuestas):
             ronda.agregarRespuesta(Respuesta(cat, res))
 
-        
-        return ronda.getRespuestasJugador()
+        info_respuestas = ronda.getRespuestasJugador()
+        print(info_respuestas)
+        return info_respuestas
    

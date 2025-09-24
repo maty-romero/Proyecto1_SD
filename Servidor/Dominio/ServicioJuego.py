@@ -61,18 +61,17 @@ class ServicioJuego:
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
-        print("Obtve las respuestas de los clientes!!!! en ServicioJuego")
         # return respuestas todos los jugadores a los clientes
 
-
-        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json)
-        self.dispacher.manejar_llamada(
-            "comunicacion",
-            "broadcast",
-            json)
-        # REFINAR
-
+ 
+        # json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json) -- Genera error
+        # self.dispacher.manejar_llamada(
+        #     "comunicacion",
+        #     "broadcast",
+        #     json)
+        
         print(respuestas_clientes)
+        print("Desde ServicioJuego se terminó de enviar_respuestas_ronda")
 
     def finalizar_partida(self):
         # notificar / enviar info fin_partida
@@ -126,9 +125,6 @@ class ServicioJuego:
             )
         # nickname ingresado esta disponible
         self.Jugadores[formated_nickname] = False # False = no confirmado
-
-        print(f"Desde ServicioJuego, el nickname es: {formated_nickname}")
-        print(f"Desde ServicioJuego, la lista de jugadores es {self.Jugadores}")
 
         return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
@@ -197,9 +193,12 @@ class ServicioJuego:
     
     def recibir_stop(self):
         with self.lock_confirmacion:
+            print("Estoy en ServicioJuego! Entre a recibir_stop con un lock")
             if self.partida.ronda_actual.get_estado_ronda():
+                print("Actualicé el estado de la ronda!")
                 return # Ya se finalizó la ronda, ignora llamadas extra
             self.partida.ronda_actual.set_estado_ronda(True)
+            print("Estoy en ServicioJuego! Cambio el estado de finalizacion de la ronda a True")
             print("Ahora voy a recibir las respuestas de la ronda")
             self.enviar_respuestas_ronda()
             print("Se finalizó la ronda!")

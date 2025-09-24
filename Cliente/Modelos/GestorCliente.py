@@ -246,8 +246,12 @@ class GestorCliente:
     def get_info_ronda_act(self):
         return self.get_proxy_partida_singleton().get_info_ronda_actual()
     
+    def get_proxy_partida(self):
+        return self.get_proxy_partida_singleton()
+    
     def enviar_stop(self):
-        self.get_proxy_partida_singleton().recibir_stop()
+        proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
+        proxy.recibir_stop()
 
     def provide_response(self):
         #se obtienenen las respuestas de RondaCliente

@@ -83,8 +83,10 @@ class ServicioComunicacion:
 
         for cliente in self.clientes:
             proxy = self.get_proxy_cliente(cliente)
-            print(proxy.obtener_respuesta_memoria())
+            proxy._pyroClaimOwnership()
+            resp = proxy.obtener_respuesta_memoria()
             
+            return resp
     
     def get_proxy_cliente(self, cliente):
         try:

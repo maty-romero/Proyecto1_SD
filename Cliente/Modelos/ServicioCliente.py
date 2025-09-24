@@ -15,6 +15,7 @@ class ServicioCliente:
 
     def obtener_respuesta_memoria(self) -> str:
         # Metodo expuesto para que el server pida información del cliente
+        print("estoy en ServicioCliente! en el método obtener_respuesta_memoria")
         return self.gestor.provide_response()
 
     """
