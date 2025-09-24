@@ -1,0 +1,28 @@
+nodo_replica1:
+    build:
+      context: ./Servidor
+      dockerfile: Dockerfile.nodo
+    container_name: nodo_replica1
+    networks:
+      - backend
+    ports:
+      - "27018:27017"
+      - "9091:9090"
+    command: >
+      bash -c "mongod --bind_ip_all --replSet rs0 --dbpath /data/db --logpath /var/log/mongod.log &
+      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done;
+      exec python3 -m Servidor.mainReplica"
+
+  cliente1:
+    build:
+      context: ./Cliente
+    container_name: cliente1
+    networks:
+      - backend
+    #depends_on:
+      #- nodo_principal
+      #- nodo_replica1
+
+networks:
+  backend:
+    driver: bridge
