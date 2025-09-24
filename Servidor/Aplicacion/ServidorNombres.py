@@ -11,10 +11,9 @@ from Servidor.Aplicacion.Nodo import Nodo
 
 """FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
 class ServidorNombres(Nodo):
-    def __init__(self, id):
-        super().__init__(id)
+    def __init__(self, id,nombre="NameServer",activo=False):
+        super().__init__(id,nombre,activo)
         self.ns_proceso = None  # Guardamos el proceso
-
 
     def verificar_nameserver(self):
         """Verifica si el servidor de nombres esta disponible"""

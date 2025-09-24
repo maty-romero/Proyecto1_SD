@@ -11,10 +11,10 @@ from Servidor.Utils.SerializeHelper import SerializeHelper
 
 @Pyro5.api.expose
 class ServicioJuego:
-    def __init__(self, dispacher: Dispatcher):
+    def __init__(self, dispacher: Dispatcher,logger=ConsoleLogger(name="ServicioJuego", level="INFO")):
         self.dispacher = dispacher
         self.partida = Partida()
-        self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
+        self.logger = logger # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
