@@ -1,4 +1,5 @@
 import traceback
+from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.ServidorNombres import ServidorNombres
 from Pyro5 import errors
 
@@ -9,7 +10,8 @@ if __name__ == "__main__":
 
     if not ns:
         try:
-            NameServ.iniciar_nameserver_subproceso()
+            ip_local = ComunicationHelper.obtener_ip_local()
+            NameServ.iniciar_nameserver_hilo(ip_local)
             # ip_servidor = ComunicationHelper.obtener_ip_local()
         except errors.NamingError:
             print("Servidor de nombres no encontrado")
