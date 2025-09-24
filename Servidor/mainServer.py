@@ -11,7 +11,7 @@ from Servidor.Dominio.ServicioJuego import ServicioJuego
 if __name__ == "__main__":
     import sys
 
-    Serv = ServidorNombres(56)
+    Serv = ServidorNombres(56,True)
 
     print("¿Qué acción querés realizar con el NameServer?")
     print("1. Iniciar NameServer")
@@ -29,7 +29,7 @@ if __name__ == "__main__":
             try:
                 print("[MAIN DENTRO DE IF]")
                 ip_servidor = ComunicationHelper.obtener_ip_local()
-                nodoPrincipal = NodoServidor(1)
+                nodoPrincipal = NodoServidor(1,True)
 
                 Gestor_Singleton = nodoPrincipal.ServicioJuego
                 daemon = Pyro5.server.Daemon(host=ip_servidor)

@@ -33,9 +33,11 @@ class ServicioComunicacion:
             time.sleep(2)  # cada 2 segundos
 
     def broadcast(self, mensaje: str):
+        if len(self.clientes) <= 0:
+            self.logger.warning("Se intenta hacer broadcast sin clientes")
         for cliente in self.clientes:
             if cliente.esta_vivo():
-                self.logger.info(f"Enviando mensaje a cliente'{cliente.nickname}' mediante [SOCKET]")
+                self.logger.warning(f"Enviando mensaje a cliente'{cliente.nickname}' mediante [SOCKET]")
                 cliente.socket.enviar(mensaje)
 
     def verificar_clientes(self):
