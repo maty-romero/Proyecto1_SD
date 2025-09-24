@@ -61,5 +61,5 @@ class ControladorSala:
 
         self.vista.setEstadoSala(msg)
 
-        self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_minimos()))
+        self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
 

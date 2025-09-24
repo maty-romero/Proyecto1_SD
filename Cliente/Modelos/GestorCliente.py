@@ -254,7 +254,7 @@ class GestorCliente:
     def get_info_sala(self):
         return self.get_proxy_partida_singleton().get_sala()
     
-    def get_jugadores_minimos(self):
+    def get_jugadores_min(self):
         return self.get_proxy_partida_singleton().get_jugadores_minimos()
     
     def get_jugadores_en_sala(self):
