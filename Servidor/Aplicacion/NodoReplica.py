@@ -3,7 +3,7 @@
 -Falta implementar metodo que calcule el timeout del servidor
 
 """
-
+from Servidor.Aplicacion.NodoServidor import NodoServidor
 
 #implementa patron de failover
 class ReplicaServidor(NodoServidor):

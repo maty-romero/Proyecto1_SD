@@ -51,12 +51,18 @@ class ControladorDB:
 
         # Si no hay partidas, insertamos una inicial
         if self.partida.count_documents({}) == 0:
-            self.partida.insert_one({
-                "code": "backpartida",
-                "players": [],
-                "categories": [],
-                "rounds": []
-            })
+            self.partida.insert_one(
+                {
+                "codigo": 1,          # código de la partida
+                "jugadores": [],
+                "nro_ronda": 0,
+                "categorias": [],
+                "letra": "",
+                "respuestas": [
+                        { }
+                    ]
+                }   
+            )
             self.datosIniciales.append("Base creada con partida inicial ABCD")
         else:
             self.datosIniciales.append("Base ya tenía datos, no se insertó nada")
