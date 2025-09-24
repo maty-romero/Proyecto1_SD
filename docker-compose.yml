@@ -1,0 +1,59 @@
+
+services:
+  servidor1:
+    build:
+      context: .
+      dockerfile: ./Servidor/Dockerfile  # ajustá si está en otra carpeta
+    container_name: servidor1
+    #volumes:
+    #  - servidor1-data:/data/db
+    ports:
+      - "27017:27017"  # MongoDB
+      - "9090:9090"    # tu servidor Python
+    networks:
+      - backend
+
+#  servidor2:
+#    build:
+#      context: .
+#      dockerfile: ./Servidor/Dockerfile
+#    container_name: servidor2
+#    volumes:
+#      - servidor2-data:/data/db
+#    ports:
+#      - "27018:27017"  # MongoDB réplica (host:container)
+#      - "9091:9090"    # tu servidor Python
+#    networks:
+#      - backend
+
+#  server-init:
+#    image: mongo:8.0.14-noble
+#    container_name: init-replica
+#    depends_on:
+#      - servidor1
+#      - servidor2
+#    entrypoint: ["/bin/sh", "-c", "/scripts/init-replica.sh"]
+#    volumes:
+#      - ./Replica/init-replica.sh:/scripts/init-replica.sh:ro
+#    networks:
+#      - backend
+
+#  cliente:
+#    build:
+#      context: .
+#      dockerfile: ./Cliente/Dockerfile
+#    container_name: cliente_app
+#    depends_on:
+#      - servidor1
+#    networks:
+#      - backend
+    # Para levantar múltiples clientes:
+    # docker-compose up --scale cliente=3
+
+#volumes:
+# servidor1-data:
+#servidor2-data:
+
+networks:
+  backend:
+    driver: bridge

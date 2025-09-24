@@ -1,0 +1,3 @@
+setuptools
+Pyro5
+pymongo
