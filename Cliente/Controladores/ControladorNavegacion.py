@@ -56,7 +56,7 @@ class ControladorNavegacion:
             self.controlador_ronda.mostrar_info_ronda() #Lo mismo que pasó con sala
             self.main_window.stack.setCurrentIndex(self.vistaRonda_Index)
         elif eleccion == "votaciones":
-            self.controlador_votaciones.mostrar_info_votaciones()  # Lo mismo que pasó con sala
+            #self.controlador_votaciones.mostrar_info_votaciones()  # Lo mismo que pasó con sala
             self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
             pass

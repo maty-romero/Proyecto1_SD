@@ -68,27 +68,31 @@ class ServicioComunicacion:
         pass
 
     def respuestas_memoria_clientes_ronda(self):
-        """
-            for in proxyCliente.obtener respuestas
-            return dict:
-            {
-                nickname1: {
-                    'categoria1': 'respuesta'
-                    'categoria2': 'respuesta'
-                },
-                nickname2: {
-                    'categoria1': 'respuesta'
-                    'categoria1': 'respuesta'
-                },
-            }
-        """
-
+        respuestas:dict= {}
         for cliente in self.clientes:
             proxy = self.get_proxy_cliente(cliente)
             proxy._pyroClaimOwnership()
             resp = proxy.obtener_respuesta_memoria()
-            
-            return resp
+            respuestas[cliente.nickname] = resp
+        return respuestas
+    
+    def enviar_datos_para_votacion(self, respuestas_de_clientes):
+        for cliente in self.clientes:
+            proxy = self.get_proxy_cliente(cliente)
+            proxy._pyroClaimOwnership()
+            print(f"Enviando datos a: {cliente.nickname}")  #
+            proxy.actualizar_vista_votacion(respuestas_de_clientes)
+    
+    def recolectar_votos(self):
+        votos_clientes:dict= {}
+        for cliente in self.clientes:
+            proxy = self.get_proxy_cliente(cliente)
+            proxy._pyroClaimOwnership()
+            votos = proxy.obtener_votos_cliente() ### cambiar
+            votos_clientes[cliente.nickname] = votos
+        return votos_clientes
+
+        
     
     def get_proxy_cliente(self, cliente):
         try:

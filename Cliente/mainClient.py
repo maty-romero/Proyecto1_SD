@@ -8,10 +8,12 @@ from PyQt6 import QtWidgets
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
 from Cliente.A_Vistas.VistaRonda import VistaRonda
+#from Cliente.A_Vistas.VistaResultado import VistaResultados
 from Cliente.Controladores.ControladorNavegacion import ControladorNavegacion
 from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorSala import ControladorSala
 from Cliente.Controladores.ControladorRonda import ControladorRonda
+#from Cliente.Controladores.ControladorResultado import ControladorResultados
 from Cliente.Modelos.GestorCliente import GestorCliente
 from Cliente.A_Vistas.MainWindow import MainWindow
 

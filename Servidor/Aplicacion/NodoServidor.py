@@ -9,16 +9,17 @@ class NodoServidor(Nodo):
     def __init__(self, id, nombre="Servidor", activo=False):
         super().__init__(id,nombre,activo)
         self.logger = ConsoleLogger(name="LoggerLocal", level="INFO")
-        self.ServDB = ControladorDB(self.logger)
+        #self.ServDB = ControladorDB(self.logger)
+        self.ServDB = ControladorDB()
         #analizar posibles modificaciones a esta invocacion
-        if self.active:
-            self.iniciar_servicio
+        if self.activo:
+            self.iniciar_servicio()
 
     def iniciar_servicio(self):
         self.ServComunic = ServicioComunicacion()
         self.Dispatcher = Dispatcher()
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
-        self.Dispatcher.registrar_servicio("db", self.ServDB)
+        # self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
 
     """ VER

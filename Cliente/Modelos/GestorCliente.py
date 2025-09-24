@@ -134,23 +134,8 @@ class GestorCliente:
     
     #usamos en controladorSalaView
     def ingresar_nickname_valido(self,formated_nickname) -> str:
-        # nickname = input("\nIngrese su NickName para la partida: ") #### ACÁ PIDE EL INPUT DEL CLIENTE
-        # formated_nickname = nickname.lower().replace(" ", "")
-        #Mandamos acá el nickname ya formateado desde el ControladorNickname
         resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-        #if resu_dict['exito']:
-            #self.Jugador_cliente = JugadorCliente(formated_nickname)
-
         return resu_dict # Devuelve un diccionario con 'exito' y 'msg'
-        # while not resu_dict['exito']:
-        #     print(f"\n**{resu_dict['msg']}")
-        #     #nickname = input("\nIngrese su NickName para la partida: ")
-        #     formated_nickname = nickname.lower().replace(" ", "")
-        #     resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-            
-        #     return {'exito': False, 'msg': resu_dict['msg']}  # Retorna el error para que lo maneje el controlador
-        # return {'exito': True, 'msg': "Nickname disponible"}  
-        #return formated_nickname
 
     # Sesiones o Servicios Cliente a Utilizar
 
@@ -197,6 +182,14 @@ class GestorCliente:
                 self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
             elif msg == "inicio_votacion":
                 self.logger.warning(f"inicio_votacion => datos: {datos}")
+                self.controlador_navegacion.mostrar('votaciones')
+            elif msg == "aviso_tiempo_votacion":
+                self.logger.info(f"Recibido del server {datos}")
+                self.controlador_navegacion.controlador_votaciones.actualizar_mensaje_timer(datos)
+            elif msg == "aviso_fin_votacion":
+                self.logger.info(f"Envié los votos al servidor!!!!!!")
+                #debería cambiar a la vista de Ronda con una nueva ronda, usando un método de partida (pero esto sería desde ServicioJuego)
+                #self.controlador_navegacion.controlador_votaciones.
             elif msg == "fin_partida":
                 #self._cerrar_partida(datos)
                 pass
@@ -230,7 +223,7 @@ class GestorCliente:
         self._daemon_thread.start()
 
         # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
-        time.sleep(2)
+        #time.sleep(2)
 
     def stop_daemon_cliente(self):
         # apagar daemon y limpiar registro en NS
@@ -279,6 +272,11 @@ class GestorCliente:
         #se obtienenen las respuestas de RondaCliente
         return self.controlador_navegacion.obtener_respuestas_ronda()
 
+    def cargar_datos_vista_votacion(self,respuestas_clientes):
+        self.controlador_navegacion.controlador_votaciones.mostrar_info_votaciones(respuestas_clientes)
+
+    def enviar_votos_jugador(self):
+        return self.controlador_navegacion.controlador_votaciones.enviar_votos()
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):

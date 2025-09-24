@@ -29,7 +29,7 @@ if __name__ == "__main__":
             try:
                 print("[MAIN DENTRO DE IF]")
                 ip_servidor = ComunicationHelper.obtener_ip_local()
-                nodoPrincipal = NodoServidor(1,True)
+                nodoPrincipal = NodoServidor(1, nombre="Servidor", activo=True)
 
                 Gestor_Singleton = nodoPrincipal.ServicioJuego
                 daemon = Pyro5.server.Daemon(host=ip_servidor)

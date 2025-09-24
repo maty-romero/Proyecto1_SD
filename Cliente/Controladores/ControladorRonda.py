@@ -45,8 +45,16 @@ class ControladorRonda:
 
         # Navegar a la siguiente vista usando el controlador de navegación
         # Por ahora suponemos que es la vista de resultados o siguiente ronda
-        self.navegacion.mostrar("resultados")  # Este método debería existir en ControladorNavegacion
+        #self.navegacion.mostrar("votaciones")  # Este método debería existir en ControladorNavegacion
     
+        #Reconstruir la vista de votaciones con la cantidad de jugadores vivos que tenemos en la partida
+        #Método para armar las lineas de cada jugador que respondío (aunque no estén vivos) con sus respuestas
+        #Método para setear las respuestas a True
+        
+        #se podra votar por un tiempoLIMITADO (30seg?)-->SUMAR ESTO A LOS ENVIOS POR SOCKET?
+        #enviar a la Ronda y setear el nro_ronda_actual
+
+
     def obtener_respuestas(self):
         respuestas = [input_widget.text() for input_widget in self.vista.obtener_categorias_input()]
         proxy_para_pedir_info = self.gestor_cliente.get_proxy_partida()
@@ -59,6 +67,6 @@ class ControladorRonda:
             ronda.agregarRespuesta(Respuesta(cat, res))
 
         info_respuestas = ronda.getRespuestasJugador()
-        print(info_respuestas)
+        #print(info_respuestas)
         return info_respuestas
    

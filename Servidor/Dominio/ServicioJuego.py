@@ -1,5 +1,6 @@
 import threading
 from threading import Lock, Thread
+import time
 
 import Pyro5.api
 
@@ -62,22 +63,60 @@ class ServicioJuego:
             "comunicacion",
             "broadcast",
             json)
+        
+        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion")
+        self.dispacher.manejar_llamada(
+            "comunicacion",
+            "broadcast",
+            json)
 
         # obtenerRespuesMemoriaClientes
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
         # return respuestas todos los jugadores a los clientes
-
- 
-        # json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json) -- Genera error
-        # self.dispacher.manejar_llamada(
-        #     "comunicacion",
-        #     "broadcast",
-        #     json)
         
-        print(respuestas_clientes)
-        print("Desde ServicioJuego se terminó de enviar_respuestas_ronda")
+        #print(respuestas_clientes)
+        
+        info_completa_votacion = {
+            'nro_ronda' : self.partida.nro_ronda_actual,
+            'letra_ronda': self.partida.ronda_actual.letra_ronda,
+            'respuestas_clientes': respuestas_clientes
+        }
+        
+        self.dispacher.manejar_llamada("comunicacion",
+        "enviar_datos_para_votacion",
+        info_completa_votacion)
+
+        """Se ejecuta el timer en un hilo separado para no bloquear la llamada remota del cliente que hace STOP"""
+        hilo_timer = threading.Thread(target=self.timer_votacion, daemon=True)
+        hilo_timer.start()
+
+    def timer_votacion(self):
+        tiempos = [30, 20, 10]
+        for t in tiempos:
+            mensaje = SerializeHelper.serializar(exito=True, msg="aviso_tiempo_votacion", datos=f"Te quedan {t} segundos para votar")
+            self.dispacher.manejar_llamada("comunicacion", "broadcast", mensaje)
+            time.sleep(10)  # Espera 10 segundos entre avisos
+
+        json = SerializeHelper.serializar(exito=True, msg="aviso_fin_votacion", datos=f"Finalizando votación...") #Cambie a la vista Ronda nueva
+        self.dispacher.manejar_llamada(
+            "comunicacion",  # nombre_servicio
+            "broadcast",  # nombre_metodo
+                json#args
+        )
+
+        hilo_pedir_votos = threading.Thread(target=self.obtener_votos_jugadores, daemon=True)
+        hilo_pedir_votos.start()
+
+    def obtener_votos_jugadores(self):
+        votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
+        "recolectar_votos")
+        
+        self.logger.info(f'votos desde un logger-->{votos}')
+        print(f"votos de un print-->{votos}")
+
+
 
     def finalizar_partida(self):
         # notificar / enviar info fin_partida
@@ -90,7 +129,7 @@ class ServicioJuego:
         hay_lugar: bool = self.dispacher.manejar_llamada(
             "comunicacion", # nombre_servicio
             "hay_lugar_disponible", # nombre_metodo
-             self.jugadores_min # args
+            self.jugadores_min # args
         )
 
         if not hay_lugar:
@@ -120,7 +159,7 @@ class ServicioJuego:
         is_nickname_disponible: bool = self.dispacher.manejar_llamada(
             "comunicacion", # nombre_servicio
             "is_nickname_disponible", # nombre_metodo
-             formated_nickname # args
+            formated_nickname # args
         )
 
         # nickname no disponible
@@ -214,42 +253,10 @@ class ServicioJuego:
 
     def recibir_stop(self):
         with self.lock_confirmacion:
-            print("Estoy en ServicioJuego! Entre a recibir_stop con un lock")
             if self.partida.ronda_actual.get_estado_ronda():
-                print("Actualicé el estado de la ronda!")
-                return # Ya se finalizó la ronda, ignora llamadas extra
+                return  # Ya se finalizó la ronda, ignora llamadas extra
             self.partida.ronda_actual.set_estado_ronda(True)
-            print("Estoy en ServicioJuego! Cambio el estado de finalizacion de la ronda a True")
-            print("Ahora voy a recibir las respuestas de la ronda")
-            self.enviar_respuestas_ronda()
-            print("Se finalizó la ronda!")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            threading.Thread(target=self.enviar_respuestas_ronda, daemon=True).start()
 
 
 
