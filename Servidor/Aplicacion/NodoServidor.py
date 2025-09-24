@@ -9,7 +9,7 @@ class NodoServidor(Nodo):
     def __init__(self, id, nombre="Servidor", activo=False):
         super().__init__(id,nombre,activo)
         self.logger = ConsoleLogger(name="LoggerLocal", level="INFO")
-        self.ServDB = ControladorDB(self.logger)
+        self.ServDB = ControladorDB()
         #analizar posibles modificaciones a esta invocacion
         if self.active:
             self.iniciar_servicio
