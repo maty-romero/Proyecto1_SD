@@ -1,6 +1,8 @@
 import threading
 import time
 from datetime import datetime
+import Pyro5.api
+import sys
 
 from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
@@ -31,9 +33,11 @@ class ServicioComunicacion:
             time.sleep(2)  # cada 2 segundos
 
     def broadcast(self, mensaje: str):
+        if len(self.clientes) <= 0:
+            self.logger.warning("Se intenta hacer broadcast sin clientes")
         for cliente in self.clientes:
             if cliente.esta_vivo():
-                self.logger.info(f"Enviando mensaje a cliente'{cliente.nickname}' mediante [SOCKET]")
+                self.logger.warning(f"Enviando mensaje a cliente'{cliente.nickname}' mediante [SOCKET]")
                 cliente.socket.enviar(mensaje)
 
     def verificar_clientes(self):
@@ -78,7 +82,20 @@ class ServicioComunicacion:
                 },
             }
         """
-        pass
+
+        for cliente in self.clientes:
+            proxy = self.get_proxy_cliente(cliente)
+            print(proxy.obtener_respuesta_memoria())
+            
+    
+    def get_proxy_cliente(self, cliente):
+        try:
+            proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
+            return proxy_cliente
+        except Pyro5.errors.NamingError:
+            self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
+            sys.exit(1)
+            return None
 
 
     """

@@ -15,6 +15,11 @@ class Ronda:
 
     # PENDIENTE --> Completar Clase RONDA y Clase Respuesta
 
+    def get_estado_ronda(self):
+        return self.finalizada
+    
+    def set_estado_ronda(self, estado):
+        self.finalizada = estado
 
     def get_letra_random(self):
         letras = list(string.ascii_uppercase)
@@ -29,6 +34,14 @@ class Ronda:
         letra = random.choice(disponibles)
         #self.letras_jugadas.append(letra)  # Guardar la letra jugada
         return letra
+
+    def info_ronda(self):
+        info = {
+            "categorias": self.categorias,
+            "nro_ronda_actual":self.nro_ronda,
+            "letra_ronda": self.letra_ronda,
+        }
+        return info
 
     """
     def iniciar_partida(self):

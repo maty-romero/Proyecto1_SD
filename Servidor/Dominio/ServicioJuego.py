@@ -35,6 +35,12 @@ class ServicioJuego:
     def get_jugadores_minimos(self):
         return  self.jugadores_min
 
+    def obtener_info_sala(self) -> dict:
+        return self.partida.get_info_sala()
+
+    def obtener_info_sala(self) -> dict:
+        return self.partida.get_info_sala()
+
     def iniciar_partida(self):
         # Inicia la 1ra Ronda
         self.partida.iniciar_nueva_ronda() # Ronda 1
@@ -61,7 +67,10 @@ class ServicioJuego:
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
+        print("Obtve las respuestas de los clientes!!!! en ServicioJuego")
         # return respuestas todos los jugadores a los clientes
+
+
         json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json)
         self.dispacher.manejar_llamada(
             "comunicacion",
@@ -69,10 +78,13 @@ class ServicioJuego:
             json)
         # REFINAR
 
+        print(respuestas_clientes)
+
     def finalizar_partida(self):
         # notificar / enviar info fin_partida
         pass
 
+    
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):
@@ -121,9 +133,6 @@ class ServicioJuego:
         # nickname ingresado esta disponible
         self.Jugadores[formated_nickname] = False # False = no confirmado
 
-        print(f"Desde ServicioJuego, el nickname es: {formated_nickname}")
-        print(f"Desde ServicioJuego, la lista de jugadores es {self.Jugadores}")
-
         return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
     def unirse_a_sala(self, info_cliente: dict):
@@ -135,7 +144,6 @@ class ServicioJuego:
         5. Obtener info Sala
         6. Retornar info Sala via Pyro
         """
-        #ServicioComunicacion. suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente
         try:
             nickname = info_cliente['nickname']
             nombre_logico = info_cliente['nombre_logico']
@@ -147,7 +155,6 @@ class ServicioJuego:
                 nickname, nombre_logico, ip_cliente, puerto_cliente  # args
             )
 
-            #Registra a Jugador en un array local
             # obtener info sala
             nicknames_jugadores: list[str] = self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
@@ -156,7 +163,18 @@ class ServicioJuego:
 
             info_sala: dict = self.partida.get_info_sala()
             info_sala['jugadores'] = nicknames_jugadores
-            # retorna infor de sala a quien se unió
+
+            self.Jugadores[nickname] = False
+
+            json_nuevo_jugador = SerializeHelper.serializar(exito=True, msg="nuevo_jugador_sala", datos={
+                'nickname': nickname
+            })
+            self.dispacher.manejar_llamada(
+                "comunicacion",  # nombre_servicio
+                "broadcast",  # nombre_metodo
+                 json_nuevo_jugador#args
+            )
+            # retorna info de sala a quien se unió
             return SerializeHelper.respuesta(
                 exito=True,
                 msg="Se ha unido a la sala exitosamente",
@@ -175,19 +193,70 @@ class ServicioJuego:
             self.gui.show_error("[salir_de_sala] Jugador {nickname} no existe en la sala")
             return None
         """
-
-
     def _verificar_jugadores_suficientes(self) -> bool:
         return len(list(filter(bool, self.Jugadores.values()))) >= self.jugadores_min
-
 
     def ver_jugadores_partida(self):
         return self.Jugadores
     
+    def obtener_jugadores_en_partida(self) -> list[str]:
+        nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")
+        return nicknames_jugadores_conectados
+
     def get_sala(self):
         return self.partida.get_info_sala()
+    
+    def get_info_ronda_actual(self):
+        return self.partida.ronda_actual.info_ronda()
+    
+    def obtener_jugadores_en_partida(self) -> list[str]:
+        nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")
+        return nicknames_jugadores_conectados
 
-####
+    def recibir_stop(self):
+        with self.lock_confirmacion:
+            if self.partida.ronda_actual.get_estado_ronda():
+                return # Ya se finalizó la ronda, ignora llamadas extra
+            self.partida.ronda_actual.set_estado_ronda(True)
+            print("Ahora voy a recibir las respuestas de la ronda")
+            self.enviar_respuestas_ronda()
+            print("Se finalizó la ronda!")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def confirmar_jugador(self, nickname: str):
         # lock -> evitar condicion de carrera
         with self.lock_confirmacion:
@@ -212,9 +281,10 @@ class ServicioJuego:
             # Verificar si se puede iniciar la partida
             jugadores_suficientes = self._verificar_jugadores_suficientes()
             if jugadores_suficientes:
+                # Notificacion mediante Sockets
                 hilo = threading.Thread(target=self.iniciar_partida, daemon=True)
                 hilo.start()
-                #self.iniciar_partida() # Notificacion mediante Sockets
+
                 return SerializeHelper.respuesta(
                     exito=True,
                     msg=f"{nickname} confirmado correctamente. ¡La partida comienza!",
