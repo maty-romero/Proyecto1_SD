@@ -1,6 +1,8 @@
 import threading
 import time
 from datetime import datetime
+import Pyro5.api
+import sys
 
 from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
@@ -80,7 +82,22 @@ class ServicioComunicacion:
                 },
             }
         """
-        pass
+
+        for cliente in self.clientes:
+            proxy = self.get_proxy_cliente(cliente)
+            proxy._pyroClaimOwnership()
+            resp = proxy.obtener_respuesta_memoria()
+            
+            return resp
+    
+    def get_proxy_cliente(self, cliente):
+        try:
+            proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
+            return proxy_cliente
+        except Pyro5.errors.NamingError:
+            self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
+            sys.exit(1)
+            return None
 
 
     """

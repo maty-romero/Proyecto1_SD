@@ -37,7 +37,7 @@ class ControladorSala:
         """Actualiza la vista con la información de la sala"""
         info: dict = self.gestor_cliente.get_proxy_partida_singleton().obtener_info_sala()
         self.vista.setRonda(str(info.get('rondas', 0)))
-        categorias = ", ".join(info.get("categorias", []))
+        categorias = ", ".join(info.get('categorias', []))
         self.vista.setListaCategoria(categorias)
         self.vista.setEstadoSala("")
 
@@ -54,10 +54,12 @@ class ControladorSala:
             LINEA PROVISORIA PARA PROBAR CON MULTIPLES CLIENTES EN UNA MISMA MAQUINA 
             (UTILIZANDO SIMULACION DE MULTIPLES CLIENTES EN UNIRSE SALA - GESTOR CLIENTE)
         """
-        self.gestor_cliente.proxy_partida._pyroClaimOwnership()
-        jugadores_conectados: list[str] = self.gestor_cliente.proxy_partida.obtener_jugadores_en_partida()
+        #self.gestor_cliente.proxy_partida._pyroClaimOwnership()
+        jugadores_conectados: list[str] = self.gestor_cliente.get_proxy_partida_singleton().obtener_jugadores_en_partida()
         jugadores_str = ", ".join(jugadores_conectados)
         self.vista.setListaJugadores(jugadores_str)
 
         self.vista.setEstadoSala(msg)
+
+        self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
 

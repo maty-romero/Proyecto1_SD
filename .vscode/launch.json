@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Cliente.mainClient",
+            "name": "Python: Servidor.mainServer",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/Cliente/mainClient.py",
+            "program": "${workspaceFolder}/Servidor/mainServer.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env"
         }

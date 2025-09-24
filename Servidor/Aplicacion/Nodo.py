@@ -1,12 +1,17 @@
 
 class Nodo: # La logica esta sin implementar, hay que revisar
-    def __init__(self, id):
+    def __init__(self, id, nombre, activo):
         self.id = id
-        self.estado = {}
+        self.nombre = nombre
+        self.activo = activo #por lo pronto dos estados, o es nodo activo, o no lo es (es replica)
+        #si se complejiza funcionalidad, self.estado="activo"-->"inactivo"-->"sincronizando"
 
     def get_id_nodo(self):
         return self.id
 
+    def get_nombre_completo(self):
+        return f"{self.nombre}-{self.id}"
+    
     def set_id_nodo(self, id):
         self.id = id
 

@@ -1,3 +1,5 @@
+from Cliente.A_Vistas.VistaVotaciones import VistaVotaciones
+from Cliente.Controladores.ControladorVotaciones import ControladorVotaciones
 from Cliente.Modelos.GestorCliente import GestorCliente
 from Cliente.Controladores.ControladorNickname import ControladorNickName
 from PyQt6 import QtWidgets
@@ -27,6 +29,7 @@ if __name__ == "__main__":
     vista_nickname = VistaNickname()
     vista_sala = VistaSala()
     vista_ronda = VistaRonda()
+    vista_votaciones = VistaVotaciones()
 
     # Crear controladores de vistas
     controlador_nickname = ControladorNickName(
@@ -44,23 +47,34 @@ if __name__ == "__main__":
         gestor
     )
 
+    controlador_votaciones = ControladorVotaciones(
+        vista_votaciones,
+        gestor
+    )
+
     # Crear controlador de navegación
     controlador_navegacion = ControladorNavegacion(
-        main_window,
-        controlador_nickname,
-        controlador_sala,
-        controlador_ronda,
-        vista_nickname,
-        vista_sala,
-        vista_ronda
+        main_window=main_window,
+        controlador_nickname=controlador_nickname,
+        controlador_sala=controlador_sala,
+        controlador_ronda=controlador_ronda,
+        vistaNickname=vista_nickname,
+        vistaSala=vista_sala,
+        vistaRonda=vista_ronda,
+        #controlador_votaciones, vistaVotaciones
+        controlador_votaciones=controlador_votaciones,
+        vistaVotaciones=vista_votaciones
     )
     controlador_nickname.setNavegacion(controlador_navegacion)
     controlador_sala.setNavegacion(controlador_navegacion)
     controlador_ronda.setNavegacion(controlador_navegacion)
+    controlador_votaciones.setNavegacion(controlador_navegacion)
 
-    gestor.registrar_controlador_navegador(controlador_navegacion) # Para referncias a cambios
+    gestor.set_controlador_navegacion(controlador_navegacion)
+
     # Mostrar vista inicial
     controlador_navegacion.mostrar("nickname")
+    #controlador_navegacion.mostrar("votaciones") # Para Probar vistaVotaciones
 
     sys.exit(app.exec())
 

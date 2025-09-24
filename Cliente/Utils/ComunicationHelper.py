@@ -1,6 +1,5 @@
 import socket
-import Pyro5.api
-
+from Pyro5 import errors
 
 class ComunicationHelper:
     @staticmethod
@@ -18,12 +17,14 @@ class ComunicationHelper:
 
 
     @staticmethod
-    def registrar_objeto_en_ns(objeto, nombre_logico: str, daemon):
+    def registrar_objeto_en_ns(objeto, nombre_logico: str, daemon, ns):#no soporta tipado el ns
         """Registra un objeto remoto en el servidor de nombres."""
-        # arg(ns): Pyro5.api.NameServer
-
-        ns = Pyro5.api.locate_ns()
         uri = daemon.register(objeto, objectId=f"{nombre_logico}")
-        ns.register(nombre_logico, uri) # ns: Pyro5.api.NameServer
+        try:
+            ns.register(nombre_logico, uri)
+        except errors.NamingError as e:
+            print(f"[Registro] Error: No se pudo registrar '{nombre_logico}': {e}")
+            return None
+
         print(f"[Registro] Objeto '{nombre_logico}' disponible en URI: {uri}")
         return uri

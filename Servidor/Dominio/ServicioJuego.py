@@ -11,10 +11,10 @@ from Servidor.Utils.SerializeHelper import SerializeHelper
 
 @Pyro5.api.expose
 class ServicioJuego:
-    def __init__(self, dispacher: Dispatcher):
+    def __init__(self, dispacher: Dispatcher,logger=ConsoleLogger(name="ServicioJuego", level="INFO")):
         self.dispacher = dispacher
         self.partida = Partida()
-        self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
+        self.logger = logger # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
@@ -32,6 +32,11 @@ class ServicioJuego:
             json = SerializeHelper.serializar(exito=False, msg="", datos={"datos"})
         
     """
+    def get_jugadores_minimos(self):
+        return  self.jugadores_min
+
+    def obtener_info_sala(self) -> dict:
+        return self.partida.get_info_sala()
 
     def obtener_info_sala(self) -> dict:
         return self.partida.get_info_sala()
@@ -63,17 +68,22 @@ class ServicioJuego:
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
         # return respuestas todos los jugadores a los clientes
-        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json)
-        self.dispacher.manejar_llamada(
-            "comunicacion",
-            "broadcast",
-            json)
-        # REFINAR
+
+ 
+        # json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json) -- Genera error
+        # self.dispacher.manejar_llamada(
+        #     "comunicacion",
+        #     "broadcast",
+        #     json)
+        
+        print(respuestas_clientes)
+        print("Desde ServicioJuego se terminó de enviar_respuestas_ronda")
 
     def finalizar_partida(self):
         # notificar / enviar info fin_partida
         pass
 
+    
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):
@@ -120,7 +130,7 @@ class ServicioJuego:
                 msg="El nickname ingresado ya esta siendo utilizado"
             )
         # nickname ingresado esta disponible
-        #self.Jugadores[formated_nickname] = False # False = no confirmado
+        self.Jugadores[formated_nickname] = False # False = no confirmado
 
         return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
@@ -182,18 +192,71 @@ class ServicioJuego:
             self.gui.show_error("[salir_de_sala] Jugador {nickname} no existe en la sala")
             return None
         """
-
-
     def _verificar_jugadores_suficientes(self) -> bool:
         return len(list(filter(bool, self.Jugadores.values()))) >= self.jugadores_min
 
-
+    def ver_jugadores_partida(self):
+        return self.Jugadores
+    
     def obtener_jugadores_en_partida(self) -> list[str]:
         nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")
         return nicknames_jugadores_conectados
 
     def get_sala(self):
         return self.partida.get_info_sala()
+    
+    def get_info_ronda_actual(self):
+        return self.partida.ronda_actual.info_ronda()
+    
+    def obtener_jugadores_en_partida(self) -> list[str]:
+        nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")
+        return nicknames_jugadores_conectados
+
+    def recibir_stop(self):
+        with self.lock_confirmacion:
+            print("Estoy en ServicioJuego! Entre a recibir_stop con un lock")
+            if self.partida.ronda_actual.get_estado_ronda():
+                print("Actualicé el estado de la ronda!")
+                return # Ya se finalizó la ronda, ignora llamadas extra
+            self.partida.ronda_actual.set_estado_ronda(True)
+            print("Estoy en ServicioJuego! Cambio el estado de finalizacion de la ronda a True")
+            print("Ahora voy a recibir las respuestas de la ronda")
+            self.enviar_respuestas_ronda()
+            print("Se finalizó la ronda!")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     def confirmar_jugador(self, nickname: str):

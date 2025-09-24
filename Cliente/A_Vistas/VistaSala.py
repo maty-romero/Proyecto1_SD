@@ -52,6 +52,17 @@ class VistaSala(QWidget):
         self.jugadores_label = QLabel("<Listado_Jugadores>", parent=self)
         self.jugadores_label.setGeometry(QtCore.QRect(300, 370, 400, 61))
         self.jugadores_label.setFont(font_label)
+        
+        # Label para el dato de "Jugadores Requeridos"
+        
+        self.label1_4 = QLabel("Jugadores Requeridos:", parent=self)
+        self.label1_4.setGeometry(QtCore.QRect(30, 470,280, 61))
+        self.label1_4.setFont(font_label)
+        
+        self.jugadores_requeridos_label = QLabel("<5>", parent=self)
+        self.jugadores_requeridos_label.setGeometry(QtCore.QRect(380, 470, 200, 61))
+        self.jugadores_requeridos_label.setFont(font_label)
+
 
         self.estado_sala_label = QLabel("<Msg_Estado_Sala>", parent=self)
         self.estado_sala_label.setGeometry(QtCore.QRect(500, 510, 500, 100))
@@ -80,3 +91,6 @@ class VistaSala(QWidget):
 
     def getUnirSala(self):
         return self.confirmar_jugador_btn
+    
+    def setJugadoresRequeridos(self,canti_jugadores):
+        return self.jugadores_requeridos_label.setText(canti_jugadores)

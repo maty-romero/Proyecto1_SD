@@ -19,6 +19,7 @@ class GestorCliente:
         self.nombre_logico_server = "gestor.partida"
         self.proxy_partida = None
         self.Jugador_cliente: JugadorCliente = None
+        self.controlador_navegacion = None
 
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
@@ -42,6 +43,9 @@ class GestorCliente:
                 self.logger.error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
                 self.logger.error("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
                 sys.exit(1)
+
+        # Reclamar propiedad del proxy en el hilo actual
+        self.proxy_partida._pyroClaimOwnership()
         return self.proxy_partida
 
     def buscar_partida(self):
@@ -191,6 +195,8 @@ class GestorCliente:
                 self.controlador_navegacion.mostrar('ronda')
             elif msg == "fin_ronda":
                 self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
+            elif msg == "inicio_votacion":
+                self.logger.warning(f"inicio_votacion => datos: {datos}")
             elif msg == "fin_partida":
                 #self._cerrar_partida(datos)
                 pass
@@ -246,9 +252,32 @@ class GestorCliente:
     def confirmar_jugador_partida(self):
         self.logger.info(f"Confirmando jugador: '{self.Jugador_cliente.get_nickname()}'....")
         msg = self.get_proxy_partida_singleton().confirmar_jugador(self.Jugador_cliente.get_nickname())
-        self.logger.info(msg['msg'])
+
+    def set_controlador_navegacion(self, controlador):
+        self.controlador_navegacion = controlador
+
     def get_info_sala(self):
         return self.get_proxy_partida_singleton().get_sala()
+    
+    def get_jugadores_min(self):
+        return self.get_proxy_partida_singleton().get_jugadores_minimos()
+    
+    def get_jugadores_en_sala(self):
+        return self.get_proxy_partida_singleton().ver_jugadores_partida()
+
+    def get_info_ronda_act(self):
+        return self.get_proxy_partida_singleton().get_info_ronda_actual()
+    
+    def get_proxy_partida(self):
+        return self.get_proxy_partida_singleton()
+    
+    def enviar_stop(self):
+        proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
+        proxy.recibir_stop()
+
+    def provide_response(self):
+        #se obtienenen las respuestas de RondaCliente
+        return self.controlador_navegacion.obtener_respuestas_ronda()
 
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
