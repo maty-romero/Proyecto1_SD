@@ -1,7 +1,7 @@
 import socket
 import threading
 
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Servidor.Utils.ConsoleLogger import ConsoleLogger
 
 """
     El servidor se conecta al socket abierto por el cliente (sesion) 

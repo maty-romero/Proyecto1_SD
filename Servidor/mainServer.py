@@ -2,7 +2,7 @@ import Pyro5.server
 from Pyro5 import errors
 from Pyro5.errors import NamingError, CommunicationError
 
-from Cliente.Utils.ComunicationHelper import ComunicationHelper
+from Servidor.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.NodoServidor import NodoServidor
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 

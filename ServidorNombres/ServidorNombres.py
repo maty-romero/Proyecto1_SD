@@ -8,7 +8,8 @@ import threading
 
 import Pyro5.nameserver
 
-from Servidor.Aplicacion.Nodo import Nodo
+from ServidorNombres.ComunicationHelper import ComunicationHelper
+from ServidorNombres.Nodo import Nodo
 
 """FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
 class ServidorNombres(Nodo):
@@ -22,7 +23,9 @@ class ServidorNombres(Nodo):
     def verificar_nameserver():
         """Verifica si hay algun Name Server en red local"""
         try:
-            ns = Pyro5.api.locate_ns()
+            ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
+            #ip = ComunicationHelper.obtener_ip_local()
+            #ns = Pyro5.api.locate_ns(host=ip, port=9090)
             # objetos = ns.list()
             # print("Contenido del NameServer:")
             # print(objetos)

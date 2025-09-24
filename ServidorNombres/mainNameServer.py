@@ -1,7 +1,9 @@
 import traceback
-from Cliente.Utils.ComunicationHelper import ComunicationHelper
-from Servidor.Aplicacion.ServidorNombres import ServidorNombres
+
 from Pyro5 import errors
+
+from ServidorNombres.ComunicationHelper import ComunicationHelper
+from ServidorNombres.ServidorNombres import ServidorNombres
 
 if __name__ == "__main__":
 

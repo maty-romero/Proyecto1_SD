@@ -1,18 +1,53 @@
-version: '3.8'
+
+# problemas:
+# 1. nameserver -> se queda como tildado, no imprime [ServerName iniciado correctamente]
+# 2. nodo_principal -> No pueede detectar el NS (ver tema de red)
+# 3. Falta probar que clientes puedan hacer forwading de GUI host, abrir socket, comunicacion
+# con nodo_principal
+# 4. nodo_replica1 -> falta agregarlo al docker-compose, esta en borrador.txt. Idem nodo_principal.
+# es casi igual a nodo_principal (deberia ejecutar mainReplica.py)
+
 services:
   nameserver:
     build:
-      context: .                # la raíz del proyecto
-      dockerfile: /ServidorNombres/Dockerfile
+      context: ./ServidorNombres                # la raíz del proyecto
+      dockerfile: Dockerfile
     container_name: name_server
     ports:
-      - "9090:9090"
+      - "5556:9090"
+      - "5557:9091"
     networks:
       - backend
 
+  nodo_principal:
+    build:
+      context: ./Servidor
+      dockerfile: Dockerfile
+    container_name: nodo_principal
+    networks:
+      - backend
+    ports:
+      - "6000:27017"
+      - "6500:9090"
+    command: >
+      bash -c "mongod --bind_ip_all --replSet rs0 --dbpath /data/db --logpath /var/log/mongod.log &
+      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done;
+      exec python3 -m Servidor.mainServer"
+
+  cliente1:
+    build:
+      context: ./Cliente                         # raíz del proyecto
+      dockerfile: Dockerfile
+    container_name: cliente1
+    environment:
+      - DISPLAY=${DISPLAY}               # pasa $DISPLAY del host
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix    # comparte el socket X11
+    networks:
+      - backend
 
 networks:
   backend:
-    driver: bridge
+#    driver: bridge
 
   # resto del docker-compose
