@@ -1,3 +1,4 @@
+import traceback
 import Pyro5.server
 from Pyro5 import errors
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     if ns:
         try:
             ip_servidor = ComunicationHelper.obtener_ip_local()
-            nodoPrincipal = NodoServidor(1,True)
+            nodoPrincipal = NodoServidor(1,None,True)
             Gestor_Singleton = nodoPrincipal.ServicioJuego
             daemon = Pyro5.server.Daemon(host=ip_servidor)
 
@@ -39,5 +40,6 @@ if __name__ == "__main__":
             print("Error de comunicación con el Servidor de nombres")
         except Exception as e:
             print(f"Error inesperado: {e}")
+            traceback.print_exc()  # esto imprime la traza completa
     else: 
         print("No se puede ejecutar el Servidor, dado que el Servidor de nombres no se esta ejecutando. ")

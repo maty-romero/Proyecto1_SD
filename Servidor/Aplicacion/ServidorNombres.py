@@ -23,9 +23,9 @@ class ServidorNombres(Nodo):
         """Verifica si hay algun Name Server en red local"""
         try:
             ns = Pyro5.api.locate_ns()
-            # objetos = ns.list()
-            # print("Contenido del NameServer:")
-            # print(objetos)
+            objetos = ns.list()
+            print("Contenido del NameServer:")
+            print(objetos)
             return ns
         except (errors.NamingError, errors.CommunicationError, ConnectionRefusedError) as e:
             print(f"No se pudo conectar al servidor de nombres: {e}")
