@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.13.7-slim-trixie
 
 # 1. Establecemos /app como raíz de la aplicación
 WORKDIR /ServidorNombres
@@ -7,10 +7,10 @@ WORKDIR /ServidorNombres
 COPY . ./ServidorNombres
 
 # 3. Instalamos Pyro5
-RUN pip install --no-cache-dir Pyro5
+RUN pip install Pyro5
 
 # 4. Exponemos el puerto del NameServer
-EXPOSE 9090 9091
+EXPOSE 9090
 
 # 5a. OPCIÓN A: Ejecutar como módulo (requiere __init__.py en ServidorNombres/)
 # Asegúrate de que el archivo se llama exactamente mainNameServer.py

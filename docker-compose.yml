@@ -12,12 +12,16 @@ services:
     build:
       context: ./ServidorNombres                # la raíz del proyecto
       dockerfile: Dockerfile
-    container_name: name_server
-    ports:
-      - "5556:9090"
-      - "5557:9091"
+    # container_name: name_server
+    environment:
+      - PYRO_NS_HOST=nameserver
+      - PYRO_NS_PORT=9090
+    #ports:
+    #  - "7000:9090"
     networks:
       - backend
+
+
 
   nodo_principal:
     build:
@@ -30,21 +34,24 @@ services:
       - "6000:27017"
       - "6500:9090"
     command: >
-      bash -c "mongod --bind_ip_all --replSet rs0 --dbpath /data/db --logpath /var/log/mongod.log &
-      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done;
+      bash -c "\
+      mongod --bind_ip_all --dbpath /data/db & \
+      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done; \
       exec python3 -m Servidor.mainServer"
+    depends_on:
+      - nameserver
 
-  cliente1:
-    build:
-      context: ./Cliente                         # raíz del proyecto
-      dockerfile: Dockerfile
-    container_name: cliente1
-    environment:
-      - DISPLAY=${DISPLAY}               # pasa $DISPLAY del host
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix    # comparte el socket X11
-    networks:
-      - backend
+#  cliente1:
+#    build:
+#      context: ./Cliente                         # raíz del proyecto
+#      dockerfile: Dockerfile
+#    container_name: cliente1
+#    environment:
+#      - DISPLAY=${DISPLAY}               # pasa $DISPLAY del host
+#    volumes:
+#      - /tmp/.X11-unix:/tmp/.X11-unix    # comparte el socket X11
+#    networks:
+#      - backend
 
 networks:
   backend:

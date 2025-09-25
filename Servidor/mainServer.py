@@ -26,14 +26,14 @@ if __name__ == "__main__":
     try:
         ip_servidor = ComunicationHelper.obtener_ip_local()
         nodoPrincipal = NodoServidor(1, True)
+        nodoPrincipal.iniciar_servicio()
         Gestor_Singleton = nodoPrincipal.ServicioJuego
         daemon = Pyro5.server.Daemon(host=ip_servidor)
 
         uri = ComunicationHelper.registrar_objeto_en_ns(
             Gestor_Singleton,
             "gestor.partida",
-            daemon,
-            ns
+            daemon
         )
 
         logger.info("Gestor de juego registrado correctamente.")

@@ -26,10 +26,6 @@ RUN pip3 install --no-cache-dir --break-system-packages -r ./Servidor/requiremen
 # Crear directorio de datos de MongoDB
 RUN mkdir -p /data/db && chown -R mongodb:mongodb /data/db
 
-# Copiar entrypoint
-#COPY ./Servidor/entrypoint.sh /entrypoint.sh
-#RUN chmod +x /entrypoint.sh
-
 # Exponer puertos: 27017 mongo, 9090 pyro
 EXPOSE 27017 9090
 

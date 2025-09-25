@@ -11,8 +11,11 @@ class NodoServidor(Nodo):
         self.logger = ConsoleLogger(name="LoggerLocal", level="INFO")
         self.ServDB = ControladorDB()
         #analizar posibles modificaciones a esta invocacion
-        if self.active:
-            self.iniciar_servicio
+        self.ServicioJuego = None
+        self.ServComunic = None
+        self.Dispatcher = None
+        if self.activo:
+            self.iniciar_servicio()
 
     def iniciar_servicio(self):
         self.ServComunic = ServicioComunicacion()
