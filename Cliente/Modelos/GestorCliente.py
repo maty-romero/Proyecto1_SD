@@ -57,6 +57,7 @@ class GestorCliente:
         self.Jugador_cliente: JugadorCliente = None
         self.controlador_navegacion = None
         
+        self.puertoNS = PUERTO_NS
         self.hostNS = str(ComunicationHelper.obtener_ip_local())
         print(f"La ip encontrada es: {self.hostNS}")
         
