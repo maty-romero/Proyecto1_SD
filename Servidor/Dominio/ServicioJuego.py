@@ -17,7 +17,7 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = logger # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 4 # pasar por constructor?
+        self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
         self.lock_confirmacion = Lock()

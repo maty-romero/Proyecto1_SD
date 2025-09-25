@@ -15,6 +15,12 @@ class ControladorRonda:
         # Conectar botón STOP! a la acción correspondiente
         self.vista.enviar_respuestas_btn.clicked.connect(self.finalizar_ronda)
 
+    def marcar_fin_ronda(self):
+        self.vista.enviar_respuestas_btn.setEnabled(False)
+
+    def habilitar_btn_stop(self):
+        self.vista.enviar_respuestas_btn.setEnabled(True)
+
     def setNavegacion(self, controlador_navegacion):
         self.navegacion = controlador_navegacion
 

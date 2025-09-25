@@ -45,7 +45,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "10.89.177.119"   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = "10.89.177.231"   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 
@@ -237,12 +237,14 @@ class GestorCliente:
             elif msg == "nueva_ronda":
                 #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
+                self.controlador_navegacion.controlador_ronda.habilitar_btn_stop()
                 self.controlador_navegacion.mostrar('ronda')
             elif msg == "fin_ronda":
                 self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
+                self.controlador_navegacion.controlador_ronda.marcar_fin_ronda()
+                self.controlador_navegacion.mostrar('votaciones')
             elif msg == "inicio_votacion":
                 self.logger.warning(f"inicio_votacion => datos: {datos}")
-                self.controlador_navegacion.mostrar('votaciones')
             elif msg == "aviso_tiempo_votacion":
                 self.logger.info(f"Recibido del server {datos}")
                 self.controlador_navegacion.controlador_votaciones.actualizar_mensaje_timer(datos)
