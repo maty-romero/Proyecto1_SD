@@ -79,7 +79,12 @@ class GestorCliente:
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
             try:
-                self.proxy_partida = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
+                with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+                    uri = ns.lookup(self.nombre_logico_server)
+                    self.proxy_partida = Pyro5.api.Proxy(uri)
+                    #self.proxy_partida = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
+                    print(f"PYRONAME:{self.nombre_logico_server}")
+                    print(uri)
             except Pyro5.errors.NamingError:
                 self.logger.error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
                 self.logger.error("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
