@@ -45,7 +45,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = ""   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = None   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 
@@ -59,10 +59,12 @@ class GestorCliente:
         
         #implementacion para ip manual, o para utilizar el nombre que identifica el equipo
         #nota: el equipo tiene que tener el puerto abierto
-        if NOMBRE_PC_NS:
+        if NOMBRE_PC_NS: 
             self.hostNS = NOMBRE_PC_NS
         else:    
-            self.hostNS = "0.0.0.0"
+            self.hostNS = str(ComunicationHelper.obtener_ip_local())
+            print(f"La ip encontrada es: {self.hostNS}")
+            
         self.puertoNS = PUERTO_NS
 
         # Estado interno (para ServicioCliente) - recepcion
@@ -266,7 +268,7 @@ class GestorCliente:
             # Crear y guardar el daemon para poder apagarlo despues
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
-                ns = Pyro5.api.locate_ns()
+                #ns = Pyro5.api.locate_ns()
                 ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
                 uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
                 self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
@@ -295,7 +297,7 @@ class GestorCliente:
 
         # opcional: remover del nameserver
         try:
-            ns = Pyro5.api.locate_ns()
+            ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
             ns.remove(self.Jugador_cliente.get_nombre_logico())
         except Exception:
             pass
@@ -340,8 +342,6 @@ class GestorCliente:
 
     def enviar_votos_jugador(self):
         return self.controlador_navegacion.controlador_votaciones.enviar_votos()
-    
-    
     
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
