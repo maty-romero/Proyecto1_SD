@@ -45,7 +45,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "DESKTOP-HUREDOL"   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = "10.89.177.119"   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 
