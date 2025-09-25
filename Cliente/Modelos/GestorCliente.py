@@ -109,6 +109,7 @@ class GestorCliente:
 
     def buscar_partida(self):
         try:
+            #ns = Pyro5.api.locate_ns()
             ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
             uri = ns.lookup(self.nombre_logico_server)
             self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
@@ -265,6 +266,7 @@ class GestorCliente:
             # Crear y guardar el daemon para poder apagarlo despues
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
+                ns = Pyro5.api.locate_ns()
                 ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
                 uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
                 self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")

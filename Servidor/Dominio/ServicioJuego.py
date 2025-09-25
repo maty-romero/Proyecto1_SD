@@ -169,6 +169,10 @@ class ServicioJuego:
 
         totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
 
+        # Posible KeyError? en 1 ejecucion me salio, el resto normal
+        #self.logger.error(f"jugadores dict totales: {totales.keys()}")
+        #self.logger.error(f"jugadores en self.partida.jugadores: {self.partida.jugadores}")
+
         for jugador in self.partida.jugadores:
             if jugador.nickname in totales:
                 jugador.sumar_puntaje(totales[jugador.nickname])
