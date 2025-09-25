@@ -7,14 +7,13 @@ WORKDIR /Servidor
 
 # Instalar Python y pip
 RUN apt-get update && apt-get install -y \
+#RUN apt-get install -y \
     python3 \
     python3-pip \
-    build-essential \
-    libssl-dev \
-    libffi-dev \
-    wget \
-    ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+    build-essential
+#    wget \
+#    ca-certificates \
+#  && rm -rf /var/lib/apt/lists/*
 
 # Copiar proyecto entero (IMPORTANTE: contexto = raíz Proyecto1_SD)
 # 'Me situo en raiz Proyecto1_SD'

@@ -28,6 +28,8 @@ services:
       context: ./Servidor
       dockerfile: Dockerfile
     container_name: nodo_principal
+    environment:
+      - PYTHONUNBUFFERED=1
     networks:
       - backend
     ports:
