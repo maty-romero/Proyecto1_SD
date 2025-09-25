@@ -118,8 +118,11 @@ class ServicioComunicacion:
     
     def get_proxy_cliente(self, cliente):
         try:
-            proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
-            return proxy_cliente
+            with Pyro5.api.locate_ns(host="10.89.177.119", port=9090) as ns:
+                uri = ns.lookup(self.nombre_logico_server)
+                proxy_cliente = Pyro5.api.Proxy(uri)
+                #proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
+                return proxy_cliente
         except Pyro5.errors.NamingError:
             self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
             sys.exit(1)

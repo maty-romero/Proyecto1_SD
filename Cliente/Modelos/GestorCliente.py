@@ -328,8 +328,15 @@ class GestorCliente:
     
     """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
-        proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
-        proxy.recibir_stop()
+        #proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
+        #proxy.recibir_stop()
+        try:
+            with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+                uri = ns.lookup(self.nombre_logico_server)
+                proxy = Pyro5.api.Proxy(uri)
+                proxy.recibir_stop()
+        except Exception as e:
+            self.logger.error(f"Error enviando stop: {e}")
     #------>
     # def enviar_stop(self):
     #     proxy = self.get_proxy_partida_singleton
