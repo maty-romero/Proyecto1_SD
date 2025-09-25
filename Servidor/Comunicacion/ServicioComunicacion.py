@@ -84,14 +84,13 @@ class ServicioComunicacion:
             proxy.actualizar_vista_votacion(respuestas_de_clientes)
     
     def recolectar_votos(self):
-        votos_clientes:dict= {}
-        for cliente in self.clientes:
+        votos_clientes: dict = {}
+        for i, cliente in enumerate(self.clientes):
             proxy = self.get_proxy_cliente(cliente)
             proxy._pyroClaimOwnership()
-            votos = proxy.obtener_votos_cliente() ### cambiar
-            votos_clientes[cliente.nickname] = votos
+            votos = proxy.obtener_votos_cliente()
+            votos_clientes[i] = votos
         return votos_clientes
-
         
     
     def get_proxy_cliente(self, cliente):

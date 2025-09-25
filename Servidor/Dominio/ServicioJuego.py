@@ -1,6 +1,7 @@
 import threading
 from threading import Lock, Thread
 import time
+from collections import defaultdict, Counter
 
 import Pyro5.api
 
@@ -74,12 +75,12 @@ class ServicioJuego:
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
-        # return respuestas todos los jugadores a los clientes
-        
-        #print(respuestas_clientes)
+
+        self.partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
         
         info_completa_votacion = {
             'nro_ronda' : self.partida.nro_ronda_actual,
+            'total_rondas':self.partida.rondas_maximas,
             'letra_ronda': self.partida.ronda_actual.letra_ronda,
             'respuestas_clientes': respuestas_clientes
         }
@@ -92,6 +93,7 @@ class ServicioJuego:
         hilo_timer = threading.Thread(target=self.timer_votacion, daemon=True)
         hilo_timer.start()
 
+
     def timer_votacion(self):
         tiempos = [30, 20, 10]
         for t in tiempos:
@@ -99,30 +101,114 @@ class ServicioJuego:
             self.dispacher.manejar_llamada("comunicacion", "broadcast", mensaje)
             time.sleep(10)  # Espera 10 segundos entre avisos
 
-        json = SerializeHelper.serializar(exito=True, msg="aviso_fin_votacion", datos=f"Finalizando votación...") #Cambie a la vista Ronda nueva
+        #se quedaría 
+
+        hilo_pedir_votos = threading.Thread(target=self.obtener_votos_jugadores, daemon=True)
+        hilo_pedir_votos.start()
+        
+
+        
+    def evaluar_ultima_ronda(self):
+        if self.partida.nro_ronda_actual == self.partida.rondas_maximas:
+            self.finalizar_partida() #manda señal para ir a resultado
+        else:
+            self.partida.iniciar_nueva_ronda()
+            info_ronda = self.partida.get_info_ronda()
+            json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
+            self.dispacher.manejar_llamada(
+                "comunicacion",  # nombre_servicio
+                "broadcast",  # nombre_metodo
+                    json#args
+            )
+
+
+    def obtener_votos_jugadores(self):
+        votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
+        "recolectar_votos")
+        self.procesar_votos_y_asignar_puntaje(votos)
+
+    
+    def procesar_votos_y_asignar_puntaje(self, votos):
+        respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
+        from collections import defaultdict
+
+        # 1. Contar repeticiones de cada respuesta por categoría (solo respuestas válidas)
+        conteo_respuestas = defaultdict(lambda: defaultdict(int))
+
+        # 2. Determinar validez de cada respuesta (más votos True que False)
+        validez = defaultdict(dict)
+        for jugador, info in respuestas_clientes.items():
+            for categoria, respuesta in info["respuestas"].items():
+                true_count = 0
+                false_count = 0
+                for ronda, votos_jugadores in votos.items():
+                    if jugador in votos_jugadores and categoria in votos_jugadores[jugador]:
+                        if votos_jugadores[jugador][categoria]:
+                            true_count += 1
+                        else:
+                            false_count += 1
+                
+                # CAMBIO: más votos True que False
+                validez[jugador][categoria] = (true_count > false_count)
+                
+                # Solo cuenta la respuesta si es válida y no vacía
+                if respuesta and validez[jugador][categoria]:
+                    conteo_respuestas[categoria][respuesta] += 1
+
+        # 3. Asignar puntajes
+        puntajes = {}
+        for jugador, info in respuestas_clientes.items():
+            puntajes[jugador] = {}
+            for categoria, respuesta in info["respuestas"].items():
+                if not respuesta or not validez[jugador][categoria]:
+                    puntaje = 0
+                else:
+                    repeticiones = conteo_respuestas[categoria][respuesta]
+                    if repeticiones == 1:
+                        puntaje = 10  # Respuesta única
+                    else:
+                        puntaje = 5   # Respuesta repetida
+                puntajes[jugador][categoria] = puntaje
+                print(f"[DEBUG] {jugador} - {categoria}: '{respuesta}' | T:{true_count} F:{false_count} válida: {validez[jugador][categoria]}, repeticiones: {conteo_respuestas[categoria][respuesta]} => {puntaje} puntos")
+
+        # 4. Sumar puntajes totales y actualizar jugadores
+        totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
+
+        for jugador in self.partida.jugadores:
+            if jugador.nickname in totales:
+                jugador.sumar_puntaje(totales[jugador.nickname])
+                print(f"Para el jugador {jugador.nickname} el puntaje total es {totales[jugador.nickname]}")
+
+        self.evaluar_ultima_ronda()
+
+
+    def finalizar_partida(self):
+        """Notifica el fin de la partida y envía los datos finales"""
+
+        puntajes_totales = {}
+        for jugador in self.partida.jugadores:
+            puntajes_totales[jugador.nickname] = jugador.get_puntaje()
+
+        puntaje_maximo = max(jugador.get_puntaje() for jugador in self.partida.jugadores)
+        ganadores = [jugador for jugador in self.partida.jugadores if jugador.get_puntaje() == puntaje_maximo]
+        if len(ganadores) == 1:
+            ganador = ganadores[0].nickname
+        else:
+            ganador = f"Empate entre: {', '.join([g.nickname for g in ganadores])}"
+
+        resultados_partida = {
+            'jugadores' : list(self.Jugadores.keys()),
+            'puntajes_totales': puntajes_totales,
+            'ganador':ganador
+        }
+
+        json = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=resultados_partida)
         self.dispacher.manejar_llamada(
             "comunicacion",  # nombre_servicio
             "broadcast",  # nombre_metodo
                 json#args
         )
 
-        hilo_pedir_votos = threading.Thread(target=self.obtener_votos_jugadores, daemon=True)
-        hilo_pedir_votos.start()
-
-    def obtener_votos_jugadores(self):
-        votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
-        "recolectar_votos")
-        
-        self.logger.info(f'votos desde un logger-->{votos}')
-        print(f"votos de un print-->{votos}")
-
-
-
-    def finalizar_partida(self):
-        # notificar / enviar info fin_partida
-        pass
-
-    
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):
@@ -257,13 +343,6 @@ class ServicioJuego:
                 return  # Ya se finalizó la ronda, ignora llamadas extra
             self.partida.ronda_actual.set_estado_ronda(True)
             threading.Thread(target=self.enviar_respuestas_ronda, daemon=True).start()
-
-
-
-
-
-
-
 
 
     def confirmar_jugador(self, nickname: str):

@@ -5,7 +5,7 @@ from Servidor.Dominio.Ronda import Ronda
 class Partida:
     def __init__(self):
         self.categorias = ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"]
-        self.rondas_maximas = 3
+        self.rondas_maximas = 1
         self.nro_ronda_actual = 0
         self.letras_jugadas: list[str] = []
         self.ronda_actual: Ronda = None

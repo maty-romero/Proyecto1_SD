@@ -8,12 +8,12 @@ from PyQt6 import QtWidgets
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
 from Cliente.A_Vistas.VistaRonda import VistaRonda
-#from Cliente.A_Vistas.VistaResultado import VistaResultados
+from Cliente.A_Vistas.VistaResultados import VistaResultados
 from Cliente.Controladores.ControladorNavegacion import ControladorNavegacion
 from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorSala import ControladorSala
 from Cliente.Controladores.ControladorRonda import ControladorRonda
-#from Cliente.Controladores.ControladorResultado import ControladorResultados
+from Cliente.Controladores.ControladorResultados import ControladorResultados
 from Cliente.Modelos.GestorCliente import GestorCliente
 from Cliente.A_Vistas.MainWindow import MainWindow
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     vista_sala = VistaSala()
     vista_ronda = VistaRonda()
     vista_votaciones = VistaVotaciones()
-
+    vista_resultados=VistaResultados()
     # Crear controladores de vistas
     controlador_nickname = ControladorNickName(
         vista_nickname,
@@ -53,6 +53,11 @@ if __name__ == "__main__":
         vista_votaciones,
         gestor
     )
+    
+    controlador_resultados= ControladorResultados(
+        vista_resultados,
+        gestor
+    )
 
     # Crear controlador de navegación
     controlador_navegacion = ControladorNavegacion(
@@ -65,12 +70,16 @@ if __name__ == "__main__":
         vistaRonda=vista_ronda,
         #controlador_votaciones, vistaVotaciones
         controlador_votaciones=controlador_votaciones,
-        vistaVotaciones=vista_votaciones
+        vistaVotaciones=vista_votaciones,
+        controlador_resultados=controlador_resultados,
+        vistaResultados=vista_resultados
     )
+    
     controlador_nickname.setNavegacion(controlador_navegacion)
     controlador_sala.setNavegacion(controlador_navegacion)
     controlador_ronda.setNavegacion(controlador_navegacion)
     controlador_votaciones.setNavegacion(controlador_navegacion)
+    controlador_resultados.setNavegacion(controlador_navegacion)
 
     gestor.set_controlador_navegacion(controlador_navegacion)
 
