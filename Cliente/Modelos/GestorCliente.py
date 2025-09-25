@@ -12,6 +12,42 @@ from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 
+"""Para el uso en docker, un compose de la siguiente forma:
+
+    services:
+  nameserver:
+    image: python:3.12
+    container_name: pyro_ns
+    networks:
+      - pyro_net
+
+  servidor:
+    build: ./servidor
+    depends_on:
+      - nameserver
+    networks:
+      - pyro_net
+
+  cliente:
+    build: ./cliente
+    depends_on:
+      - servidor
+    networks:
+      - pyro_net
+
+networks:
+  pyro_net:
+    driver: bridge
+
+    
+    Permite lo siguiente
+
+    ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
+
+"""
+NOMBRE_PC_NS = ""   # DESKTOP-HUREDOL
+PUERTO_NS = 9090
+
 
 class GestorCliente:
     def __init__(self):
@@ -20,6 +56,14 @@ class GestorCliente:
         self.proxy_partida = None
         self.Jugador_cliente: JugadorCliente = None
         self.controlador_navegacion = None
+        
+        #implementacion para ip manual, o para utilizar el nombre que identifica el equipo
+        #nota: el equipo tiene que tener el puerto abierto
+        if NOMBRE_PC_NS:
+            self.hostNS = NOMBRE_PC_NS
+        else:    
+            self.hostNS = "0.0.0.0"
+        self.puertoNS = PUERTO_NS
 
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
@@ -48,9 +92,24 @@ class GestorCliente:
         self.proxy_partida._pyroClaimOwnership()
         return self.proxy_partida
 
+    """NUEVO METODO PARA CONEXION A REMOTO EN MISMA RED LOCAL - Puede cambiarse para usar los valores globales"""
+    # def get_proxy_partida_singleton(self):
+    #     if self.proxy_partida is None:
+    #         try:
+    #             # Conexión al NameServer remoto usando IP y puerto
+    #             with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+    #                 uri = ns.lookup(self.nombre_logico_server)
+    #                 self.proxy_partida = Pyro5.api.Proxy(uri)
+    #         except Pyro5.errors.NamingError:
+    #             print(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}' en {self.hostNS}:{self.puertoNS}")
+    #             raise
+    #     # Reclamar propiedad del proxy en el hilo actual si es necesario
+    #     self.proxy_partida._pyroClaimOwnership()
+    #     return self.proxy_partida
+
     def buscar_partida(self):
         try:
-            ns = Pyro5.api.locate_ns()
+            ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
             uri = ns.lookup(self.nombre_logico_server)
             self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
             return True
@@ -260,9 +319,14 @@ class GestorCliente:
     def get_proxy_partida(self):
         return self.get_proxy_partida_singleton()
     
+    """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
         proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
         proxy.recibir_stop()
+    #------>
+    # def enviar_stop(self):
+    #     proxy = self.get_proxy_partida_singleton
+    #     proxy.recibir_stop()
 
     def provide_response(self):
         #se obtienenen las respuestas de RondaCliente
