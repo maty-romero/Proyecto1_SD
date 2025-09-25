@@ -77,34 +77,32 @@ class ServicioComunicacion:
             respuestas[cliente.nickname] = resp
         return respuestas
     
-    def enviar_datos_para_votacion(self, respuestas_de_clientes):
-        # Usamos un pool de threads para llamar a todos en paralelo
-        with ThreadPoolExecutor(max_workers=len(self.clientes)) as executor:
-            futures = []
-            for cliente in self.clientes:
-                proxy = self.get_proxy_cliente(cliente)
-                proxy._pyroClaimOwnership()
-                print(f"Enviando datos a: {cliente.nickname}")
-                futures.append(executor.submit(proxy.actualizar_vista_votacion,
-                                            respuestas_de_clientes))
-
-            # Si el método es oneway, no hay nada que esperar, 
-            # pero si no lo es, podemos hacer esto para detectar errores:
-            for future in as_completed(futures):
-                try:
-                    future.result(timeout=5)  # solo levanta excepción si falla
-                except Exception as e:
-                    print(f"Error enviando datos a un cliente: {e}")
-
-
-
-    #lineal en mismo hilo
     # def enviar_datos_para_votacion(self, respuestas_de_clientes):
-    #     for cliente in self.clientes:
-    #         proxy = self.get_proxy_cliente(cliente)
-    #         proxy._pyroClaimOwnership()
-    #         print(f"Enviando datos a: {cliente.nickname}")  #
-    #         proxy.actualizar_vista_votacion(respuestas_de_clientes)
+    #     # Usamos un pool de threads para llamar a todos en paralelo
+    #     with ThreadPoolExecutor(max_workers=len(self.clientes)) as executor:
+    #         futures = []
+    #         print(f"Los clientes existentes son: {self.clientes}")
+    #         for cliente in self.clientes:
+    #             proxy = self.get_proxy_cliente(cliente)
+    #             proxy._pyroClaimOwnership()
+    #             print(f"Enviando datos a: {cliente.nickname}")
+    #             futures.append(executor.submit(proxy.actualizar_vista_votacion,
+    #                                         respuestas_de_clientes))
+
+    #         # Si el método es oneway, no hay nada que esperar, 
+    #         # pero si no lo es, podemos hacer esto para detectar errores:
+    #         for future in as_completed(futures):
+    #             try:
+    #                 future.result(timeout=5)  # solo levanta excepción si falla
+    #             except Exception as e:
+    #                 print(f"Error enviando datos a un cliente: {e}")
+
+    def enviar_datos_para_votacion(self, respuestas_de_clientes):
+        for cliente in self.clientes:
+            proxy = self.get_proxy_cliente(cliente)
+            proxy._pyroClaimOwnership()
+            print(f"Enviando datos a: {cliente.nickname}")  #
+            proxy.actualizar_vista_votacion(respuestas_de_clientes)
     
     def recolectar_votos(self):
         votos_clientes: dict = {}
