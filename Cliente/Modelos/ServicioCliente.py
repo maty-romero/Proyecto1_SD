@@ -17,7 +17,6 @@ class ServicioCliente:
         # Metodo expuesto para que el server pida información del cliente
         return self.gestor.provide_response()
 
-    @Pyro5.api.oneway
     def actualizar_vista_votacion(self, respuestas_clientes):
         self.gestor.cargar_datos_vista_votacion(respuestas_clientes)
 
