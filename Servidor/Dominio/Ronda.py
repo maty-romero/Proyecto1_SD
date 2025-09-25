@@ -12,14 +12,21 @@ class Ronda:
         self.letra_ronda = self.get_letra_random()
         self.categorias = categorias
         self.jugadores_ronda = jugadores
+        self.respuestas_ronda:dict = {}
 
     # PENDIENTE --> Completar Clase RONDA y Clase Respuesta
 
-    def get_estado_ronda(self):
-        return self.finalizada
-    
     def set_estado_ronda(self, estado):
         self.finalizada = estado
+
+    def set_respuestas_ronda(self,respuestas):
+        self.respuestas_ronda = respuestas
+    
+    def get_respuestas_ronda(self):
+        return self.respuestas_ronda
+
+    def get_estado_ronda(self):
+        return self.finalizada
 
     def get_letra_random(self):
         letras = list(string.ascii_uppercase)

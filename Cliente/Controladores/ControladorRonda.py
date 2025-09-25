@@ -18,10 +18,15 @@ class ControladorRonda:
     def setNavegacion(self, controlador_navegacion):
         self.navegacion = controlador_navegacion
 
+    def reset(self):
+        """Limpia los campos de la vista."""
+        inputs = self.vista.obtener_categorias_input()
+        for input in inputs:
+            input.clear()
+
     def mostrar_info_ronda(self):
         """Actualiza las etiquetas y categorías según la info de la sala"""
-        #info = self.gestor_cliente.get_info_sala()
-
+        self.reset()
         info = self.gestor_cliente.get_info_ronda_act()
         categorias = info.get('categorias', [])
         ronda = info.get('nro_ronda_actual', 1)
@@ -39,20 +44,7 @@ class ControladorRonda:
 
     def finalizar_ronda(self):
         """Acción al presionar STOP!"""
-        # Recolectar respuestas y enviarlas al gestor
-        
         self.gestor_cliente.enviar_stop()
-
-        # Navegar a la siguiente vista usando el controlador de navegación
-        # Por ahora suponemos que es la vista de resultados o siguiente ronda
-        #self.navegacion.mostrar("votaciones")  # Este método debería existir en ControladorNavegacion
-    
-        #Reconstruir la vista de votaciones con la cantidad de jugadores vivos que tenemos en la partida
-        #Método para armar las lineas de cada jugador que respondío (aunque no estén vivos) con sus respuestas
-        #Método para setear las respuestas a True
-        
-        #se podra votar por un tiempoLIMITADO (30seg?)-->SUMAR ESTO A LOS ENVIOS POR SOCKET?
-        #enviar a la Ronda y setear el nro_ronda_actual
 
 
     def obtener_respuestas(self):
@@ -67,6 +59,5 @@ class ControladorRonda:
             ronda.agregarRespuesta(Respuesta(cat, res))
 
         info_respuestas = ronda.getRespuestasJugador()
-        #print(info_respuestas)
         return info_respuestas
    

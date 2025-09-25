@@ -25,6 +25,7 @@ class VistaResultados(QWidget):
         self.labelPuntajesTotales.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
         self.labelPuntajesTotales.setStyleSheet("color: green;")
         self.labelPuntajesTotales.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.labelPuntajesTotales.setWordWrap(True)
 
         header_layout.addWidget(self.labelJugadores)
         header_layout.addWidget(self.labelPuntajesTotales)
@@ -47,8 +48,8 @@ class VistaResultados(QWidget):
         self.labelJugadores.setText("Jugadores: " + ", ".join(jugadores))
 
     def set_puntajes_totales(self, puntajes: dict):
-        texto = " | ".join([f"{nick}: {puntaje}" for nick, puntaje in puntajes.items()])
-        self.labelPuntajesTotales.setText(f"Puntajes Totales: {texto}")
+        texto = "\n".join([f"  {nick}: {puntaje}" for nick, puntaje in puntajes.items()])
+        self.labelPuntajesTotales.setText(f"Puntajes Totales:\n{texto}")
 
     def set_ganador(self, ganador: str):
         self.labelGanador.setText(f"Ganador de la partida: {ganador}")

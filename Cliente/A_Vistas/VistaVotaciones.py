@@ -18,9 +18,9 @@ class VistaVotaciones(QWidget):
 
         # --- Header: Ronda y Letra ---
         header_layout = QHBoxLayout()
-        self.labelRondaConNumero = QLabel("Ronda: 1/3")
+        self.labelRondaConNumero = QLabel("Ronda: -/-")
         self.labelRondaConNumero.setFont(QFont("Segoe UI", 22, QFont.Weight.Bold))
-        self.labelLetraRandom = QLabel("Letra: T")
+        self.labelLetraRandom = QLabel("Letra: -")
         self.labelLetraRandom.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
     
         self.labelMensajeVotacion = QLabel("Esperando jugadores para la Votacion!!")
@@ -64,7 +64,7 @@ class VistaVotaciones(QWidget):
     def set_mensaje_votacion(self,mensaje:str):
         self.labelMensajeVotacion.setText(mensaje)
 
-    def _limpiar_scroll(self):
+    def limpiar_scroll(self):
         while self.scroll_layout.count():
             item = self.scroll_layout.takeAt(0)
             widget = item.widget()
@@ -72,7 +72,7 @@ class VistaVotaciones(QWidget):
                 widget.setParent(None)
 
     def agregar_respuestas_para_votar(self, respuestas_por_categoria: dict[str, list[tuple[str, str]]]):
-        self._limpiar_scroll()
+        self.limpiar_scroll()
         self.checkboxes_por_categoria = {}
 
         fuente_subtitulo = QFont("Segoe UI", 18, QFont.Weight.Bold)
@@ -137,6 +137,13 @@ class VistaVotaciones(QWidget):
             for nickname, checkbox in lista:
                 if nickname not in votos:
                     votos[nickname] = {}
-                votos[nickname][cat_simple] = checkbox.isChecked()
+                votos[nickname][cat_simple] = not checkbox.isChecked()
 
         return votos
+    
+    def reiniciar_labels(self):
+        self.limpiar_scroll()
+        self.labelRondaConNumero.setText("Ronda: -/-")
+        self.labelLetraRandom.setText("Letra: -")
+        self.labelMensajeVotacion.setText("Esperando jugadores para la Votacion!!")
+        self.checkboxes_por_categoria = {}

@@ -110,9 +110,7 @@ class GestorCliente:
         # espera a que sesion socket este listo
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
-
         self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
-
         # registro del cliente
         info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
@@ -186,13 +184,11 @@ class GestorCliente:
             elif msg == "aviso_tiempo_votacion":
                 self.logger.info(f"Recibido del server {datos}")
                 self.controlador_navegacion.controlador_votaciones.actualizar_mensaje_timer(datos)
-            elif msg == "aviso_fin_votacion":
-                self.logger.info(f"Envié los votos al servidor!!!!!!")
-                #debería cambiar a la vista de Ronda con una nueva ronda, usando un método de partida (pero esto sería desde ServicioJuego)
-                #self.controlador_navegacion.controlador_votaciones.
             elif msg == "fin_partida":
-                #self._cerrar_partida(datos)
-                pass
+                self.logger.info("La partida ha finalizado.")
+                self.controlador_navegacion.controlador_resultados.mostrar_resultados(datos)
+                self.controlador_navegacion.mostrar('resultados')
+                #self.stop_daemon_cliente()
             else:
                 self.logger.warning(f"[Socket] Otro Mensaje: {msg}")
 
@@ -277,6 +273,9 @@ class GestorCliente:
 
     def enviar_votos_jugador(self):
         return self.controlador_navegacion.controlador_votaciones.enviar_votos()
+    
+    
+    
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):
