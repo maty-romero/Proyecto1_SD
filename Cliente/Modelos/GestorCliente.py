@@ -45,7 +45,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = None   # DESKTOP-HUREDOL
+#NOMBRE_PC_NS = None   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 
@@ -57,16 +57,9 @@ class GestorCliente:
         self.Jugador_cliente: JugadorCliente = None
         self.controlador_navegacion = None
         
-        #implementacion para ip manual, o para utilizar el nombre que identifica el equipo
-        #nota: el equipo tiene que tener el puerto abierto
-        if NOMBRE_PC_NS: 
-            self.hostNS = NOMBRE_PC_NS
-        else:    
-            self.hostNS = str(ComunicationHelper.obtener_ip_local())
-            print(f"La ip encontrada es: {self.hostNS}")
-            
-        self.puertoNS = PUERTO_NS
-
+        self.hostNS = str(ComunicationHelper.obtener_ip_local())
+        print(f"La ip encontrada es: {self.hostNS}")
+        
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
         self._state_lock = threading.Lock()
