@@ -63,7 +63,6 @@ class ControladorNavegacion:
             self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
             self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
-            self.controlador_resultados.mostrar_resultados()
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
     

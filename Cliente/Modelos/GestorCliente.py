@@ -265,7 +265,8 @@ class GestorCliente:
             # Crear y guardar el daemon para poder apagarlo despues
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
-                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon)
+                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
+                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
                 self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
             except Exception as e:
                 self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
