@@ -71,7 +71,7 @@ class ServicioComunicacion:
     def respuestas_memoria_clientes_ronda(self):
         respuestas:dict= {}
         for cliente in self.clientes:
-            proxy = self.get_proxy_cliente(cliente)
+            proxy = cliente.get_proxy_cliente()
             proxy._pyroClaimOwnership()
             resp = proxy.obtener_respuesta_memoria()
             respuestas[cliente.nickname] = resp
@@ -99,7 +99,7 @@ class ServicioComunicacion:
 
     def enviar_datos_para_votacion(self, respuestas_de_clientes):
         for cliente in self.clientes:
-            proxy = self.get_proxy_cliente(cliente)
+            proxy = cliente.get_proxy_cliente()
             proxy._pyroClaimOwnership()
             print(f"Enviando datos a: {cliente.nickname}")  #
             proxy.actualizar_vista_votacion(respuestas_de_clientes)
@@ -107,24 +107,24 @@ class ServicioComunicacion:
     def recolectar_votos(self):
         votos_clientes: dict = {}
         for i, cliente in enumerate(self.clientes):
-            proxy = self.get_proxy_cliente(cliente)
+            proxy = cliente.get_proxy_cliente()
             proxy._pyroClaimOwnership()
             votos = proxy.obtener_votos_cliente()
             votos_clientes[i] = votos
         return votos_clientes
         
     
-    def get_proxy_cliente(self, cliente):
-        try:
-            with Pyro5.api.locate_ns(host="10.89.177.119", port=9090) as ns:
-                uri = ns.lookup(self.nombre_logico_server)
-                proxy_cliente = Pyro5.api.Proxy(uri)
-                #proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
-                return proxy_cliente
-        except Pyro5.errors.NamingError:
-            self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
-            sys.exit(1)
-            return None
+    # def get_proxy_cliente(self, cliente):
+    #     try:
+    #         with Pyro5.api.locate_ns(host="10.89.177.119", port=9090) as ns:
+    #             uri = ns.lookup(self.nombre_logico_server)
+    #             proxy_cliente = Pyro5.api.Proxy(uri)
+    #             #proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
+    #             return proxy_cliente
+    #     except Pyro5.errors.NamingError:
+    #         self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
+    #         sys.exit(1)
+    #         return None
 
 
     """
