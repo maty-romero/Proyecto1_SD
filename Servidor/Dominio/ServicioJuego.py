@@ -132,10 +132,8 @@ class ServicioJuego:
         respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
         from collections import defaultdict
 
-        # 1. Contar repeticiones de cada respuesta por categoría (solo respuestas válidas)
         conteo_respuestas = defaultdict(lambda: defaultdict(int))
 
-        # 2. Determinar validez de cada respuesta (más votos True que False)
         validez = defaultdict(dict)
         for jugador, info in respuestas_clientes.items():
             for categoria, respuesta in info["respuestas"].items():
@@ -148,14 +146,12 @@ class ServicioJuego:
                         else:
                             false_count += 1
                 
-                # CAMBIO: más votos True que False
                 validez[jugador][categoria] = (true_count > false_count)
                 
                 # Solo cuenta la respuesta si es válida y no vacía
                 if respuesta and validez[jugador][categoria]:
                     conteo_respuestas[categoria][respuesta] += 1
 
-        # 3. Asignar puntajes
         puntajes = {}
         for jugador, info in respuestas_clientes.items():
             puntajes[jugador] = {}
@@ -171,13 +167,12 @@ class ServicioJuego:
                 puntajes[jugador][categoria] = puntaje
                 print(f"[DEBUG] {jugador} - {categoria}: '{respuesta}' | T:{true_count} F:{false_count} válida: {validez[jugador][categoria]}, repeticiones: {conteo_respuestas[categoria][respuesta]} => {puntaje} puntos")
 
-        # 4. Sumar puntajes totales y actualizar jugadores
         totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
 
         for jugador in self.partida.jugadores:
             if jugador.nickname in totales:
                 jugador.sumar_puntaje(totales[jugador.nickname])
-                print(f"Para el jugador {jugador.nickname} el puntaje total es {totales[jugador.nickname]}")
+            print(f"El puntaje del jugador {jugador.nickname} es {totales[jugador.nickname]}")
 
         self.evaluar_ultima_ronda()
 
@@ -185,16 +180,7 @@ class ServicioJuego:
     def finalizar_partida(self):
         """Notifica el fin de la partida y envía los datos finales"""
 
-        puntajes_totales = {}
-        for jugador in self.partida.jugadores:
-            puntajes_totales[jugador.nickname] = jugador.get_puntaje()
-
-        puntaje_maximo = max(jugador.get_puntaje() for jugador in self.partida.jugadores)
-        ganadores = [jugador for jugador in self.partida.jugadores if jugador.get_puntaje() == puntaje_maximo]
-        if len(ganadores) == 1:
-            ganador = ganadores[0].nickname
-        else:
-            ganador = f"Empate entre: {', '.join([g.nickname for g in ganadores])}"
+        puntajes_totales, ganador = self.partida.calcular_puntos_partida()
 
         resultados_partida = {
             'jugadores' : list(self.Jugadores.keys()),
@@ -331,7 +317,7 @@ class ServicioJuego:
         return self.partida.get_info_sala()
     
     def get_info_ronda_actual(self):
-        return self.partida.ronda_actual.info_ronda()
+        return self.partida.get_info_ronda()
     
     def obtener_jugadores_en_partida(self) -> list[str]:
         nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")

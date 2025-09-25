@@ -29,7 +29,7 @@ class ControladorRonda:
         self.reset()
         info = self.gestor_cliente.get_info_ronda_act()
         categorias = info.get('categorias', [])
-        ronda = info.get('nro_ronda_actual', 1)
+        ronda = info.get('nro_ronda', 1)
         total_rondas = info.get('total_rondas', 3)
 
         # Actualizar número de ronda y letra (si aplica)
