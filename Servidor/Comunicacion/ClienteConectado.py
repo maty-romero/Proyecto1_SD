@@ -11,12 +11,11 @@ class ClienteConectado:
     def __init__(self, nickname: str, nombre_logico: str, ip_cliente: str, puerto_cliente: int):
         self.id = str(uuid.uuid4())
         self.nickname = nickname
+        self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente)
         self.confirmado: bool = False
         self.conectado: bool = False
         self.timestamp: datetime
-        self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
-
         self.socket = ManejadorSocket( # sesion cliente
             ip_cliente=ip_cliente,
             puerto_cliente=puerto_cliente,
