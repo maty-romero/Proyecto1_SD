@@ -45,7 +45,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-#NOMBRE_PC_NS = None   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = "DESKTOP-HUREDOL"   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 
@@ -58,8 +58,9 @@ class GestorCliente:
         self.controlador_navegacion = None
         
         self.puertoNS = PUERTO_NS
-        self.hostNS = str(ComunicationHelper.obtener_ip_local())
-        print(f"La ip encontrada es: {self.hostNS}")
+        self.hostNS = NOMBRE_PC_NS
+        #self.hostNS = str(ComunicationHelper.obtener_ip_local())
+        print(f"NameServer name : {self.hostNS}")
         
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
