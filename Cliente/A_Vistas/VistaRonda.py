@@ -70,7 +70,7 @@ class VistaRonda(QWidget):
             grid_layout.addWidget(line_edit, i, 1)
 
         # --- Botón STOP! ---
-        self.enviar_respuestas_btn = QPushButton("STOP!")
+        self.enviar_respuestas_btn = QPushButton("STOP!", parent=self)
         self.enviar_respuestas_btn.setFont(QFont("Verdana", 14, QFont.Weight.Bold))
         main_layout.addWidget(self.enviar_respuestas_btn, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
 
