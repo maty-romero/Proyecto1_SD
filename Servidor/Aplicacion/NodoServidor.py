@@ -1,3 +1,4 @@
+from time import sleep
 from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
@@ -9,8 +10,8 @@ class NodoServidor(Nodo):
     def __init__(self, id, nombre="Servidor", activo=False):
         super().__init__(id,nombre,activo)
         self.logger = ConsoleLogger(name="LoggerLocal", level="INFO")
-        self.ServDB = None
-        #self.ServDB = ControladorDB(self.logger)
+        #self.ServDB = None
+        self.ServDB = ControladorDB()
         #analizar posibles modificaciones a esta invocacion
         if self.activo:
             self.iniciar_servicio()
@@ -19,8 +20,33 @@ class NodoServidor(Nodo):
         self.ServComunic = ServicioComunicacion()
         self.Dispatcher = Dispatcher()
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
-        # self.Dispatcher.registrar_servicio("db", self.ServDB)
+        self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
+
+        #datos de prueba para testear la bd
+        datos = {
+            "codigo": 1,          # código de la partida
+            "jugadores": ["Ana", "Luis"],
+            "nro_ronda": 1,
+            "categorias": ["Animal", "Ciudad", "Color"],
+            "letra": "M",
+            "respuestas": [
+                    { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
+                    { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
+                ]
+            }
+
+        dataI = self.ServDB.obtener_partida()
+        #deberia imprimir la data vacia 
+        self.logger.info(dataI)
+        self.ServDB.crear_partida(datos)
+        #deberia imprimir la data cargada en la linea anterior
+        data2 = self.ServDB.obtener_partida()
+        self.logger.info(data2)
+        
+        RegistroControladorDB = self.ServDB.registroDatos
+        self.logger.info(f"RegistroDB: {RegistroControladorDB}")
+        sleep(1)
 
 
     """ VER
