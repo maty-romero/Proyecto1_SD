@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import time
 from datetime import datetime
@@ -10,8 +11,8 @@ from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 
 class ServicioComunicacion:
-    def __init__(self):
-        # self.dispatcher = dispatcher
+    def __init__(self,dispatcher):
+        self.dispatcher = dispatcher
         # self.sockets_registrados =  []
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
@@ -49,6 +50,7 @@ class ServicioComunicacion:
             else:
                 self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
                 cliente.socket.cerrar()
+                self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname)
                 json = SerializeHelper.serializar(
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
@@ -58,27 +60,72 @@ class ServicioComunicacion:
         self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
 
     # Metodos de Suscripcion
-    def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente):
-        cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente)
+    def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente):
+        cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente)
         cliente.socket.conectar() # inicio sesion por socket
         self.clientes.append(cliente)
 
-    def desuscribir_cliente(self, nickname):
-        #self.clientes.pop(id_cliente, None)
-        pass
+    # def desuscribir_cliente(self, nickname):
+    #     #self.clientes.pop(id_cliente, None)
+    #     pass
+
+    """AGREGAR EXCEPCION POR SI CLIENTE DENIEGA CONEXION / NO EXISTE"""
+
+    #No funciona
+    # def respuestas_memoria_clientes_ronda(self):
+    #     respuestas: dict = {}
+    #     for cliente in self.clientes:
+    #         try:
+    #             proxy = cliente.get_proxy_cliente()
+    #             proxy._pyroClaimOwnership()
+    #             resp = proxy.obtener_respuesta_memoria()
+    #             respuestas[cliente.nickname] = resp
+    #         except Pyro5.errors.CommunicationError as e:
+    #             self.logger.warning(f"No se pudo obtener respuesta de {cliente.nickname}: {e}")
+    #             # opcional: asignar None o valor por defecto
+    #             respuestas[cliente.nickname] = None
+    #     return respuestas
+
+
+    # def enviar_datos_para_votacion(self, respuestas_de_clientes):
+    #     for cliente in self.clientes:
+    #         try:
+    #             proxy = cliente.get_proxy_cliente()
+    #             proxy._pyroClaimOwnership()
+    #             print(f"Enviando datos a: {cliente.nickname}")
+    #             proxy.actualizar_vista_votacion(respuestas_de_clientes)
+    #         except Pyro5.errors.CommunicationError as e:
+    #             self.logger.warning(f"No se pudo enviar datos a {cliente.nickname}: {e}")
+    #             continue  # sigue con el siguiente cliente
+
+
+    # def recolectar_votos(self):
+    #     votos_clientes: dict = {}
+    #     for i, cliente in enumerate(self.clientes):
+    #         try:
+    #             proxy = cliente.get_proxy_cliente()
+    #             proxy._pyroClaimOwnership()
+    #             votos = proxy.obtener_votos_cliente()
+    #             votos_clientes[i] = votos
+    #         except Pyro5.errors.CommunicationError as e:
+    #             self.logger.warning(f"No se pudo obtener votos de {cliente.nickname}: {e}")
+    #             votos_clientes[i] = None
+    #     return votos_clientes   
+
 
     def respuestas_memoria_clientes_ronda(self):
         respuestas:dict= {}
         for cliente in self.clientes:
-            proxy = self.get_proxy_cliente(cliente)
+            proxy = cliente.get_proxy_cliente()
             proxy._pyroClaimOwnership()
             resp = proxy.obtener_respuesta_memoria()
             respuestas[cliente.nickname] = resp
         return respuestas
-    
+
+
     def enviar_datos_para_votacion(self, respuestas_de_clientes):
         for cliente in self.clientes:
-            proxy = self.get_proxy_cliente(cliente)
+            proxy = cliente.get_proxy_cliente()
             proxy._pyroClaimOwnership()
             print(f"Enviando datos a: {cliente.nickname}")  #
             proxy.actualizar_vista_votacion(respuestas_de_clientes)
@@ -86,23 +133,13 @@ class ServicioComunicacion:
     def recolectar_votos(self):
         votos_clientes: dict = {}
         for i, cliente in enumerate(self.clientes):
-            proxy = self.get_proxy_cliente(cliente)
+            proxy = cliente.get_proxy_cliente()
             proxy._pyroClaimOwnership()
             votos = proxy.obtener_votos_cliente()
             votos_clientes[i] = votos
         return votos_clientes
         
     
-    def get_proxy_cliente(self, cliente):
-        try:
-            proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
-            return proxy_cliente
-        except Pyro5.errors.NamingError:
-            self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
-            sys.exit(1)
-            return None
-
-
     """
     def enviar_a_cliente(self, id_cliente, mensaje):
         pass

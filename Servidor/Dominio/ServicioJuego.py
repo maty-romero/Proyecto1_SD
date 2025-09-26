@@ -17,9 +17,9 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = logger # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 2 # pasar por constructor?
+        self.jugadores_min = 4 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
-        self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
+        self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
 
     """
@@ -263,10 +263,11 @@ class ServicioJuego:
             nombre_logico = info_cliente['nombre_logico']
             ip_cliente = info_cliente['ip']
             puerto_cliente = info_cliente['puerto']
+            uri_cliente = info_cliente['uri']
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
                 "suscribir_cliente",  # nombre_metodo
-                nickname, nombre_logico, ip_cliente, puerto_cliente  # args
+                nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente  # args
             )
 
             # obtener info sala
@@ -376,3 +377,6 @@ class ServicioJuego:
             #Opcional, agregar mensaje por socket. por jugador, aunque lo mejor es dejarlo
             # para cuando inicie la ronda a todos
 
+    def eliminar_jugador(self,nickname):
+        self.partida.eliminar_jugador_partida(nickname)
+        self.Jugadores.pop(nickname)

@@ -19,11 +19,13 @@ class NodoServidor(Nodo):
             self.iniciar_servicio()
 
     def iniciar_servicio(self):
-        self.ServComunic = ServicioComunicacion()
         self.Dispatcher = Dispatcher()
+        self.ServComunic = ServicioComunicacion(self.Dispatcher)
+        self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
+        self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
         self.Dispatcher.registrar_servicio("db", self.ServDB)
-        self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
+        
 
         #datos de prueba para testear la bd
         datos = {

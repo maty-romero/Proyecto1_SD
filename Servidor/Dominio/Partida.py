@@ -11,6 +11,11 @@ class Partida:
         self.ronda_actual: Ronda = None
         self.jugadores: list[Jugador] = []
 
+    def eliminar_jugador_partida(self, nickname: str):
+        for jugador in self.jugadores:
+            if jugador.nickname == nickname: 
+                self.jugadores.remove(jugador)
+
     # Se asume que hay jugadores requeridos para jugar
     def cargar_jugadores_partida(self, jugadores: list[Jugador]):
         self.jugadores = jugadores
