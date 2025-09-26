@@ -15,7 +15,7 @@ class ManejadorSocket:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.hilo_escucha = None
         self._escuchando = False
-        self.logger = ConsoleLogger(name=f"ServidorConectado[{nickname_log}]", level="INFO")
+        self.logger = ConsoleLogger(name=f"ManejadorSocket['{nickname_log}']", level="INFO")
 
     def conectar(self):
         try:

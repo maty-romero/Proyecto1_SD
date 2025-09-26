@@ -1,6 +1,8 @@
 from Cliente.A_Vistas.VistaVotaciones import VistaVotaciones
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6.QtCore import Qt, pyqtSignal, QObject, QMetaObject
+
+from Cliente.Utils.ConsoleLogger import ConsoleLogger
 class VotacionesSignals(QObject):
     """Clase que hereda de QObject para poder utilizar señales pyqtSignal"""
     actualizar_vista_signal = pyqtSignal(dict) #Esta señal sirve para comunicarse desde un hilo secundario al hilo de la gui, de lo contrario no se puede modificar la gui
@@ -17,6 +19,9 @@ class ControladorVotaciones:
         self.signals.actualizar_vista_signal.connect(self.vista.reiniciar_labels,Qt.ConnectionType.QueuedConnection)
         self.signals.actualizar_vista_signal.connect(self._actualizar_vista_votaciones,Qt.ConnectionType.QueuedConnection)
         self.signals.actualizar_mensaje_timer_signal.connect(self.vista.set_mensaje_votacion, Qt.ConnectionType.QueuedConnection)
+
+        self.logger = ConsoleLogger(name="ControladorVotaciones", level="INFO")
+
 
         """
         La línea de abajo sirve para saber en qué hilo estás, sirvió para probar que las señales se estaban enviando desde un hilo pyro (que tiene origen en
@@ -42,6 +47,11 @@ class ControladorVotaciones:
         respuestas_por_categoria = {}
         # 'NICKNAME' es la clave del diccionario
         for nickname, info in respuestas_clientes['respuestas_clientes'].items():
+
+            if not info.get("respuestas", {}):   # se evalúa True si está vacío
+                self.logger.warning(f"No hay respuestas registradas para jugador {nickname}")
+                continue  # saltar al siguiente jugador
+
             for categoria, respuesta in info['respuestas'].items():
                 clave = f"{categoria} con {letra}"
                 if clave not in respuestas_por_categoria:

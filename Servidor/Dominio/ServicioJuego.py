@@ -127,7 +127,7 @@ class ServicioJuego:
         "recolectar_votos")
         self.procesar_votos_y_asignar_puntaje(votos)
 
-    
+    """
     def procesar_votos_y_asignar_puntaje(self, votos):
         respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
         from collections import defaultdict
@@ -136,6 +136,11 @@ class ServicioJuego:
 
         validez = defaultdict(dict)
         for jugador, info in respuestas_clientes.items():
+            
+            if not info.get("respuestas", {}):   # se evalúa True si está vacío
+                self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
+                continue  # saltar al siguiente jugador
+           
             for categoria, respuesta in info["respuestas"].items():
                 true_count = 0
                 false_count = 0
@@ -155,6 +160,11 @@ class ServicioJuego:
         puntajes = {}
         for jugador, info in respuestas_clientes.items():
             puntajes[jugador] = {}
+
+            if not info.get("respuestas", {}):   # se evalúa True si está vacío
+                self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
+                continue  # saltar al siguiente jugador
+
             for categoria, respuesta in info["respuestas"].items():
                 if not respuesta or not validez[jugador][categoria]:
                     puntaje = 0
@@ -179,6 +189,77 @@ class ServicioJuego:
             print(f"El puntaje del jugador {jugador.nickname} es {totales[jugador.nickname]}")
 
         self.evaluar_ultima_ronda()
+    """
+
+    def procesar_votos_y_asignar_puntaje(self, votos):
+        from collections import defaultdict
+
+        respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
+        conteo_respuestas = defaultdict(lambda: defaultdict(int))
+        validez = defaultdict(dict)
+
+        # --- Primera pasada: validar respuestas y contar ocurrencias ---
+        for jugador, info in respuestas_clientes.items():
+            respuestas = info.get("respuestas", {})
+            if not respuestas:
+                self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
+                continue
+
+            for categoria, respuesta in respuestas.items():
+                true_count = false_count = 0
+                for ronda, votos_jugadores in votos.items():
+                    if jugador in votos_jugadores and categoria in votos_jugadores[jugador]:
+                        if votos_jugadores[jugador][categoria]:
+                            true_count += 1
+                        else:
+                            false_count += 1
+
+                es_valida = (true_count > false_count)
+                validez[jugador][categoria] = es_valida
+
+                # Solo cuenta la respuesta si es válida y no vacía
+                if respuesta and es_valida:
+                    conteo_respuestas[categoria][respuesta] += 1
+
+                self.logger.debug(
+                    f"[VALIDACIÓN] {jugador} - {categoria}: '{respuesta}' "
+                    f"T:{true_count} F:{false_count} válida:{es_valida}"
+                )
+
+        # --- Segunda pasada: asignar puntajes ---
+        puntajes = {}
+        for jugador, info in respuestas_clientes.items():
+            puntajes[jugador] = {}
+            respuestas = info.get("respuestas", {})
+            if not respuestas:
+                self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
+                continue
+
+            for categoria, respuesta in respuestas.items():
+                es_valida = validez[jugador].get(categoria, False)
+                if not respuesta or not es_valida:
+                    puntaje = 0
+                else:
+                    repeticiones = conteo_respuestas[categoria][respuesta]
+                    puntaje = 10 if repeticiones == 1 else 5
+
+                puntajes[jugador][categoria] = puntaje
+                self.logger.debug(
+                    f"[PUNTAJE] {jugador} - {categoria}: '{respuesta}' "
+                    f"válida:{es_valida}, repeticiones:{conteo_respuestas[categoria][respuesta]} "
+                    f"=> {puntaje} puntos"
+                )
+
+        # --- Totales y asignación ---
+        totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
+
+        for jugador in self.partida.jugadores:
+            total = totales.get(jugador.nickname, 0)  # evita KeyError
+            jugador.sumar_puntaje(total)
+            self.logger.info(f"El puntaje del jugador {jugador.nickname} es {total}")
+
+        self.evaluar_ultima_ronda()
+
 
 
     def finalizar_partida(self):

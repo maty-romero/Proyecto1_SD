@@ -8,7 +8,7 @@ import threading
 
 import Pyro5.nameserver
 
-from Servidor.Aplicacion.Nodo import Nodo
+from ServidorNombres.Nodo import Nodo
 
 """FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
 class ServidorNombres(Nodo):

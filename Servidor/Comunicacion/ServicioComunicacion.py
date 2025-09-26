@@ -31,7 +31,7 @@ class ServicioComunicacion:
     def loop_verificacion(self):
         while True:
             self.verificar_clientes()
-            time.sleep(2)  # cada 2 segundos
+            time.sleep(1.5)  # cada 2 segundos
 
     def broadcast(self, mensaje: str):
         if len(self.clientes) <= 0:
@@ -114,23 +114,63 @@ class ServicioComunicacion:
 
 
     def respuestas_memoria_clientes_ronda(self):
+        self.logger.warning("Obteniendo respuestas memoria clientes ronda...")
         respuestas:dict= {}
         for cliente in self.clientes:
-            proxy = cliente.get_proxy_cliente()
-            proxy._pyroClaimOwnership()
-            resp = proxy.obtener_respuesta_memoria()
-            respuestas[cliente.nickname] = resp
-        return respuestas
+            try:
+                proxy = cliente.get_proxy_cliente()
+                proxy._pyroClaimOwnership()
+                resp = proxy.obtener_respuesta_memoria()
+                respuestas[cliente.nickname] = resp
+            except (Pyro5.errors.CommunicationError, Pyro5.errors.TimeoutError,
+                    Pyro5.errors.ConnectionClosedError) as e:
+                self.logger.error(f"No se pudo contactar a {cliente.nickname}: {type(e).__name__} - {e}")
+                respuestas[cliente.nickname] = {}  # Se toma como respuestas vacias? 
+            except Exception as e:
+                self.logger.error(f"[ERROR] Fallo inesperado con {cliente.nickname}: {type(e).__name__} - {e}")
+                respuestas[cliente.nickname] = {}
+            
+        return respuestas 
 
 
     def enviar_datos_para_votacion(self, respuestas_de_clientes):
+        self.logger.warning("Enviando datos votacion (actualizacion vista)...")
         for cliente in self.clientes:
-            proxy = cliente.get_proxy_cliente()
-            proxy._pyroClaimOwnership()
-            print(f"Enviando datos a: {cliente.nickname}")  #
-            proxy.actualizar_vista_votacion(respuestas_de_clientes)
+            try:
+                proxy = cliente.get_proxy_cliente()
+                proxy._pyroClaimOwnership()
+                #self.logger.warning(f"Enviando datos a: {cliente.nickname}...")
+                proxy.actualizar_vista_votacion(respuestas_de_clientes)
+
+            except (Pyro5.errors.CommunicationError, Pyro5.errors.TimeoutError,
+                    Pyro5.errors.ConnectionClosedError) as e:
+                self.logger.error(f"No se pudo contactar a {cliente.nickname}: {type(e).__name__} - {e}")
+            except Exception as e:
+                self.logger.error(f"[ERROR] Fallo inesperado con {cliente.nickname}: {type(e).__name__} - {e}")
     
+
     def recolectar_votos(self):
+        self.logger.warning("Recolectando votos de jugadores...")
+        votos_clientes: dict = {}
+        for i, cliente in enumerate(self.clientes):
+            try:
+                proxy = cliente.get_proxy_cliente()
+                proxy._pyroClaimOwnership()
+                votos = proxy.obtener_votos_cliente()
+                votos_clientes[i] = votos
+
+            except (Pyro5.errors.CommunicationError,
+                    Pyro5.errors.TimeoutError,
+                    Pyro5.errors.ConnectionClosedError) as e:
+                self.logger.error(f"No se pudo obtener votos de {cliente.nickname}: {type(e).__name__} - {e}")
+                votos_clientes[i] = {}  # Considerar votos vacios? 
+            except Exception as e:
+                self.logger.error(f"[ERROR] Fallo inesperado con {cliente.nickname}: {type(e).__name__} - {e}")
+                votos_clientes[i] = {}
+
+        return votos_clientes
+        """
+        --> Codigo anterior
         votos_clientes: dict = {}
         for i, cliente in enumerate(self.clientes):
             proxy = cliente.get_proxy_cliente()
@@ -138,7 +178,7 @@ class ServicioComunicacion:
             votos = proxy.obtener_votos_cliente()
             votos_clientes[i] = votos
         return votos_clientes
-        
+        """
     
     """
     def enviar_a_cliente(self, id_cliente, mensaje):

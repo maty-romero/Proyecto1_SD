@@ -45,21 +45,21 @@ services:
     depends_on:
       - nameserver
 
-  cliente:
-    build:
-      context: ./Cliente
-      dockerfile: Dockerfile
-    container_name: cliente
-    environment:
-      - DISPLAY=0 # DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    networks:
-      - backend
-    depends_on:
-      - nameserver
-      - nodo_principal
+  # cliente:
+  #   build:
+  #     context: ./Cliente
+  #     dockerfile: Dockerfile
+  #   container_name: cliente
+  #   environment:
+  #     - DISPLAY=0 # DISPLAY=${DISPLAY}
+  #     - QT_X11_NO_MITSHM=1
+  #   volumes:
+  #     - /tmp/.X11-unix:/tmp/.X11-unix:rw
+  #   networks:
+  #     - backend
+  #   depends_on:
+  #     - nameserver
+  #     - nodo_principal
 
 
 networks:
