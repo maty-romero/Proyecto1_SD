@@ -50,7 +50,7 @@ class ServicioComunicacion:
             else:
                 self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
                 cliente.socket.cerrar()
-                self.dispatcher.manejar_llamada("Juego","eliminar_jugador",cliente.nickname)
+                self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname)
                 json = SerializeHelper.serializar(
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
@@ -69,6 +69,50 @@ class ServicioComunicacion:
     #     #self.clientes.pop(id_cliente, None)
     #     pass
 
+    """AGREGAR EXCEPCION POR SI CLIENTE DENIEGA CONEXION / NO EXISTE"""
+
+    #No funciona
+    # def respuestas_memoria_clientes_ronda(self):
+    #     respuestas: dict = {}
+    #     for cliente in self.clientes:
+    #         try:
+    #             proxy = cliente.get_proxy_cliente()
+    #             proxy._pyroClaimOwnership()
+    #             resp = proxy.obtener_respuesta_memoria()
+    #             respuestas[cliente.nickname] = resp
+    #         except Pyro5.errors.CommunicationError as e:
+    #             self.logger.warning(f"No se pudo obtener respuesta de {cliente.nickname}: {e}")
+    #             # opcional: asignar None o valor por defecto
+    #             respuestas[cliente.nickname] = None
+    #     return respuestas
+
+
+    # def enviar_datos_para_votacion(self, respuestas_de_clientes):
+    #     for cliente in self.clientes:
+    #         try:
+    #             proxy = cliente.get_proxy_cliente()
+    #             proxy._pyroClaimOwnership()
+    #             print(f"Enviando datos a: {cliente.nickname}")
+    #             proxy.actualizar_vista_votacion(respuestas_de_clientes)
+    #         except Pyro5.errors.CommunicationError as e:
+    #             self.logger.warning(f"No se pudo enviar datos a {cliente.nickname}: {e}")
+    #             continue  # sigue con el siguiente cliente
+
+
+    # def recolectar_votos(self):
+    #     votos_clientes: dict = {}
+    #     for i, cliente in enumerate(self.clientes):
+    #         try:
+    #             proxy = cliente.get_proxy_cliente()
+    #             proxy._pyroClaimOwnership()
+    #             votos = proxy.obtener_votos_cliente()
+    #             votos_clientes[i] = votos
+    #         except Pyro5.errors.CommunicationError as e:
+    #             self.logger.warning(f"No se pudo obtener votos de {cliente.nickname}: {e}")
+    #             votos_clientes[i] = None
+    #     return votos_clientes   
+
+
     def respuestas_memoria_clientes_ronda(self):
         respuestas:dict= {}
         for cliente in self.clientes:
@@ -77,26 +121,7 @@ class ServicioComunicacion:
             resp = proxy.obtener_respuesta_memoria()
             respuestas[cliente.nickname] = resp
         return respuestas
-    
-    # def enviar_datos_para_votacion(self, respuestas_de_clientes):
-    #     # Usamos un pool de threads para llamar a todos en paralelo
-    #     with ThreadPoolExecutor(max_workers=len(self.clientes)) as executor:
-    #         futures = []
-    #         print(f"Los clientes existentes son: {self.clientes}")
-    #         for cliente in self.clientes:
-    #             proxy = self.get_proxy_cliente(cliente)
-    #             proxy._pyroClaimOwnership()
-    #             print(f"Enviando datos a: {cliente.nickname}")
-    #             futures.append(executor.submit(proxy.actualizar_vista_votacion,
-    #                                         respuestas_de_clientes))
 
-    #         # Si el método es oneway, no hay nada que esperar, 
-    #         # pero si no lo es, podemos hacer esto para detectar errores:
-    #         for future in as_completed(futures):
-    #             try:
-    #                 future.result(timeout=5)  # solo levanta excepción si falla
-    #             except Exception as e:
-    #                 print(f"Error enviando datos a un cliente: {e}")
 
     def enviar_datos_para_votacion(self, respuestas_de_clientes):
         for cliente in self.clientes:
@@ -115,19 +140,6 @@ class ServicioComunicacion:
         return votos_clientes
         
     
-    # def get_proxy_cliente(self, cliente):
-    #     try:
-    #         with Pyro5.api.locate_ns(host="10.89.177.119", port=9090) as ns:
-    #             uri = ns.lookup(self.nombre_logico_server)
-    #             proxy_cliente = Pyro5.api.Proxy(uri)
-    #             #proxy_cliente = Pyro5.api.Proxy(f"PYRONAME:{cliente.proxy}")
-    #             return proxy_cliente
-    #     except Pyro5.errors.NamingError:
-    #         self.logger.error(f"Error: No se pudo encontrar el objeto '{cliente.proxy}'.")
-    #         sys.exit(1)
-    #         return None
-
-
     """
     def enviar_a_cliente(self, id_cliente, mensaje):
         pass
