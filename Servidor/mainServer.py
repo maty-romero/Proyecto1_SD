@@ -37,20 +37,17 @@ if __name__ == "__main__":
             daemon
         )
 
-        logger.info("Gestor de juego registrado correctamente.")
+        logger.info("ServicioJuego registrado correctamente.")
         logger.debug(f"URI: {uri}")
         logger.debug(f"Daemon: {daemon}")
         daemon.requestLoop()
-
-        
-"""        
-        except errors.NamingError:
-            print("Servidor de nombres no encontrado")
-        except errors.CommunicationError:
-            print("Error de comunicación con el Servidor de nombres")
-        except Exception as e:
-            print(f"Error inesperado: {e}")
-            traceback.print_exc()  # esto imprime la traza completa
-    else: 
-        print("No se puede ejecutar el Servidor, dado que el Servidor de nombres no se esta ejecutando. ")
-"""
+       
+#    except errors.NamingError:
+#        print("Servidor de nombres no encontrado")
+#    except errors.CommunicationError:
+#        print("Error de comunicación con el Servidor de nombres")
+    except Exception as e:
+        print(f"Error inesperado: {e}")
+        traceback.print_exc()  # esto imprime la traza completa
+    #else: 
+#        print("No se puede ejecutar el Servidor, dado que el Servidor de nombres no se esta ejecutando. ")
