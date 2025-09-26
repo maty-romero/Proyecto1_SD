@@ -1,3 +1,4 @@
+import queue
 import socket
 import sys
 import threading
@@ -150,7 +151,7 @@ class GestorCliente:
         self.logger.info(f"NickName '{nickname_valido}' disponible!")
         # inicializacion deamon Cliente y sesion de socket
         self.Jugador_cliente = JugadorCliente(nickname_valido)
-        self.inicializar_Deamon_Cliente()
+        uri = self.inicializar_Deamon_Cliente()
 
 
         # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
@@ -175,6 +176,7 @@ class GestorCliente:
         self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
         # registro del cliente
         info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
+        info_cliente['uri'] = uri
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
         self.logger.warning(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
         self.logger.warning(f"InfoSala: {resultado_dict}")
@@ -261,6 +263,42 @@ class GestorCliente:
 
     def inicializar_Deamon_Cliente(self):
         ip_cliente = ComunicationHelper.obtener_ip_local()
+        objeto_cliente = ServicioCliente(self)
+        nombre_logico: str = self.Jugador_cliente.get_nombre_logico()
+
+        # Cola para pasar la URI desde el hilo
+        uri_queue = queue.Queue()
+
+        def daemon_loop():
+            self._daemon = Pyro5.api.Daemon(host=ip_cliente)
+            try:
+                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
+                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
+                self.logger.info(f"[Daemon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
+                uri_queue.put(uri)  # Enviar la URI al hilo principal
+            except Exception as e:
+                self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
+                uri_queue.put(None)  # Enviar None si hubo error
+
+            self._daemon.requestLoop()
+
+        # Arrancar daemon en hilo de fondo
+        self._daemon_thread = threading.Thread(target=daemon_loop, daemon=True)
+        self._daemon_thread.start()
+
+        # Esperar a que el hilo coloque la URI en la cola
+        try:
+            uri = uri_queue.get(timeout=5)  # Espera hasta 5 segundos
+        except queue.Empty:
+            uri = None
+            self.logger.error("Timeout esperando la URI del objeto cliente")
+
+        return uri
+
+
+    """
+    def inicializar_Deamon_Cliente(self):
+        ip_cliente = ComunicationHelper.obtener_ip_local()
         objeto_cliente = ServicioCliente(self)  # Se crea objeto remoto y se pasa el gestor (self)
 
         # nom_logico ya definido con prefijo "jugador.<nickname>"
@@ -284,8 +322,10 @@ class GestorCliente:
         self._daemon_thread = threading.Thread(target=daemon_loop, daemon=True)
         self._daemon_thread.start()
 
+        
         # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
         #time.sleep(2)
+    """
 
     def stop_daemon_cliente(self):
         # apagar daemon y limpiar registro en NS
