@@ -22,7 +22,7 @@ from Cliente.Controladores.ControladorSala import ControladorSala
 class ControladorNavegacion:
     def __init__(self, main_window,controlador_nickname,
                  controlador_sala,controlador_ronda, vistaNickname,
-                 vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones):
+                 vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, vistaResultados):
         self.main_window = main_window
 
         # Guardar referencias a controladores
@@ -30,18 +30,21 @@ class ControladorNavegacion:
         self.controlador_sala = controlador_sala
         self.controlador_ronda = controlador_ronda
         self.controlador_votaciones = controlador_votaciones
+        self.controlador_resultados = controlador_resultados
 
         # Guardar referencias a vistas
         self.vistaNickname = vistaNickname
         self.vistaSala = vistaSala
         self.vistaRonda = vistaRonda
         self.vistaVotaciones = vistaVotaciones
+        self.vistaResultados = vistaResultados
 
         # Agregar vistas al stack
         self.vistaNickname_Index = self.main_window.stack.addWidget(self.vistaNickname)
         self.vistaSala_Index = self.main_window.stack.addWidget(self.vistaSala)
         self.vistaRonda_Index = self.main_window.stack.addWidget(self.vistaRonda)
         self.vistaVotaciones_Index = self.main_window.stack.addWidget(self.vistaVotaciones)
+        self.vistaResultados_Index = self.main_window.stack.addWidget(self.vistaResultados)
 
     # --- Métodos de navegación ---
       #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
@@ -55,12 +58,11 @@ class ControladorNavegacion:
         elif eleccion == "ronda":
             self.controlador_ronda.mostrar_info_ronda() #Lo mismo que pasó con sala
             self.main_window.stack.setCurrentIndex(self.vistaRonda_Index)
-        elif eleccion == "votaciones":
-            self.controlador_votaciones.mostrar_info_votaciones()  # Lo mismo que pasó con sala
+        elif eleccion == "votaciones":   
+            self.controlador_votaciones.vista.reiniciar_labels()  # Limpiar vista antes de mostrarla
             self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
-            pass
-            #self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
+            self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
     

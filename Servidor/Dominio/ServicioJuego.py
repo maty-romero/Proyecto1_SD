@@ -1,5 +1,7 @@
 import threading
 from threading import Lock, Thread
+import time
+from collections import defaultdict, Counter
 
 import Pyro5.api
 
@@ -62,35 +64,148 @@ class ServicioJuego:
             "comunicacion",
             "broadcast",
             json)
+        
+        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion")
+        self.dispacher.manejar_llamada(
+            "comunicacion",
+            "broadcast",
+            json)
 
         # obtenerRespuesMemoriaClientes
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
-        # return respuestas todos los jugadores a los clientes
 
- 
-        # json = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=json) -- Genera error
-        # self.dispacher.manejar_llamada(
-        #     "comunicacion",
-        #     "broadcast",
-        #     json)
+        self.partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
         
-        print(respuestas_clientes)
-        print("Desde ServicioJuego se terminó de enviar_respuestas_ronda")
+        info_completa_votacion = {
+            'nro_ronda' : self.partida.nro_ronda_actual,
+            'total_rondas':self.partida.rondas_maximas,
+            'letra_ronda': self.partida.ronda_actual.letra_ronda,
+            'respuestas_clientes': respuestas_clientes
+        }
+        
+        self.dispacher.manejar_llamada("comunicacion",
+        "enviar_datos_para_votacion",
+        info_completa_votacion)
 
-    def finalizar_partida(self):
-        # notificar / enviar info fin_partida
-        pass
+        """Se ejecuta el timer en un hilo separado para no bloquear la llamada remota del cliente que hace STOP"""
+        hilo_timer = threading.Thread(target=self.timer_votacion, daemon=True)
+        hilo_timer.start()
+
+
+    def timer_votacion(self):
+        tiempos = [30, 20, 10]
+        for t in tiempos:
+            mensaje = SerializeHelper.serializar(exito=True, msg="aviso_tiempo_votacion", datos=f"Te quedan {t} segundos para votar")
+            self.dispacher.manejar_llamada("comunicacion", "broadcast", mensaje)
+            time.sleep(10)  # Espera 10 segundos entre avisos
+
+        #se quedaría 
+
+        hilo_pedir_votos = threading.Thread(target=self.obtener_votos_jugadores, daemon=True)
+        hilo_pedir_votos.start()
+        
+
+        
+    def evaluar_ultima_ronda(self):
+        if self.partida.nro_ronda_actual == self.partida.rondas_maximas:
+            self.finalizar_partida() #manda señal para ir a resultado
+        else:
+            self.partida.iniciar_nueva_ronda()
+            info_ronda = self.partida.get_info_ronda()
+            json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
+            self.dispacher.manejar_llamada(
+                "comunicacion",  # nombre_servicio
+                "broadcast",  # nombre_metodo
+                    json#args
+            )
+
+
+    def obtener_votos_jugadores(self):
+        votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
+        "recolectar_votos")
+        self.procesar_votos_y_asignar_puntaje(votos)
 
     
+    def procesar_votos_y_asignar_puntaje(self, votos):
+        respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
+        from collections import defaultdict
+
+        conteo_respuestas = defaultdict(lambda: defaultdict(int))
+
+        validez = defaultdict(dict)
+        for jugador, info in respuestas_clientes.items():
+            for categoria, respuesta in info["respuestas"].items():
+                true_count = 0
+                false_count = 0
+                for ronda, votos_jugadores in votos.items():
+                    if jugador in votos_jugadores and categoria in votos_jugadores[jugador]:
+                        if votos_jugadores[jugador][categoria]:
+                            true_count += 1
+                        else:
+                            false_count += 1
+                
+                validez[jugador][categoria] = (true_count > false_count)
+                
+                # Solo cuenta la respuesta si es válida y no vacía
+                if respuesta and validez[jugador][categoria]:
+                    conteo_respuestas[categoria][respuesta] += 1
+
+        puntajes = {}
+        for jugador, info in respuestas_clientes.items():
+            puntajes[jugador] = {}
+            for categoria, respuesta in info["respuestas"].items():
+                if not respuesta or not validez[jugador][categoria]:
+                    puntaje = 0
+                else:
+                    repeticiones = conteo_respuestas[categoria][respuesta]
+                    if repeticiones == 1:
+                        puntaje = 10  # Respuesta única
+                    else:
+                        puntaje = 5   # Respuesta repetida
+                puntajes[jugador][categoria] = puntaje
+                print(f"[DEBUG] {jugador} - {categoria}: '{respuesta}' | T:{true_count} F:{false_count} válida: {validez[jugador][categoria]}, repeticiones: {conteo_respuestas[categoria][respuesta]} => {puntaje} puntos")
+
+        totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
+
+        # Posible KeyError? en 1 ejecucion me salio, el resto normal
+        #self.logger.error(f"jugadores dict totales: {totales.keys()}")
+        #self.logger.error(f"jugadores en self.partida.jugadores: {self.partida.jugadores}")
+
+        for jugador in self.partida.jugadores:
+            if jugador.nickname in totales:
+                jugador.sumar_puntaje(totales[jugador.nickname])
+            print(f"El puntaje del jugador {jugador.nickname} es {totales[jugador.nickname]}")
+
+        self.evaluar_ultima_ronda()
+
+
+    def finalizar_partida(self):
+        """Notifica el fin de la partida y envía los datos finales"""
+
+        puntajes_totales, ganador = self.partida.calcular_puntos_partida()
+
+        resultados_partida = {
+            'jugadores' : list(self.Jugadores.keys()),
+            'puntajes_totales': puntajes_totales,
+            'ganador':ganador
+        }
+
+        json = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=resultados_partida)
+        self.dispacher.manejar_llamada(
+            "comunicacion",  # nombre_servicio
+            "broadcast",  # nombre_metodo
+                json#args
+        )
+
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):
         hay_lugar: bool = self.dispacher.manejar_llamada(
             "comunicacion", # nombre_servicio
             "hay_lugar_disponible", # nombre_metodo
-             self.jugadores_min # args
+            self.jugadores_min # args
         )
 
         if not hay_lugar:
@@ -120,7 +235,7 @@ class ServicioJuego:
         is_nickname_disponible: bool = self.dispacher.manejar_llamada(
             "comunicacion", # nombre_servicio
             "is_nickname_disponible", # nombre_metodo
-             formated_nickname # args
+            formated_nickname # args
         )
 
         # nickname no disponible
@@ -206,7 +321,7 @@ class ServicioJuego:
         return self.partida.get_info_sala()
     
     def get_info_ronda_actual(self):
-        return self.partida.ronda_actual.info_ronda()
+        return self.partida.get_info_ronda()
     
     def obtener_jugadores_en_partida(self) -> list[str]:
         nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")
@@ -214,49 +329,10 @@ class ServicioJuego:
 
     def recibir_stop(self):
         with self.lock_confirmacion:
-            print("Estoy en ServicioJuego! Entre a recibir_stop con un lock")
             if self.partida.ronda_actual.get_estado_ronda():
-                print("Actualicé el estado de la ronda!")
-                return # Ya se finalizó la ronda, ignora llamadas extra
+                return  # Ya se finalizó la ronda, ignora llamadas extra
             self.partida.ronda_actual.set_estado_ronda(True)
-            print("Estoy en ServicioJuego! Cambio el estado de finalizacion de la ronda a True")
-            print("Ahora voy a recibir las respuestas de la ronda")
-            self.enviar_respuestas_ronda()
-            print("Se finalizó la ronda!")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            threading.Thread(target=self.enviar_respuestas_ronda, daemon=True).start()
 
 
     def confirmar_jugador(self, nickname: str):

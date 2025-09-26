@@ -1,15 +1,15 @@
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QCheckBox, QSizePolicy
+    QScrollArea, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 
 
-class VistaVotaciones(QWidget):
+#esto a lo ultimo como pendiente
+class VistaPuntajes(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.checkboxes_por_categoria = {}  # {categoria: [(nickname, checkbox), ...]}
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -18,25 +18,24 @@ class VistaVotaciones(QWidget):
 
         # --- Header: Ronda y Letra ---
         header_layout = QHBoxLayout()
-        self.labelRondaConNumero = QLabel("Ronda: -/-")
+        self.labelRondaConNumero = QLabel("Ronda: 1/3")
         self.labelRondaConNumero.setFont(QFont("Segoe UI", 22, QFont.Weight.Bold))
-        self.labelLetraRandom = QLabel("Letra: -")
+        self.labelLetraRandom = QLabel("Letra: T")
         self.labelLetraRandom.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
-    
-        self.labelMensajeVotacion = QLabel("Esperando jugadores para la Votacion!!")
-        self.labelMensajeVotacion.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
-        self.labelMensajeVotacion.setStyleSheet("color: orange;")
-        self.labelMensajeVotacion.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        
+
+        # Label para mostrar los puntajes de todos los jugadores
+        self.labelPuntajes = QLabel("")
+        self.labelPuntajes.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+        self.labelPuntajes.setStyleSheet("color: green;")
+        self.labelPuntajes.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         header_layout.addWidget(self.labelRondaConNumero)
         header_layout.addWidget(self.labelLetraRandom)
-        header_layout.addWidget(self.labelMensajeVotacion, stretch=1)
-                
+        header_layout.addWidget(self.labelPuntajes, stretch=1)
         header_layout.addStretch()
         main_layout.addLayout(header_layout)
 
-        # --- Scroll de categorías ---
+        # --- Scroll de resultados por categoría ---
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -45,7 +44,7 @@ class VistaVotaciones(QWidget):
         # Contenedor raíz dentro del scroll
         outer_container = QWidget()
         outer_layout = QHBoxLayout(outer_container)
-        outer_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)  # alinear al centro
+        outer_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.scroll_area.setWidget(outer_container)
 
         # Contenedor de categorías
@@ -54,40 +53,44 @@ class VistaVotaciones(QWidget):
         self.scroll_layout = QVBoxLayout(self.scroll_content)
         self.scroll_layout.setSpacing(20)
         self.scroll_layout.setContentsMargins(0, 0, 0, 0)
-
         outer_layout.addWidget(self.scroll_content)
 
     def set_ronda_y_letra(self, ronda_actual: int, total_rondas: int, letra: str):
         self.labelRondaConNumero.setText(f"Ronda: {ronda_actual}/{total_rondas}")
         self.labelLetraRandom.setText(f"Letra: {letra}")
-        
-    def set_mensaje_votacion(self,mensaje:str):
-        self.labelMensajeVotacion.setText(mensaje)
 
-    def limpiar_scroll(self):
+    def set_puntajes(self, puntajes: dict):
+        # puntajes = {"jugador1": 10, "jugador2": 8, ...}
+        texto = " | ".join([f"{nick}: {puntaje}" for nick, puntaje in puntajes.items()])
+        self.labelPuntajes.setText(texto)
+
+    def _limpiar_scroll(self):
         while self.scroll_layout.count():
             item = self.scroll_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.setParent(None)
 
-    def agregar_respuestas_para_votar(self, respuestas_por_categoria: dict[str, list[tuple[str, str]]]):
-        self.limpiar_scroll()
-        self.checkboxes_por_categoria = {}
+    def agregar_resultados_por_categoria(self, resultados_por_categoria: dict[str, list[tuple[str, str, int]]]):
+        """
+        resultados_por_categoria = {
+            "Nombres con T": [("jugador1", "respuesta1", 2), ("jugador2", "respuesta2", 1)],
+            ...
+        }
+        """
+        self._limpiar_scroll()
 
         fuente_subtitulo = QFont("Segoe UI", 18, QFont.Weight.Bold)
         fuente_items = QFont("Segoe UI", 16)
 
-        for categoria, respuestas in respuestas_por_categoria.items():
+        for categoria, resultados in resultados_por_categoria.items():
             subtitulo = QLabel(categoria)
             subtitulo.setFont(fuente_subtitulo)
             subtitulo.setStyleSheet("color: rgb(0, 85, 255);")
             subtitulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(subtitulo)
 
-            self.checkboxes_por_categoria[categoria] = []
-
-            for nickname, respuesta in respuestas:
+            for nickname, respuesta, puntaje in resultados:
                 fila_widget = QWidget()
                 fila_layout = QHBoxLayout(fila_widget)
                 fila_layout.setContentsMargins(20, 5, 20, 5)
@@ -104,46 +107,17 @@ class VistaVotaciones(QWidget):
                 label_resp.setWordWrap(True)
                 label_resp.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-                checkbox_invalido = QCheckBox("Votar negativamente")
-                checkbox_invalido.setFont(fuente_items)
-                checkbox_invalido.setStyleSheet("color: red;")
-
-                # Se guarda una referencia de los checkbox para obtener sus valores en otro método
-                self.checkboxes_por_categoria[categoria].append((nickname, checkbox_invalido))
+                label_puntaje = QLabel(f"Puntaje: {puntaje}")
+                label_puntaje.setFont(fuente_items)
+                label_puntaje.setStyleSheet("color: green;")
+                label_puntaje.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
                 fila_layout.addWidget(label_nick)
                 fila_layout.addWidget(label_resp)
-                fila_layout.addWidget(checkbox_invalido)
+                fila_layout.addWidget(label_puntaje)
                 fila_layout.addStretch()
 
                 self.scroll_layout.addWidget(fila_widget)
 
         self.scroll_layout.addStretch()
-
-    def obtener_votos(self):
-        """
-        Devuelve un diccionario con los votos del usuario:
-        {
-            'nickname1': {'Nombres': True, 'Animales': False, ...},
-            'nickname2': {...},
-            ...
-        }
-        True = voto negativo (checkbox marcado), False = voto positivo (checkbox desmarcado)
-        """
-        votos = {}
-        for categoria, lista in self.checkboxes_por_categoria.items():
-            # Extrae solo el nombre de la categoría (por ejemplo, "Nombres" de "Nombres con Y")
-            cat_simple = categoria.split(" con ")[0]
-            for nickname, checkbox in lista:
-                if nickname not in votos:
-                    votos[nickname] = {}
-                votos[nickname][cat_simple] = not checkbox.isChecked()
-
-        return votos
-    
-    def reiniciar_labels(self):
-        self.limpiar_scroll()
-        self.labelRondaConNumero.setText("Ronda: -/-")
-        self.labelLetraRandom.setText("Letra: -")
-        self.labelMensajeVotacion.setText("Esperando jugadores para la Votacion!!")
-        self.checkboxes_por_categoria = {}
+        

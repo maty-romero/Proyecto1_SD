@@ -45,6 +45,7 @@ class ControladorSala:
         self.logger.warning(f"jugadores_conectados: {jugadores_conectados}")
         jugadores_str = ", ".join(jugadores_conectados)
         self.vista.setListaJugadores(jugadores_str)
+        self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
 
 
     def cambiar_estado_sala(self, msg: str):

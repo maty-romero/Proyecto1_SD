@@ -8,34 +8,35 @@ class Ronda:
     def __init__(self, nro_ronda: int, categorias: list[str], jugadores: list[Jugador], letras_jugadas: list[str]):
         self.nro_ronda = nro_ronda
         self.finalizada: bool = False
-        self.letras_jugadas = letras_jugadas
-        self.letra_ronda = self.get_letra_random()
+        self.letras_jugadas = letras_jugadas if letras_jugadas else []  # Solo para consulta
+        self.letra_ronda = self.get_letra_random()  # La letra de ESTA ronda
         self.categorias = categorias
         self.jugadores_ronda = jugadores
+        self.respuestas_ronda:dict = {}
 
-    # PENDIENTE --> Completar Clase RONDA y Clase Respuesta
-
-    def get_estado_ronda(self):
-        return self.finalizada
-    
     def set_estado_ronda(self, estado):
         self.finalizada = estado
 
+    def set_respuestas_ronda(self,respuestas):
+        self.respuestas_ronda = respuestas
+    
+    def get_respuestas_ronda(self):
+        return self.respuestas_ronda
+
+    def get_estado_ronda(self):
+        return self.finalizada
+
     def get_letra_random(self):
         letras = list(string.ascii_uppercase)
-        if len(self.letras_jugadas) <= 0:
-            return random.choice(letras)
-
+        
         disponibles = [l for l in letras if l not in self.letras_jugadas]
+        print(f"Las letras disponibles para jugar son {disponibles}")
 
         if not disponibles:
             raise ValueError("No quedan letras disponibles")
+        return random.choice(disponibles)
 
-        letra = random.choice(disponibles)
-        #self.letras_jugadas.append(letra)  # Guardar la letra jugada
-        return letra
-
-    def info_ronda(self):
+    # def info_ronda(self): #se usa en Partida
         info = {
             "categorias": self.categorias,
             "nro_ronda_actual":self.nro_ronda,

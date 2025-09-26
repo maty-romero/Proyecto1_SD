@@ -18,13 +18,18 @@ class ControladorRonda:
     def setNavegacion(self, controlador_navegacion):
         self.navegacion = controlador_navegacion
 
+    def reset(self):
+        """Limpia los campos de la vista."""
+        inputs = self.vista.obtener_categorias_input()
+        for input in inputs:
+            input.clear()
+
     def mostrar_info_ronda(self):
         """Actualiza las etiquetas y categorías según la info de la sala"""
-        #info = self.gestor_cliente.get_info_sala()
-
+        self.reset()
         info = self.gestor_cliente.get_info_ronda_act()
         categorias = info.get('categorias', [])
-        ronda = info.get('nro_ronda_actual', 1)
+        ronda = info.get('nro_ronda', 1)
         total_rondas = info.get('total_rondas', 3)
 
         # Actualizar número de ronda y letra (si aplica)
@@ -39,14 +44,9 @@ class ControladorRonda:
 
     def finalizar_ronda(self):
         """Acción al presionar STOP!"""
-        # Recolectar respuestas y enviarlas al gestor
-        
         self.gestor_cliente.enviar_stop()
 
-        # Navegar a la siguiente vista usando el controlador de navegación
-        # Por ahora suponemos que es la vista de resultados o siguiente ronda
-        self.navegacion.mostrar("resultados")  # Este método debería existir en ControladorNavegacion
-    
+
     def obtener_respuestas(self):
         respuestas = [input_widget.text() for input_widget in self.vista.obtener_categorias_input()]
         proxy_para_pedir_info = self.gestor_cliente.get_proxy_partida()
@@ -59,6 +59,5 @@ class ControladorRonda:
             ronda.agregarRespuesta(Respuesta(cat, res))
 
         info_respuestas = ronda.getRespuestasJugador()
-        print(info_respuestas)
         return info_respuestas
    

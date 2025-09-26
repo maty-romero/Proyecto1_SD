@@ -31,107 +31,78 @@ PARTIDA:
         Asegura que una clase tenga una única instancia y proporciona un punto de acceso global a ella.
         Útil para controladores de base de datos, ya que evita múltiples conexiones.    
 """
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 from bson.objectid import ObjectId
+
+"""Los Datos ya tienen que llegar formateados a la clase. No se pueden actualizar datos particulares,
+    la clase esta diseñada para que llegue todo el conjunto de datos
+"""
 class ControladorDB:
 
-    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB"):
-        # Cambié a lista para poder usar append
-        self.datosIniciales = []
-        self.iniciar_db(uri, db_name)
+    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):
+        self.uri= uri
+        self.db_name = db_name      
+        self.registroDatos = [] #lista para imprimir con informacion relevante
+        self.codigo_partida = codigoPartida
+        self.iniciar_db()
 
     #puede renombrarse o dividir responsabilidades
-    def iniciar_db(self, uri, db_name):
-        self.conexiondb = MongoClient(uri)
-        self.db = self.conexiondb[db_name]        # se crea sola si no existe
-        self.partida = self.db["Partida"]           # lo mismo para la colección
+    def iniciar_db(self):
+        try:
+            self.conexiondb = MongoClient(self.uri)
+            self.db = self.conexiondb[self.db_name]        # se crea sola si no existe
+            self.partida = self.db["Partida"]           # lo mismo para la colección
 
-        # Creamos un índice por código de partida (opcional, recomendado)
-        self.partida.create_index("code", unique=True)
+            # Creamos un índice por código de partida (opcional, recomendado)
+            self.partida.create_index("code", unique=True)
 
-        # Si no hay partidas, insertamos una inicial
-        if self.partida.count_documents({}) == 0:
-            self.partida.insert_one(
-                {
-                "codigo": 1,          # código de la partida
-                "jugadores": [],
-                "nro_ronda": 0,
-                "categorias": [],
-                "letra": "",
-                "respuestas": [
-                        { }
-                    ]
-                }   
-            )
-            self.datosIniciales.append("Base creada con partida inicial ABCD")
-        else:
-            self.datosIniciales.append("Base ya tenía datos, no se insertó nada")
+            # Si no hay partidas, insertamos una inicial
+            if self.partida.count_documents({}) == 0:
+                self.partida.insert_one(
+                    {
+                    "codigo": 1,          # código de la partida
+                    "jugadores": [],
+                    "nro_ronda": 0,
+                    "categorias": [],
+                    "letra": "",
+                    "respuestas": [
+                            { }
+                        ]
+                    }   
+                )
+                self.registroDatos.append("[ControladorDB] Base creada con partida inicial ABCD")
+            else:
+                self.registroDatos.append("[ControladorDB] Base ya tenía datos, no se insertó nada")
+        except errors.ServerSelectionTimeoutError as e:
+            self.registroDatos.append(f"[ControladorDB] Error de conexión a MongoDB: {e}")
+            self.conexiondb = None
+            self.db = None
 
-        # No cerramos la conexión por lo pronto
-        # conexiondb.close()
+    def crear_partida(self, datos_partida):
+        """Crea o reemplaza la partida con el código de self.codigo_partida"""
+        datos_partida["codigo"] = self.codigo_partida
+        resultado = self.partida.replace_one(
+            {"codigo": self.codigo_partida},
+            datos_partida,
+            upsert=True
+        )
+        return resultado.upserted_id
 
-    def desconectar(self):
-        # Cierra la conexión
-        self.conexiondb.close()
-    
-    """
-    # --- Conexión ---
-    def conectar(self):
-        # Verifica la conexión
-        return self.db.name
+    def obtener_partida(self):
+        """Obtiene el documento de la partida actual"""
+        return self.partida.find_one({"codigo": self.codigo_partida})
 
-    # --- Partidas ---
-    def crear_partida(self, datos):
-        #Crea una nueva partida
-        return self.db.partidas.insert_one(datos).inserted_id
-
-    def obtener_partida(self, id_partida):
-        #Obtiene una partida por ID
-        return self.db.partidas.find_one({"_id": ObjectId(id_partida)})
-
-    def actualizar_partida(self, id_partida, datos):
-        #Actualiza datos de una partida
-        return self.db.partidas.update_one(
-            {"_id": ObjectId(id_partida)}, {"$set": datos}
+    def actualizar_partida(self, datos):
+        """Actualiza parcialmente la partida actual"""
+        return self.partida.update_one(
+            {"codigo": self.codigo_partida},
+            {"$set": datos}
         ).modified_count
 
-    def eliminar_partida(self, id_partida):
-        #Elimina una partida
-        return self.db.partidas.delete_one({"_id": ObjectId(id_partida)}).deleted_count
+    def eliminar_partida(self):
+        """Elimina la partida actual"""
+        return self.partida.delete_one({"codigo": self.codigo_partida}).deleted_count
 
-    # --- Rondas ---
-    def crear_ronda(self, id_partida, datos):
-        #Crea una ronda asociada a una partida
-        datos["id_partida"] = ObjectId(id_partida)
-        return self.db.rondas.insert_one(datos).inserted_id
-
-    def obtener_rondas_de_partida(self, id_partida):
-        #Obtiene todas las rondas de una partida
-        return list(self.db.rondas.find({"id_partida": ObjectId(id_partida)}))
-
-    # --- Jugadores ---
-    def agregar_jugador_a_ronda(self, id_ronda, datos):
-        #Agrega un jugador a una ronda
-        datos["id_ronda"] = ObjectId(id_ronda)
-        return self.db.jugadores.insert_one(datos).inserted_id
-
-    def obtener_jugadores_de_ronda(self, id_ronda):
-        #Obtiene todos los jugadores de una ronda
-        return list(self.db.jugadores.find({"id_ronda": ObjectId(id_ronda)}))
-
-    # --- Utilitarios ---
-    def ejecutar_consulta(self, coleccion, filtros=None):
-        #Ejecutar consulta genérica en cualquier colección
-        filtros = filtros or {}
-        return list(self.db[coleccion].find(filtros))
-
-    def existe(self, coleccion, filtros=None):
-        #Verifica si existe al menos un documento que cumpla el filtro
-        filtros = filtros or {}
-        return self.db[coleccion].count_documents(filtros) > 0
-
-    def contar(self, coleccion, filtros=None):
-        #Cuenta documentos en una colección
-        filtros = filtros or {}
-        return self.db[coleccion].count_documents(filtros)
-    """
+    def desconectar(self):
+        if self.conexiondb:
+            self.conexiondb.close()

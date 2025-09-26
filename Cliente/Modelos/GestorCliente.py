@@ -12,6 +12,42 @@ from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 
+"""Para el uso en docker, un compose de la siguiente forma:
+
+    services:
+  nameserver:
+    image: python:3.12
+    container_name: pyro_ns
+    networks:
+      - pyro_net
+
+  servidor:
+    build: ./servidor
+    depends_on:
+      - nameserver
+    networks:
+      - pyro_net
+
+  cliente:
+    build: ./cliente
+    depends_on:
+      - servidor
+    networks:
+      - pyro_net
+
+networks:
+  pyro_net:
+    driver: bridge
+
+    
+    Permite lo siguiente
+
+    ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
+
+"""
+NOMBRE_PC_NS = ""   # DESKTOP-HUREDOL
+PUERTO_NS = 9090
+
 
 class GestorCliente:
     def __init__(self):
@@ -20,6 +56,14 @@ class GestorCliente:
         self.proxy_partida = None
         self.Jugador_cliente: JugadorCliente = None
         self.controlador_navegacion = None
+        
+        #implementacion para ip manual, o para utilizar el nombre que identifica el equipo
+        #nota: el equipo tiene que tener el puerto abierto
+        if NOMBRE_PC_NS:
+            self.hostNS = NOMBRE_PC_NS
+        else:    
+            self.hostNS = "0.0.0.0"
+        self.puertoNS = PUERTO_NS
 
         # Estado interno (para ServicioCliente) - recepcion
         self._last_response = None
@@ -48,9 +92,25 @@ class GestorCliente:
         self.proxy_partida._pyroClaimOwnership()
         return self.proxy_partida
 
+    """NUEVO METODO PARA CONEXION A REMOTO EN MISMA RED LOCAL - Puede cambiarse para usar los valores globales"""
+    # def get_proxy_partida_singleton(self):
+    #     if self.proxy_partida is None:
+    #         try:
+    #             # Conexión al NameServer remoto usando IP y puerto
+    #             with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+    #                 uri = ns.lookup(self.nombre_logico_server)
+    #                 self.proxy_partida = Pyro5.api.Proxy(uri)
+    #         except Pyro5.errors.NamingError:
+    #             print(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}' en {self.hostNS}:{self.puertoNS}")
+    #             raise
+    #     # Reclamar propiedad del proxy en el hilo actual si es necesario
+    #     self.proxy_partida._pyroClaimOwnership()
+    #     return self.proxy_partida
+
     def buscar_partida(self):
         try:
-            ns = Pyro5.api.locate_ns()
+            #ns = Pyro5.api.locate_ns()
+            ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
             uri = ns.lookup(self.nombre_logico_server)
             self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
             return True
@@ -110,9 +170,7 @@ class GestorCliente:
         # espera a que sesion socket este listo
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
-
         self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
-
         # registro del cliente
         info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
@@ -134,23 +192,8 @@ class GestorCliente:
     
     #usamos en controladorSalaView
     def ingresar_nickname_valido(self,formated_nickname) -> str:
-        # nickname = input("\nIngrese su NickName para la partida: ") #### ACÁ PIDE EL INPUT DEL CLIENTE
-        # formated_nickname = nickname.lower().replace(" ", "")
-        #Mandamos acá el nickname ya formateado desde el ControladorNickname
         resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-        #if resu_dict['exito']:
-            #self.Jugador_cliente = JugadorCliente(formated_nickname)
-
         return resu_dict # Devuelve un diccionario con 'exito' y 'msg'
-        # while not resu_dict['exito']:
-        #     print(f"\n**{resu_dict['msg']}")
-        #     #nickname = input("\nIngrese su NickName para la partida: ")
-        #     formated_nickname = nickname.lower().replace(" ", "")
-        #     resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
-            
-        #     return {'exito': False, 'msg': resu_dict['msg']}  # Retorna el error para que lo maneje el controlador
-        # return {'exito': True, 'msg': "Nickname disponible"}  
-        #return formated_nickname
 
     # Sesiones o Servicios Cliente a Utilizar
 
@@ -197,9 +240,15 @@ class GestorCliente:
                 self.logger.info(f"FIN RONDA: exito:{exito}, msg:'{msg}', datos:{datos}")
             elif msg == "inicio_votacion":
                 self.logger.warning(f"inicio_votacion => datos: {datos}")
+                self.controlador_navegacion.mostrar('votaciones')
+            elif msg == "aviso_tiempo_votacion":
+                self.logger.info(f"Recibido del server {datos}")
+                self.controlador_navegacion.controlador_votaciones.actualizar_mensaje_timer(datos)
             elif msg == "fin_partida":
-                #self._cerrar_partida(datos)
-                pass
+                self.logger.info("La partida ha finalizado.")
+                self.controlador_navegacion.controlador_resultados.mostrar_resultados(datos)
+                self.controlador_navegacion.mostrar('resultados')
+                #self.stop_daemon_cliente()
             else:
                 self.logger.warning(f"[Socket] Otro Mensaje: {msg}")
 
@@ -217,7 +266,9 @@ class GestorCliente:
             # Crear y guardar el daemon para poder apagarlo despues
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
-                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon)
+                ns = Pyro5.api.locate_ns()
+                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
+                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
                 self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
             except Exception as e:
                 self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
@@ -230,7 +281,7 @@ class GestorCliente:
         self._daemon_thread.start()
 
         # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
-        time.sleep(2)
+        #time.sleep(2)
 
     def stop_daemon_cliente(self):
         # apagar daemon y limpiar registro en NS
@@ -271,14 +322,27 @@ class GestorCliente:
     def get_proxy_partida(self):
         return self.get_proxy_partida_singleton()
     
+    """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
         proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
         proxy.recibir_stop()
+    #------>
+    # def enviar_stop(self):
+    #     proxy = self.get_proxy_partida_singleton
+    #     proxy.recibir_stop()
 
     def provide_response(self):
         #se obtienenen las respuestas de RondaCliente
         return self.controlador_navegacion.obtener_respuestas_ronda()
 
+    def cargar_datos_vista_votacion(self,respuestas_clientes):
+        self.controlador_navegacion.controlador_votaciones.mostrar_info_votaciones(respuestas_clientes)
+
+    def enviar_votos_jugador(self):
+        return self.controlador_navegacion.controlador_votaciones.enviar_votos()
+    
+    
+    
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):
