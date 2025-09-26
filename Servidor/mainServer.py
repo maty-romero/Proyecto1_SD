@@ -1,3 +1,4 @@
+import traceback
 import Pyro5.server
 from Pyro5 import errors
 from Pyro5.errors import NamingError, CommunicationError
@@ -41,9 +42,15 @@ if __name__ == "__main__":
         logger.debug(f"Daemon: {daemon}")
         daemon.requestLoop()
 
-    except NamingError:
-        logger.error("Servidor de nombres no encontrado.")
-    except CommunicationError:
-        logger.error("Error de comunicación con el Servidor de nombres.")
-    except Exception as e:
-        logger.error(f"Error inesperado: {e}")
+        
+"""        
+        except errors.NamingError:
+            print("Servidor de nombres no encontrado")
+        except errors.CommunicationError:
+            print("Error de comunicación con el Servidor de nombres")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
+            traceback.print_exc()  # esto imprime la traza completa
+    else: 
+        print("No se puede ejecutar el Servidor, dado que el Servidor de nombres no se esta ejecutando. ")
+"""
