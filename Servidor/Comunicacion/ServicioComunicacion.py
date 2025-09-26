@@ -59,8 +59,8 @@ class ServicioComunicacion:
         self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
 
     # Metodos de Suscripcion
-    def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente):
-        cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente)
+    def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente):
+        cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente)
         cliente.socket.conectar() # inicio sesion por socket
         self.clientes.append(cliente)
 

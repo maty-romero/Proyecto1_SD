@@ -8,11 +8,12 @@ from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from datetime import datetime, timedelta
 
 class ClienteConectado:
-    def __init__(self, nickname: str, nombre_logico: str, ip_cliente: str, puerto_cliente: int):
+    def __init__(self, nickname: str, nombre_logico: str, ip_cliente: str, puerto_cliente: int,uri_cliente:str):
         self.id = str(uuid.uuid4())
         self.nickname = nickname
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
-        self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente)
+        self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente,uri_cliente)
+        self.logger.warning(f"proxy del cliente registrada: {self.proxy}")
         self.confirmado: bool = False
         self.conectado: bool = False
         self.timestamp: datetime
@@ -28,15 +29,14 @@ class ClienteConectado:
     def get_proxy_cliente(self):
         return self.proxy
 
-    def crear_proxy_cliente(self, nombre_logico: str, ip, puerto):
+    def crear_proxy_cliente(self, nombre_logico: str, ip, puerto,uri):
         try:
-            with Pyro5.api.locate_ns(ip, puerto) as ns: 
-                uri = ns.lookup(nombre_logico)
-                return Pyro5.api.Proxy(uri)
-        except Pyro5.errors.NamingError:
+            return Pyro5.api.Proxy(uri)    
+        except:
             self.logger.error(f"Error: No se pudo encontrar el objeto '{nombre_logico}'.")
             sys.exit(1)
             return None
+       
                         
 
 

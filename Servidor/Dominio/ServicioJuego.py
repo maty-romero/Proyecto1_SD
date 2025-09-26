@@ -263,10 +263,11 @@ class ServicioJuego:
             nombre_logico = info_cliente['nombre_logico']
             ip_cliente = info_cliente['ip']
             puerto_cliente = info_cliente['puerto']
+            uri_cliente = info_cliente['uri']
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
                 "suscribir_cliente",  # nombre_metodo
-                nickname, nombre_logico, ip_cliente, puerto_cliente  # args
+                nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente  # args
             )
 
             # obtener info sala
