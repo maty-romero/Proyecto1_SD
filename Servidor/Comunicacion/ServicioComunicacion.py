@@ -11,8 +11,8 @@ from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 
 class ServicioComunicacion:
-    def __init__(self):
-        # self.dispatcher = dispatcher
+    def __init__(self,dispatcher):
+        self.dispatcher = dispatcher
         # self.sockets_registrados =  []
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
@@ -50,6 +50,7 @@ class ServicioComunicacion:
             else:
                 self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
                 cliente.socket.cerrar()
+                self.dispatcher.manejar_llamada("Juego","eliminar_jugador",cliente.nickname)
                 json = SerializeHelper.serializar(
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
@@ -64,9 +65,9 @@ class ServicioComunicacion:
         cliente.socket.conectar() # inicio sesion por socket
         self.clientes.append(cliente)
 
-    def desuscribir_cliente(self, nickname):
-        #self.clientes.pop(id_cliente, None)
-        pass
+    # def desuscribir_cliente(self, nickname):
+    #     #self.clientes.pop(id_cliente, None)
+    #     pass
 
     def respuestas_memoria_clientes_ronda(self):
         respuestas:dict= {}

@@ -19,7 +19,7 @@ class ServicioJuego:
         self.logger = logger # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 4 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
-        self.Jugadores = {}  # Lista de nicknames de jugadores en la sala
+        self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
 
     """
@@ -377,3 +377,6 @@ class ServicioJuego:
             #Opcional, agregar mensaje por socket. por jugador, aunque lo mejor es dejarlo
             # para cuando inicie la ronda a todos
 
+    def eliminar_jugador(self,nickname):
+        self.partida.eliminar_jugador_partida(nickname)
+        self.Jugadores.pop(nickname)
