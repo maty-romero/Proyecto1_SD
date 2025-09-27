@@ -12,17 +12,24 @@
     
 Esqueleto bd:
 PARTIDA:
-{
-  "codigo": 1,          // código de la partida
-  "jugadores": ["Ana", "Luis"],
-  "nro_ronda": 1,
-  "categorias": ["Animal", "Ciudad", "Color"],
-  "letra": "M",
-  "respuestas": [
-        { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
-        { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
-    ]
-}   
+datos = {
+            "codigo": 1,          # código de la partida
+            "clientes": {
+                "Ana": "",
+                "Luis":{
+                    "ip":0.0.0.0,
+                    "puerto":9090,
+                    "uri"cliente.Luis@0.0.0.0:9090.Servicio.Juego
+                }
+            },
+            "nro_ronda": 1,
+            "categorias": ["Animal", "Ciudad", "Color"],
+            "letra": "M",
+            "respuestas": [
+                    { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
+                    { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
+                ]
+            }
 
 -PATRONES OPCIONALES:
     repository pattern -> https://www.mongodb.com/developer/how-to/implement-repository-pattern-python-mongodb/
@@ -37,6 +44,7 @@ from bson.objectid import ObjectId
 """Los Datos ya tienen que llegar formateados a la clase. No se pueden actualizar datos particulares,
     la clase esta diseñada para que llegue todo el conjunto de datos
 """
+COD_PARTIDA = 1
 class ControladorDB:
 
     def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):
@@ -58,18 +66,15 @@ class ControladorDB:
 
             # Si no hay partidas, insertamos una inicial
             if self.partida.count_documents({}) == 0:
-                self.partida.insert_one(
-                    {
-                    "codigo": 1,          # código de la partida
-                    "jugadores": [],
-                    "nro_ronda": 0,
+                datos = {
+                    "codigo": COD_PARTIDA,          # código de la partida
+                    "clientes": {},
+                    "nro_ronda": 1,
                     "categorias": [],
                     "letra": "",
-                    "respuestas": [
-                            { }
-                        ]
-                    }   
-                )
+                    "respuestas": []
+                    }
+                self.partida.insert_one(datos)
                 self.registroDatos.append("[ControladorDB] Base creada con partida inicial ABCD")
             else:
                 self.registroDatos.append("[ControladorDB] Base ya tenía datos, no se insertó nada")
