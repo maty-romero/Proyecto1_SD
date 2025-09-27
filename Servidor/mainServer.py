@@ -3,6 +3,7 @@ import Pyro5.server
 from Pyro5 import errors
 from Pyro5.errors import NamingError, CommunicationError
 
+from Servidor.Aplicacion.NodoReplica import NodoReplica
 from Servidor.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.NodoServidor import NodoServidor
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
@@ -15,7 +16,7 @@ from Servidor.Utils.ConsoleLogger import ConsoleLogger
 if __name__ == "__main__":
     logger = ConsoleLogger(name="mainServer", level="INFO")
     logger.info("Iniciando servidor principal...")
-
+    """ """
     try:
         ns = Pyro5.api.locate_ns()
         logger.info("Servidor de nombres localizado correctamente.")
@@ -25,11 +26,36 @@ if __name__ == "__main__":
         exit(1)
 
     try:
-        ip_servidor = ComunicationHelper.obtener_ip_local()
-        nodoPrincipal = NodoServidor(1, True)
+        #ip_servidor = ComunicationHelper.obtener_ip_local()
+        ip_localhost = "127.0.0.1"
+
+        # id mas grande por Bully
+        nodoPrincipal = NodoServidor(id=30, host=ip_localhost, puerto=5000, nombre="NodoPpal", activo=True)
+        # activo = false por defecto
+        #id, host, puerto, coordinador_id: int, nombre="Replica", activo=False
+        nodoReplica1 = NodoReplica(id=15, host=ip_localhost, puerto=5001,
+                                   coordinador_id=nodoPrincipal.id, nombre="Replica1", )
+        nodoReplica2 = NodoReplica(id=10, host=ip_localhost, puerto=5002,
+                                   coordinador_id=nodoPrincipal.id, nombre="Replica2")
+
+        # Todos los nodos deben conocerse entre si - condicion de algoritmo Bully
+        # Refactorizar lo siguiente ??
+        nodoPrincipal.registrar_nodo_en_cluster(nodoReplica1)
+        nodoPrincipal.registrar_nodo_en_cluster(nodoReplica2)
+
+        nodoReplica1.registrar_nodo_en_cluster(nodoPrincipal)
+        nodoReplica1.registrar_nodo_en_cluster(nodoReplica2)
+
+        nodoReplica2.registrar_nodo_en_cluster(nodoPrincipal)
+        nodoReplica2.registrar_nodo_en_cluster(nodoReplica1)
+
         nodoPrincipal.iniciar_servicio()
+        nodoReplica1.iniciar_replica()
+        nodoReplica2.iniciar_replica()
+
         Gestor_Singleton = nodoPrincipal.ServicioJuego
-        daemon = Pyro5.server.Daemon(host=ip_servidor)
+        #daemon = Pyro5.server.Daemon(host=ip_servidor)
+        daemon = Pyro5.server.Daemon(host=ip_localhost)
 
         uri = ComunicationHelper.registrar_objeto_en_ns(
             Gestor_Singleton,
@@ -41,7 +67,7 @@ if __name__ == "__main__":
         logger.debug(f"URI: {uri}")
         logger.debug(f"Daemon: {daemon}")
         daemon.requestLoop()
-       
+
 #    except errors.NamingError:
 #        print("Servidor de nombres no encontrado")
 #    except errors.CommunicationError:

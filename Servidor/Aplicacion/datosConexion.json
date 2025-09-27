@@ -1,0 +1,9 @@
+
+{
+  "comentario": "Archivo para prueba local de replicas, en Docker se utilizan nombres de los servicios",  
+  "nodos": [
+    {"id": 1, "host": "127.0.0.1", "port": 5001},
+    {"id": 2, "host": "127.0.0.1", "port": 5002},
+    {"id": 3, "host": "127.0.0.1", "port": 5003}
+  ]
+}
