@@ -10,7 +10,6 @@ class Partida:
         self.letras_jugadas: list[str] = []
         self.ronda_actual: Ronda = None
         self.jugadores: list[Jugador] = []
-        
 
     def eliminar_jugador_partida(self, nickname: str):
         for jugador in self.jugadores:
