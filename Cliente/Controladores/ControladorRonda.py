@@ -50,6 +50,17 @@ class ControladorRonda:
 
     def finalizar_ronda(self):
         """Acción al presionar STOP!"""
+        respuestas = [input_widget.text().strip() for input_widget in self.vista.obtener_categorias_input()]
+        if not all(respuestas):
+            QtWidgets.QMessageBox.warning(self.vista, "Atención", "Debes completar TODAS las respuestas antes de finalizar la ronda.")
+            return
+        # Verificar que todas las respuestas empiecen con la letra de la ronda
+        info = self.gestor_cliente.get_info_ronda_act()
+        letra_ronda = info.get('letra_ronda', '').strip().upper()
+        for respuesta in respuestas:
+            if not respuesta.upper().startswith(letra_ronda):
+                QtWidgets.QMessageBox.warning(self.vista, "Atención", f"Todas las respuestas deben comenzar con la letra '{letra_ronda}'.")
+                return
         self.gestor_cliente.enviar_stop()
 
 

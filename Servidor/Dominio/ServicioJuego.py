@@ -22,6 +22,8 @@ class ServicioJuego:
         self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
 
+    #a
+
     """
         ServicioJuego --> Entran las llamadas Pyro
     
@@ -74,7 +76,7 @@ class ServicioJuego:
         # obtenerRespuesMemoriaClientes
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
-            "respuestas_memoria_clientes_ronda")
+            "respuestas_memoria_clientes_ronda") #No se utiliza el socket sino el proxy
 
         self.partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
         
@@ -126,6 +128,9 @@ class ServicioJuego:
         votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
         "recolectar_votos")
         self.procesar_votos_y_asignar_puntaje(votos)
+
+    # Método para restaurarle a un cliente los mensajes enviados por broadcast
+
 
     """
     def procesar_votos_y_asignar_puntaje(self, votos):
@@ -227,8 +232,8 @@ class ServicioJuego:
                 )
 
         # --- Segunda pasada: asignar puntajes ---
-        puntajes = {}
-        for jugador, info in respuestas_clientes.items():
+        puntajes = {} 
+        for jugador, info in respuestas_clientes.items(): 
             puntajes[jugador] = {}
             respuestas = info.get("respuestas", {})
             if not respuestas:

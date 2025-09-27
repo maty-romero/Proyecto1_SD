@@ -53,7 +53,7 @@ class ControladorNavegacion:
         #elf.vistaMensaje_Index = self.main_window.stack.addWidget(self.vistaMensaje)
 
     # --- Métodos de navegación ---
-      #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
+    #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
     
     def mostrar(self, eleccion: str):
         if eleccion == "nickname":
