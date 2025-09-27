@@ -14,7 +14,11 @@ Esqueleto bd:
 PARTIDA:
 {
   "codigo": 1,          // código de la partida
-  "jugadores": ["Ana", "Luis"],
+   "clientes_Conectados": [
+        ip: "0.0.0.0",
+        puerto:"9090"
+        uri:PYRO:<nombre_logico>@<ip>:<puerto>
+   ],
   "nro_ronda": 1,
   "categorias": ["Animal", "Ciudad", "Color"],
   "letra": "M",
@@ -61,7 +65,7 @@ class ControladorDB:
                 self.partida.insert_one(
                     {
                     "codigo": 1,          # código de la partida
-                    "jugadores": [],
+                    "clientes_Conectados": [],
                     "nro_ronda": 0,
                     "categorias": [],
                     "letra": "",
