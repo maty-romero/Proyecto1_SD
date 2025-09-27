@@ -42,7 +42,7 @@ class ControladorNavegacion:
         self.vistaRonda = vistaRonda
         self.vistaVotaciones = vistaVotaciones
         self.vistaResultados = vistaResultados
-        self.vistaMensaje = VistaMensajeTransitorio()
+        #self.vistaMensaje = VistaMensajeTransitorio()
 
         # Agregar vistas al stack
         self.vistaNickname_Index = self.main_window.stack.addWidget(self.vistaNickname)
@@ -50,7 +50,7 @@ class ControladorNavegacion:
         self.vistaRonda_Index = self.main_window.stack.addWidget(self.vistaRonda)
         self.vistaVotaciones_Index = self.main_window.stack.addWidget(self.vistaVotaciones)
         self.vistaResultados_Index = self.main_window.stack.addWidget(self.vistaResultados)
-        self.vistaMensaje_Index = self.main_window.stack.addWidget(self.vistaMensaje)
+        #elf.vistaMensaje_Index = self.main_window.stack.addWidget(self.vistaMensaje)
 
     # --- Métodos de navegación ---
       #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
