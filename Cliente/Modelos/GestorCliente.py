@@ -11,7 +11,7 @@ from Cliente.Modelos.ServicioCliente import ServicioCliente
 from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Utils.SerializeHelper import SerializeHelper
+from Cliente.Utils.SerializeHelper import SerializeHelper
 
 """Para el uso en docker, un compose de la siguiente forma:
 

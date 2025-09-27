@@ -10,56 +10,56 @@
 # xhost +local:docker && docker-compose up --scale cliente=1
 
 services:
-  nameserver:
-    build:
-      context: ./ServidorNombres                # la raíz del proyecto
-      dockerfile: Dockerfile
-    # container_name: name_server
-    environment:
-      - PYRO_NS_HOST=nameserver
-      - PYRO_NS_PORT=9090
-    #ports:
-    #  - "7000:9090"
-    networks:
-      - backend
-
-
-
-  nodo_principal:
-    build:
-      context: ./Servidor
-      dockerfile: Dockerfile
-    container_name: nodo_principal
-    environment:
-      - PYTHONUNBUFFERED=1
-    networks:
-      - backend
-    ports:
-      - "6000:27017"
-      - "6500:9090"
-    command: >
-      bash -c "\
-      mongod --bind_ip_all --dbpath /data/db & \
-      until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done; \
-      exec python3 -m Servidor.mainServer"
-    depends_on:
-      - nameserver
-
-  # cliente:
+  # nameserver:
   #   build:
-  #     context: ./Cliente
+  #     context: ./ServidorNombres                # la raíz del proyecto
   #     dockerfile: Dockerfile
-  #   container_name: cliente
+  #   # container_name: name_server
   #   environment:
-  #     - DISPLAY=0 # DISPLAY=${DISPLAY}
-  #     - QT_X11_NO_MITSHM=1
-  #   volumes:
-  #     - /tmp/.X11-unix:/tmp/.X11-unix:rw
+  #     - PYRO_NS_HOST=nameserver
+  #     - PYRO_NS_PORT=9090
+  #   #ports:
+  #   #  - "7000:9090"
   #   networks:
   #     - backend
+
+
+
+  # nodo_principal:
+  #   build:
+  #     context: ./Servidor
+  #     dockerfile: Dockerfile
+  #   container_name: nodo_principal
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   networks:
+  #     - backend
+  #   ports:
+  #     - "6000:27017"
+  #     - "6500:9090"
+  #   command: >
+  #     bash -c "\
+  #     mongod --bind_ip_all --dbpath /data/db & \
+  #     until mongosh --quiet --eval 'db.adminCommand(\"ping\")' >/dev/null 2>&1; do sleep 1; done; \
+  #     exec python3 -m Servidor.mainServer"
   #   depends_on:
   #     - nameserver
-  #     - nodo_principal
+
+  cliente:
+    build:
+      context: ./Cliente
+      dockerfile: Dockerfile
+  #  container_name: cliente
+    environment:
+      - DISPLAY=0 # DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    networks:
+      - backend
+    # depends_on:
+    #   - nameserver
+    #   - nodo_principal
 
 
 networks:
