@@ -88,6 +88,7 @@ if __name__ == "__main__":
     # Mostrar vista inicial
     controlador_navegacion.mostrar("nickname")
     #controlador_navegacion.mostrar("mensaje") # Para Probar vistaVotaciones
+    #controlador_navegacion.mostrar("resultados") # Para Probar vistaVotaciones
 
     sys.exit(app.exec())
 

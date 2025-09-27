@@ -3,7 +3,7 @@ import threading
 import time
 
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Utils.ComunicationHelper import ComunicationHelper
+from Cliente.Utils.ComunicationHelper import ComunicationHelper
 
 class SesionClienteSocket:
     def __init__(self, puerto_fijo: int, callback_mensaje, nickname_log: str):

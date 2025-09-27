@@ -49,7 +49,7 @@ services:
     build:
       context: ./Cliente
       dockerfile: Dockerfile
-    container_name: cliente
+  #  container_name: cliente
     environment:
       - DISPLAY=0 # DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
@@ -57,9 +57,9 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     networks:
       - backend
-#    depends_on:
-#      - nameserver
-#      - nodo_principal
+    # depends_on:
+    #   - nameserver
+    #   - nodo_principal
 
 
 networks:
