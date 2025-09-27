@@ -36,7 +36,7 @@ if __name__ == "__main__":
         ip_localhost = "127.0.0.1"
 
         # id mas grande por Bully
-        nodoPrincipal = NodoServidor(id=30, host=ip_localhost, puerto=5000, nombre="NodoPpal", activo=True)
+        nodoPrincipal = NodoServidor(id=30, host=ip_localhost, puerto=5000, nombre="NodoPpal", esCoordinador=True)
         # activo = false por defecto
         #id, host, puerto, coordinador_id: int, nombre="Replica", activo=False
         nodoReplica1 = NodoReplica(id=15, host=ip_localhost, puerto=5001,
@@ -50,14 +50,8 @@ if __name__ == "__main__":
         nodoPrincipal.registrar_nodo_en_cluster(nodoReplica2)
 
         nodoReplica1.registrar_nodo_en_cluster(nodoPrincipal)
-        nodoReplica1.registrar_nodo_en_cluster(nodoReplica2)
+        nodoReplica1.conectarse_a_coordinador()
 
-        nodoReplica2.registrar_nodo_en_cluster(nodoPrincipal)
-        nodoReplica2.registrar_nodo_en_cluster(nodoReplica1)
-
-        nodoPrincipal.iniciar_servicio()
-        nodoReplica1.iniciar_replica()
-        nodoReplica2.iniciar_replica()
 
         Gestor_Singleton = nodoPrincipal.ServicioJuego
         #daemon = Pyro5.server.Daemon(host=ip_servidor)

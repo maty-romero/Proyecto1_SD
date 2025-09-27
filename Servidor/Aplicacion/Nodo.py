@@ -1,15 +1,22 @@
+from EstadoNodo import EstadoNodo
 
 class Nodo: # La logica esta sin implementar, hay que revisar
-    def __init__(self, id, nombre, host, puerto, activo):
+    def __init__(self, id, nombre, host, puerto, esCoordinador):
         self.id = id
         self.host = host # uso de ip en pruebas
         self.puerto = puerto # uso de ip en pruebas
         self.nombre = nombre
-        self.activo = activo #por lo pronto dos estados, o es nodo activo, o no lo es (es replica)
-        #si se complejiza funcionalidad, self.estado="activo"-->"inactivo"-->"sincronizando"
-        self.nodos_cluster = []
+        self.esCoordinador = esCoordinador #por lo pronto dos estados, o es nodo activo, o no lo es (es replica)
+        self.nodos_cluster:Nodo = []
         self.id_coordinador_actual = None #Id del primario actual
-        # self.estado = enum ??
+         #si se complejiza funcionalidad, self.estado="activo"-->"inactivo"-->"sincronizando"
+        self.estado = EstadoNodo.ACTIVO#selecciona el estado actual del nodo
+    
+    def get_esCoordinador(self):
+        return self.esCoordinador
+    
+    def set_esCoordinador(self,atributo:bool):
+        self.esCoordinador = atributo
 
     def registrar_nodo_en_cluster(self, nodo):
         self.nodos_cluster.append(nodo)
@@ -31,12 +38,3 @@ class Nodo: # La logica esta sin implementar, hay que revisar
 
     def mostrar_estado(self):
         print(f"Estado del nodo {self.id}: {self.estado}")
-
-    # Evaluar si esto queda aca
-    # def iniciar_daemon(self):
-    #     # Inicia el daemon Pyro
-    #     pass
-
-    # def registrar_en_nameserver(self, nombre):
-    #     # Registra el objeto en el Name Server
-    #     pass
