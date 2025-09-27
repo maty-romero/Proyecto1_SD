@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     Replicas_Vecinas=[]
 
-
+    while
 
 
 

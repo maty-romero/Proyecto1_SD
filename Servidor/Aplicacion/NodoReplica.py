@@ -4,19 +4,20 @@
 
 """
 import sys
+import threading
 from time import sleep
 from Pyro5 import errors
 import Pyro5
 from Pyro5.errors import NamingError, CommunicationError
-from Servidor.Aplicacion.ManejadorSocketServidor import ManejadorSocketServidor
+from Servidor.Aplicacion.ManejadorSocketServidor import ManejadorSocket
 from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
 from Servidor.Dominio.ServicioJuego import ServicioJuego
 from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Aplicacion.ManejadorSocketReplica import ManejadorSocketReplica
-from Servidor.Aplicacion.ManejadorSocketServidor import ManejadorSocketServidor
+from Servidor.Aplicacion.ManejadorSocketReplica import ManejadorSocket
+from Servidor.Aplicacion.ManejadorSocketServidor import ManejadorSocket
 from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
@@ -57,7 +58,7 @@ class NodoReplica():
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
         self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como principal")
-        self.socket_manager = ManejadorSocketServidor(self.host, self.puerto, self._on_msg)
+        self.socket_manager = ManejadorSocket(self.host, self.puerto, self._on_msg)
         self.socket_manager.iniciar()
         
         #datos de prueba para testear la bd
@@ -99,7 +100,7 @@ class NodoReplica():
         coord = coincidencias[0] if coincidencias else None
         #self.logger.error(coord)
 
-        self.socket_manager = ManejadorSocketReplica(
+        self.socket_manager = ManejadorSocket(
             coord.host,
             coord.puerto,
             self._on_msg,
@@ -114,7 +115,7 @@ class NodoReplica():
         self.logger.warning(f"{self.get_nombre_completo()} promovido a PRIMARIO")
         self.socket_manager.cerrar()
         # Para que pueda enviar heartbeat a N nodos replicas
-        self.socket_mgr = ManejadorSocketServidor(self.host, self.puerto, self._on_msg)
+        self.socket_mgr = ManejadorSocket(self.host, self.puerto, self._on_msg)
         self.id_coordinador_actual = self.id_coordinador_actual
         self.socket_manager.iniciar()
         # aviso a todos los nodos vecinos - nuevo coordinador (broadcast)
@@ -162,6 +163,38 @@ class NodoReplica():
 
     def enviar_mensaje_eleccion(nodo):
         pass 
+    
+
+    #Algoritmo bully v2
+
+    def callback_mensaje(self, mensaje, conn):
+        if mensaje.startswith("ELECCION"):
+            id_remitente = int(mensaje.split(":")[1])
+            if id_remitente < self.id_nodo:
+                # responder que estoy vivo
+                self.manejador.enviar(f"RESPUESTA:{self.id_nodo}", conn)
+                # inicio mi propia elección
+                self.iniciar_eleccion()
+
+        elif mensaje.startswith("RESPUESTA"):
+            # alguien mayor está vivo, espero su anuncio
+            print(f"[Nodo {self.id_nodo}] Nodo mayor respondió, espero coordinador")
+
+        elif mensaje.startswith("COORDINADOR"):
+            self.coordinador = int(mensaje.split(":")[1])
+            print(f"[Nodo {self.id_nodo}] Nuevo coordinador: {self.coordinador}")
+
+    def iniciar_eleccion(self):
+        print(f"[Nodo {self.id_nodo}] Iniciando elección...")
+        for ip, puerto, id_otro in self.ServComunic.lista_nodos:
+            if id_otro > self.id_nodo:
+                self.manejador.enviar(f"ELECCION:{self.id_nodo}")
+        # Si nadie responde en X segundos, me proclamo coordinador
+        threading.Timer(3.0, self.convertirse_en_coordinador).start()
+
+    def convertirse_en_coordinador(self):
+        self.coordinador = self.id_nodo
+        self.manejador.enviar(f"COORDINADOR:{self.id_nodo}")
 
 
 

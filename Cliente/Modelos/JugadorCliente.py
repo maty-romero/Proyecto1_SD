@@ -1,11 +1,11 @@
-from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
+from Cliente.Modelos.SesionClienteSocket import ManejadorSocket
 
 
 class JugadorCliente:
     def __init__(self, nickname: str):
         self.nickname = nickname
         self.nombre_logico = f"jugador.{nickname}"
-        self.sesion_socket: SesionClienteSocket = None  # se inyecta desde el controlador
+        self.sesion_socket: ManejadorSocket = None  # se inyecta desde el controlador
 
     def get_nickname(self):
         return self.nickname

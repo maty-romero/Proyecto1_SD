@@ -18,8 +18,8 @@ class ClienteConectado:
         self.conectado: bool = False
         self.timestamp: datetime
         self.socket = ManejadorSocket( # sesion cliente
-            ip_cliente=ip_cliente,
-            puerto_cliente=puerto_cliente,
+            ip_nodo=ip_cliente,
+            puerto_nodo=puerto_cliente,
             callback_mensaje= lambda msg: self._procesar_mensaje(msg),
             nickname_log=nickname
         )

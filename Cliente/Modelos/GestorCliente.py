@@ -8,7 +8,7 @@ import Pyro5
 from Cliente.Controladores.ControladorNavegacion import ControladorNavegacion
 from Cliente.Modelos.JugadorCliente import JugadorCliente
 from Cliente.Modelos.ServicioCliente import ServicioCliente
-from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
+from Cliente.Modelos.SesionClienteSocket import ManejadorSocket
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Cliente.Utils.SerializeHelper import SerializeHelper
@@ -203,7 +203,7 @@ class GestorCliente:
 
     def iniciar_sesion_socket_en_hilo(self, puerto: int):
         try:
-            self.Jugador_cliente.sesion_socket = SesionClienteSocket(
+            self.Jugador_cliente.sesion_socket = ManejadorSocket(
                 puerto_fijo=puerto,
                 callback_mensaje=self._procesar_mensaje_socket,
                 nickname_log=self.Jugador_cliente.get_nickname()

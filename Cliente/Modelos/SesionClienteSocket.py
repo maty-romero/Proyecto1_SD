@@ -4,68 +4,126 @@ import time
 
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
+from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 
-class SesionClienteSocket:
-    def __init__(self, puerto_fijo: int, callback_mensaje, nickname_log: str):
-        self.host = ComunicationHelper.obtener_ip_local()
-        self.puerto = puerto_fijo
-        self.callback_mensaje = callback_mensaje # funcion que se ejecuta cuando ocurre un evento
+import socket
+import threading
+import time
+from datetime import datetime, timedelta
+from Servidor.Utils.ConsoleLogger import ConsoleLogger
+
+class ManejadorSocket:
+    def __init__(self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False):
+        self.host = host
+        self.puerto = puerto
+        self.callback_mensaje = callback_mensaje
+        self.es_servidor = es_servidor
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.conexion = None
-        self.hilo_escucha = None
-        self.hilo_heartbeat = None
+        self.conexiones = []  # lista de sockets conectados (para broadcast)
         self._escuchando = False
-        self.logger = ConsoleLogger(name=f"SesionClienteSocket[{nickname_log}]", level="INFO")
-        self.logger.info("Nueva Instancia Sesion Socket en Cliente")
-        self.socket_listo_event = threading.Event() # para saber cuándo el socket está listo
+        self.logger = ConsoleLogger(name=f"Socket[{nombre_logico}]", level="INFO")
+        self.hilo_heartbeat = None
 
-    def iniciar(self):
+        # Estado para algoritmo Bully
+        self.coordinador = None
+        self.timestamp = None
+        self.conectado = False
+
+    # ---------------------------
+    # Inicializar como servidor
+    # ---------------------------
+    def iniciar_servidor(self):
+        self.socket.bind((self.host, self.puerto))
+        self.socket.listen()
+        self._escuchando = True
+        self.logger.info(f"Servidor escuchando en {self.host}:{self.puerto}")
+        threading.Thread(target=self._aceptar_conexiones, daemon=True).start()
+
+        # Thread de heartbeat
+        self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
+        self.hilo_heartbeat.start()
+
+    # ---------------------------
+    # Conectar como cliente a otro nodo
+    # ---------------------------
+    def conectar_a_nodo(self, ip_destino, puerto_destino):
         try:
-            self.logger.info("Iniciando socket...")
-            self.socket.bind((self.host, self.puerto))
-            self.socket.listen(1)
-            self.socket_listo_event.set() # Seteo evento para poder llamarlo desde GestorCliente
-            self.logger.info(f"Cliente esperando conexion en {self.host}:{self.puerto}")
-            self.conexion, addr = self.socket.accept()
-            self.logger.info(f"Servidor conectado desde {addr}")
-            self._escuchando = True
-
-            self.hilo_escucha = threading.Thread(target=self._escuchar, daemon=True)
-            self.hilo_escucha.start()
-            self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
-            self.hilo_heartbeat.start()
+            conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            conn.connect((ip_destino, puerto_destino))
+            self.logger.info(f"Conectado a nodo en {ip_destino}:{puerto_destino}")
+            self.conexiones.append(conn)
+            threading.Thread(target=self._escuchar, args=(conn,), daemon=True).start()
         except Exception as e:
-            self.logger.error(f"Error al iniciar: {e}")
-            import traceback
-            traceback.print_exc()
+            self.logger.error(f"Error al conectar con nodo: {e}")
 
-    def _escuchar(self):
-        self.logger.info("Iniciando escucha constante...")
+    # ---------------------------
+    # Aceptar nuevas conexiones (modo servidor)
+    # ---------------------------
+    def _aceptar_conexiones(self):
+        while self._escuchando:
+            conn, addr = self.socket.accept()
+            self.conexiones.append(conn)
+            self.logger.info(f"Nodo conectado desde {addr}")
+            threading.Thread(target=self._escuchar, args=(conn,), daemon=True).start()
+
+    # ---------------------------
+    # Escucha de mensajes
+    # ---------------------------
+    def _escuchar(self, conn):
         while self._escuchando:
             try:
-                data = self.conexion.recv(1024)
+                data = conn.recv(1024)
                 if not data:
                     break
-                self.callback_mensaje(data.decode())
+                mensaje = data.decode()
+                if mensaje == "HEARTBEAT":
+                    self.timestamp = datetime.utcnow()
+                    self.conectado = True
+                self.callback_mensaje(mensaje, conn)
             except OSError:
                 break
-        self.cerrar()
+        conn.close()
 
+    # ---------------------------
+    # Enviar mensajes
+    # ---------------------------
+    def enviar(self, mensaje: str, conn=None):
+        try:
+            data = mensaje.encode()
+            if conn:
+                conn.sendall(data)
+            else:
+                # broadcast si no se especifica conexión
+                for c in list(self.conexiones):
+                    try:
+                        c.sendall(data)
+                    except:
+                        self.logger.warning("Conexión rota, eliminando")
+                        self.conexiones.remove(c)
+        except Exception as e:
+            self.logger.error(f"Error al enviar mensaje: {e}")
+
+    # ---------------------------
+    # Heartbeat
+    # ---------------------------
     def _enviar_heartbeat(self):
         while self._escuchando:
-            try:
-                self.logger.info("Enviando HEARTBEAT...")
-                self.conexion.sendall(b"HEARTBEAT")
-                time.sleep(2)  # cada 30 seg
-            except OSError:
-                break
+            self.enviar("HEARTBEAT")
+            time.sleep(3)
+
+    def esta_vivo(self) -> bool:
+        if not self.conectado:
+            return False
+        if not self.timestamp:
+            return False
+        return datetime.utcnow() - self.timestamp < timedelta(seconds=5)
 
     def cerrar(self):
-        self.logger.info("Cerrando Session por Socket...")
+        self.logger.info("Cerrando manejador de socket...")
         self._escuchando = False
-        if self.conexion:
-            self.conexion.close()
-            self.conexion = None
+        for conn in self.conexiones:
+            conn.close()
         self.socket.close()
 
 
