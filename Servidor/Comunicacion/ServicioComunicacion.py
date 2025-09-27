@@ -16,6 +16,7 @@ class ServicioComunicacion:
         # self.sockets_registrados =  []
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
+        self.nodos_cluster: list[Nodo] = []
         # hilo que maneja verificacion clientes vivos
         threading.Thread(target=self.loop_verificacion, daemon=True).start()
 

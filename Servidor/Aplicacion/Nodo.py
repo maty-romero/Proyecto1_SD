@@ -1,4 +1,4 @@
-from EstadoNodo import EstadoNodo
+from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 
 class Nodo: # La logica esta sin implementar, hay que revisar
     def __init__(self, id, nombre, host, puerto, esCoordinador):
@@ -8,7 +8,6 @@ class Nodo: # La logica esta sin implementar, hay que revisar
         self.nombre = nombre
         self.esCoordinador = esCoordinador #por lo pronto dos estados, o es nodo activo, o no lo es (es replica)
         self.nodos_cluster:Nodo = []
-        self.id_coordinador_actual = None #Id del primario actual
          #si se complejiza funcionalidad, self.estado="activo"-->"inactivo"-->"sincronizando"
         self.estado = EstadoNodo.ACTIVO#selecciona el estado actual del nodo
     

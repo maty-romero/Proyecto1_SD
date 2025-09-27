@@ -1,6 +1,18 @@
 
+from enum import Enum, auto
 from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Ronda import Ronda
+
+"""----------Clase Estatica estados-----------------------------------------------------------------------------------------------------------"""
+class EstadoJuego(Enum):
+    #Estados fuera de la ronda
+    EN_SALA = auto()
+    MOSTRANDO_RESULTADOS_FINALES = auto()
+
+    #Estados dentro de la ronda
+    RONDA_EN_CURSO = auto()
+    EN_VOTACIONES = auto()
+"""---------------------------------------------------------------------------------------------------------------------"""
 
 class Partida:
     def __init__(self):
@@ -10,6 +22,7 @@ class Partida:
         self.letras_jugadas: list[str] = []
         self.ronda_actual: Ronda = None
         self.jugadores: list[Jugador] = []
+        self.estado_actual = EstadoJuego.EN_SALA
 
     def eliminar_jugador_partida(self, nickname: str):
         for jugador in self.jugadores:
@@ -79,6 +92,9 @@ class Partida:
             "total_rondas": self.rondas_maximas
         }
         return info
+    
+    def terminar_partida(self) -> bool:
+        self.estado_actual == EstadoJuego.FIN_JUEGO
 
 
 
