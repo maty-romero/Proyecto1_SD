@@ -1,3 +1,4 @@
+from Cliente.A_Vistas import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaVotaciones import VistaVotaciones
 from Cliente.Controladores.ControladorVotaciones import ControladorVotaciones
 from Cliente.Modelos.GestorCliente import GestorCliente
@@ -33,6 +34,7 @@ if __name__ == "__main__":
     vista_ronda = VistaRonda()
     vista_votaciones = VistaVotaciones()
     vista_resultados=VistaResultados()
+    #vista_mensaje = VistaMensajeTransitorio()
     # Crear controladores de vistas
     controlador_nickname = ControladorNickName(
         vista_nickname,
@@ -68,11 +70,11 @@ if __name__ == "__main__":
         vistaNickname=vista_nickname,
         vistaSala=vista_sala,
         vistaRonda=vista_ronda,
-        #controlador_votaciones, vistaVotaciones
         controlador_votaciones=controlador_votaciones,
         vistaVotaciones=vista_votaciones,
         controlador_resultados=controlador_resultados,
         vistaResultados=vista_resultados
+        
     )
     
     controlador_nickname.setNavegacion(controlador_navegacion)
@@ -85,7 +87,8 @@ if __name__ == "__main__":
 
     # Mostrar vista inicial
     controlador_navegacion.mostrar("nickname")
-    #controlador_navegacion.mostrar("votaciones") # Para Probar vistaVotaciones
+    #controlador_navegacion.mostrar("mensaje") # Para Probar vistaVotaciones
+    #controlador_navegacion.mostrar("resultados") # Para Probar vistaVotaciones
 
     sys.exit(app.exec())
 

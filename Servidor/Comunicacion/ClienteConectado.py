@@ -3,7 +3,7 @@ import uuid
 
 import Pyro5
 
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from datetime import datetime, timedelta
 

@@ -11,7 +11,7 @@ from Cliente.Modelos.ServicioCliente import ServicioCliente
 from Cliente.Modelos.SesionClienteSocket import SesionClienteSocket
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Utils.SerializeHelper import SerializeHelper
+from Cliente.Utils.SerializeHelper import SerializeHelper
 
 """Para el uso en docker, un compose de la siguiente forma:
 
@@ -46,7 +46,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "10.89.177.119"   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = "192.168.100.22"   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 

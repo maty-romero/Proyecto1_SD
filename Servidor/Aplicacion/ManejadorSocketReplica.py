@@ -6,21 +6,20 @@ from Servidor.Utils.ConsoleLogger import ConsoleLogger
 """
     El servidor se conecta al socket abierto por el cliente (sesion) 
 """
-
-class ManejadorSocket:
-    def __init__(self, ip_cliente: str, puerto_cliente: int, callback_mensaje, nickname_log: str):
-        self.ip_cliente = ip_cliente
-        self.puerto_cliente = puerto_cliente
+class ManejadorSocketReplica:
+    def __init__(self, ip_primario: str, puerto_primario: int, callback_mensaje, nickname_log: str):
+        self.ip_primario = ip_primario
+        self.puerto_primario = puerto_primario
         self.callback_mensaje = callback_mensaje # funcion que se ejecuta cuando ocurre un evento
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.hilo_escucha = None
         self._escuchando = False
-        self.logger = ConsoleLogger(name=f"ManejadorSocket['{nickname_log}']", level="INFO")
+        self.logger = ConsoleLogger(name=f"ReplicaSocket[{nickname_log}]", level="INFO")
 
     def conectar(self):
         try:
-            self.socket.connect((self.ip_cliente, self.puerto_cliente))
-            self.logger.info(f"Conectado al cliente en {self.ip_cliente}:{self.puerto_cliente}")
+            self.socket.connect((self.ip_primario, self.puerto_primario))
+            self.logger.info(f"Conectado al nodo ppal en {self.ip_primario}:{self.puerto_primario}")
             self._escuchando = True
             self.hilo_escucha = threading.Thread(target=self._escuchar, daemon=True)
             self.hilo_escucha.start()
