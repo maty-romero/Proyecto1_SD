@@ -47,7 +47,14 @@ class NodoServidor(Nodo):
         #datos de prueba para testear la bd
         datos = {
             "codigo": 1,          # código de la partida
-            "jugadores": ["Ana", "Luis"],
+            "clientes": {
+                "Ana": "",
+                "Luis":{
+                    "ip"
+                    "puerto"
+                    "uri"
+                }
+            },
             "nro_ronda": 1,
             "categorias": ["Animal", "Ciudad", "Color"],
             "letra": "M",
