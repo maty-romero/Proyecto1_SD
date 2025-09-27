@@ -14,6 +14,7 @@ from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
 from Servidor.Comunicacion.Dispacher import Dispatcher
+from Servidor.Dominio import ServicioJuego
 from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
@@ -42,8 +43,12 @@ class NodoReplica(Nodo):
         except Exception as e:
             self.logger.error(f"No se pudo conectar al servidor de nombres: {e}")
             sys.exit(1)
+        
+        self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
 
-        self.ServicioJuego = None  # instanciar real si aplica
+        self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
+        self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
+        self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como coordinador")
         self.socket_manager = ManejadorSocket(self.host, self.puerto, self.callback_mensaje)
         self.socket_manager.iniciar()
