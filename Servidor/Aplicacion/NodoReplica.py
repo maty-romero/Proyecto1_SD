@@ -3,198 +3,133 @@
 -Falta implementar metodo que calcule el timeout del servidor
 
 """
+# ---------------- NodoReplica ----------------
 import sys
 import threading
 from time import sleep
-from Pyro5 import errors
+from datetime import datetime
+
 import Pyro5
-from Pyro5.errors import NamingError, CommunicationError
-from Servidor.Aplicacion.ManejadorSocketServidor import ManejadorSocket
 from Servidor.Aplicacion.Nodo import Nodo
-from Servidor.Comunicacion.Dispacher import Dispatcher
+from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
-from Servidor.Dominio.ServicioJuego import ServicioJuego
-from Servidor.Persistencia.ControladorDB import ControladorDB
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Aplicacion.ManejadorSocketReplica import ManejadorSocket
-from Servidor.Aplicacion.ManejadorSocketServidor import ManejadorSocket
+from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 
-#implementa patron de failover
-class NodoReplica():
-    def __init__(self, id, host, puerto,nombre="Replica", esCoordinador=False):
-        super().__init__(id, host=host, puerto=puerto, nombre=nombre, esCoordinador=esCoordinador)
-        
-        #----------Instancias para coordinador----------#
-        self.ServicioJuego = None
-        self.socket_manager = None
+
+class NodoReplica(Nodo):
+    def __init__(self, id, host, puerto, nombre="Replica", esCoordinador=False):
+        super().__init__(id, host, puerto, nombre, esCoordinador)
         self.Dispatcher = Dispatcher()
         self.ServComunic = ServicioComunicacion(self.Dispatcher)
-        #-----------------------------------------------#
         self.ServDB = ControladorDB()
-        self.socket_manager = None
-        self.logger = ConsoleLogger(name=f"Replica Local", level="INFO") # Sobrescritura
+        self.ServicioJuego = None
+        self.socket_manager: ManejadorSocket = None
+        self.logger = ConsoleLogger(name=f"Replica-{self.id}", level="INFO")
 
-    def iniciar_como_coordinador(self,ip_ns,puerto_ns):
-        reintentar = True
-        while reintentar:
-            self.logger.info("[Main] Iniciando servidor principal...")
-            try:
-                ns = Pyro5.api.locate_ns(ip_ns,puerto_ns)
-                self.logger.info("Servidor de nombres localizado correctamente.")
-                reintentar=False
-            except (NamingError, CommunicationError, ConnectionRefusedError) as e:
-                 self.logger.error(f"No se pudo conectar al servidor de nombres: {e}")
-                 self.logger.warning("Abortando inicio del servidor.")
-            
-            s_n = input("Desea reintentar conexión? (s/n): ").strip().lower()
-            if s_n != "s":
-                sys.exit(1)
+        self.coordinador_actual = None
+        self.heartbeat_interval = 5
+        self.timeout_heartbeat = 10
+        self.ultimo_heartbeat = datetime.utcnow()
 
-        self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
-        self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
-        self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
-        self.Dispatcher.registrar_servicio("db", self.ServDB)
-        self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como principal")
-        self.socket_manager = ManejadorSocket(self.host, self.puerto, self._on_msg)
+    # ---------------- Inicialización como coordinador ----------------
+    def iniciar_como_coordinador(self, ip_ns, puerto_ns):
+        try:
+            ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+            self.logger.info("Servidor de nombres localizado correctamente.")
+        except Exception as e:
+            self.logger.error(f"No se pudo conectar al servidor de nombres: {e}")
+            sys.exit(1)
+
+        self.ServicioJuego = None  # instanciar real si aplica
+        self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como coordinador")
+        self.socket_manager = ManejadorSocket(self.host, self.puerto, self.callback_mensaje)
         self.socket_manager.iniciar()
-        
-        #datos de prueba para testear la bd
+
+        # BD inicial de prueba
         datos = {
-            "codigo": 1,          # código de la partida
-            "clientes": {
-                "Ana": "",
-                "Luis":{
-                    "ip"
-                    "puerto"
-                    "uri"
-                }
-            },
+            "codigo": 1,
+            "clientes": {"Ana": "", "Luis": {"ip": "", "puerto": "", "uri": ""}},
             "nro_ronda": 1,
             "categorias": ["Animal", "Ciudad", "Color"],
             "letra": "M",
-            "respuestas": [
-                    { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
-                    { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
-                ]
-            }
-
-        dataI = self.ServDB.obtener_partida()
-        #deberia imprimir la data vacia 
-        self.logger.info(dataI)
+            "respuestas": []
+        }
         self.ServDB.crear_partida(datos)
-        #deberia imprimir la data cargada en la linea anterior
-        data2 = self.ServDB.obtener_partida()
-        self.logger.info(data2)
-        
-        RegistroControladorDB = self.ServDB.registroDatos
-        self.logger.info(f"RegistroDB: {RegistroControladorDB}")
-        sleep(1)
+        self.logger.info(f"BD inicializada: {self.ServDB.obtener_partida()}")
 
-    def conectarse_a_coordinador(self):
-        self.logger.info(f"{self.get_nombre_completo()} conectándose a nodo primario {self.id_coordinador_actual}")
-        #self.logger.error(self.nodos_cluster)
-        coincidencias = [n for n in self.nodos_cluster if n.esCoordinador == self.id_coordinador_actual]
-        coord = coincidencias[0] if coincidencias else None
-        #self.logger.error(coord)
+        threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
 
-        self.socket_manager = ManejadorSocket(
-            coord.host,
-            coord.puerto,
-            self._on_msg,
-            self.get_nombre_completo())
+    # ---------------- Conectarse a coordinador ----------------
+    def conectarse_a_coordinador(self, nodo_coordinador):
+        self.logger.info(f"{self.get_nombre_completo()} conectándose a coordinador {nodo_coordinador.get_nombre_completo()}")
+        self.socket_manager = ManejadorSocket(nodo_coordinador.host, nodo_coordinador.puerto, self.callback_mensaje)
         self.socket_manager.conectar()
+        self.coordinador_actual = nodo_coordinador.id
 
-    def _on_msg(self, mensaje):
-        self.logger.info(f"Mensaje recibido del primario: {mensaje}")
-        # Aquí procesás heartbeats, updates, etc.
-
-    def promover_a_principal(self): 
-        self.logger.warning(f"{self.get_nombre_completo()} promovido a PRIMARIO")
-        self.socket_manager.cerrar()
-        # Para que pueda enviar heartbeat a N nodos replicas
-        self.socket_mgr = ManejadorSocket(self.host, self.puerto, self._on_msg)
-        self.id_coordinador_actual = self.id_coordinador_actual
-        self.socket_manager.iniciar()
-        # aviso a todos los nodos vecinos - nuevo coordinador (broadcast)
-
-    # ---------------
+    # ---------------- Heartbeat ----------------
+    def _enviar_heartbeat(self):
+        while True:
+            sleep(self.heartbeat_interval)
+            if self.socket_manager:
+                try:
+                    self.socket_manager.enviar("HEARTBEAT")
+                except Exception as e:
+                    self.logger.warning(f"No se pudo enviar heartbeat: {e}")
 
     def verificar_heartbeat(self):
-        if not self.recibe_heartbeat_a_tiempo():
+        delta = (datetime.utcnow() - self.ultimo_heartbeat).total_seconds()
+        if delta > self.timeout_heartbeat:
             self.logger.warning("No se recibió heartbeat del coordinador. Iniciando elección...")
-            self.iniciar_eleccion_coordinador() # Algoritmo Bully
+            self.iniciar_eleccion()
 
-
-    # Algoritmo de Bully 
-    def iniciar_eleccion_coordinador(self): 
+    # ---------------- Bully ----------------
+    def iniciar_eleccion(self):
         self.logger.info(f"{self.get_nombre_completo()} inicia elección Bully")
-
-        nodos_mayores = [n for n in self.nodos_cluster if n.id > self.id and self.nodo_esta_activo(n)]
+        nodos_mayores = [n for n in self.ServComunic.nodos_cluster if n.id > self.id and n.obtener_estado() == EstadoNodo.ACTIVO]
         if not nodos_mayores:
             self.logger.info("No hay nodos mayores activos. Me proclamo coordinador.")
-            self.proclamar_coordinador()
+            self.convertirse_en_coordinador()
             return
 
-        respuestas = []
         for nodo in nodos_mayores:
             try:
-                self.enviar_mensaje_eleccion(nodo)
-                respuesta = self.esperar_respuesta(nodo, timeout=2)
-                if respuesta == "OK":
-                    respuestas.append(nodo.id)
+                self.socket_manager.enviar(f"ELECCION:{self.id}")
             except Exception as e:
-                self.logger.warning(f"Fallo al contactar nodo {nodo.id}: {e}")
-                self.marcar_nodo_como_inactivo(nodo)
+                self.logger.warning(f"Error al enviar ELECCION a nodo {nodo.id}: {e}")
 
-        if not respuestas:
-            self.logger.info("Nadie respondió. Me proclamo coordinador.")
-            self.proclamar_coordinador()
-        else:
-            self.logger.info("Delego elección a nodos mayores.")
-
-    def recibir_mensaje_eleccion(self, id_remitente):
-        self.logger.info(f"Recibí mensaje de elección de nodo {id_remitente}")
-        if self.id > id_remitente:
-            self.enviar_respuesta_ok(id_remitente)
-            self.iniciar_eleccion_coordinador()
-
-    def enviar_mensaje_eleccion(nodo):
-        pass 
-    
-
-    #Algoritmo bully v2
-
-    def callback_mensaje(self, mensaje, conn):
-        if mensaje.startswith("ELECCION"):
-            id_remitente = int(mensaje.split(":")[1])
-            if id_remitente < self.id_nodo:
-                # responder que estoy vivo
-                self.manejador.enviar(f"RESPUESTA:{self.id_nodo}", conn)
-                # inicio mi propia elección
-                self.iniciar_eleccion()
-
-        elif mensaje.startswith("RESPUESTA"):
-            # alguien mayor está vivo, espero su anuncio
-            print(f"[Nodo {self.id_nodo}] Nodo mayor respondió, espero coordinador")
-
-        elif mensaje.startswith("COORDINADOR"):
-            self.coordinador = int(mensaje.split(":")[1])
-            print(f"[Nodo {self.id_nodo}] Nuevo coordinador: {self.coordinador}")
-
-    def iniciar_eleccion(self):
-        print(f"[Nodo {self.id_nodo}] Iniciando elección...")
-        for ip, puerto, id_otro in self.ServComunic.lista_nodos:
-            if id_otro > self.id_nodo:
-                self.manejador.enviar(f"ELECCION:{self.id_nodo}")
-        # Si nadie responde en X segundos, me proclamo coordinador
-        threading.Timer(3.0, self.convertirse_en_coordinador).start()
+        threading.Timer(3, self.convertirse_en_coordinador).start()
 
     def convertirse_en_coordinador(self):
-        self.coordinador = self.id_nodo
-        self.manejador.enviar(f"COORDINADOR:{self.id_nodo}")
+        self.coordinador_actual = self.id
+        self.set_esCoordinador(True)
+        self.logger.warning(f"{self.get_nombre_completo()} se convierte en coordinador")
+        for nodo in self.ServComunic.nodos_cluster:
+            try:
+                if nodo.socket_manager:
+                    nodo.socket_manager.enviar(f"COORDINADOR:{self.id}")
+            except:
+                pass
+
+    # ---------------- Callback de mensajes ----------------
+    def callback_mensaje(self, mensaje, conn=None):
+        self.logger.info(f"[{self.get_nombre_completo()}] Mensaje recibido: {mensaje}")
+        if mensaje == "HEARTBEAT":
+            self.ultimo_heartbeat = datetime.utcnow()
+        elif mensaje.startswith("ELECCION"):
+            remitente_id = int(mensaje.split(":")[1])
+            if remitente_id < self.id:
+                self.socket_manager.enviar(f"RESPUESTA:{self.id}")
+                self.iniciar_eleccion()
+        elif mensaje.startswith("RESPUESTA"):
+            self.logger.info("Nodo mayor respondió. Esperando COORDINADOR...")
+        elif mensaje.startswith("COORDINADOR"):
+            coord_id = int(mensaje.split(":")[1])
+            self.coordinador_actual = coord_id
+            self.set_esCoordinador(self.id == coord_id)
+            self.logger.info(f"Nuevo coordinador: {coord_id}")
 
 
 
