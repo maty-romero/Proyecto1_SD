@@ -10,6 +10,7 @@
     - Va a haber acoplamiento, dado que este controlador conocera a todos los demas
     """
 
+from Cliente.A_Vistas import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
 from Cliente.A_Vistas.VistaRonda import VistaRonda
@@ -22,7 +23,9 @@ from Cliente.Controladores.ControladorSala import ControladorSala
 class ControladorNavegacion:
     def __init__(self, main_window,controlador_nickname,
                  controlador_sala,controlador_ronda, vistaNickname,
-                 vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, vistaResultados):
+                 vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, 
+                 vistaResultados):
+        
         self.main_window = main_window
 
         # Guardar referencias a controladores
@@ -31,6 +34,7 @@ class ControladorNavegacion:
         self.controlador_ronda = controlador_ronda
         self.controlador_votaciones = controlador_votaciones
         self.controlador_resultados = controlador_resultados
+        # self.controlador_mensaje No hace falta controlador, control de transiciones - controlador nav 
 
         # Guardar referencias a vistas
         self.vistaNickname = vistaNickname
@@ -38,6 +42,7 @@ class ControladorNavegacion:
         self.vistaRonda = vistaRonda
         self.vistaVotaciones = vistaVotaciones
         self.vistaResultados = vistaResultados
+        self.vistaMensaje = VistaMensajeTransitorio()
 
         # Agregar vistas al stack
         self.vistaNickname_Index = self.main_window.stack.addWidget(self.vistaNickname)
@@ -45,6 +50,7 @@ class ControladorNavegacion:
         self.vistaRonda_Index = self.main_window.stack.addWidget(self.vistaRonda)
         self.vistaVotaciones_Index = self.main_window.stack.addWidget(self.vistaVotaciones)
         self.vistaResultados_Index = self.main_window.stack.addWidget(self.vistaResultados)
+        self.vistaMensaje_Index = self.main_window.stack.addWidget(self.vistaMensaje)
 
     # --- Métodos de navegación ---
       #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
@@ -63,9 +69,22 @@ class ControladorNavegacion:
             self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
             self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
+        elif eleccion == "mensaje": 
+            self.main_window.stack.setCurrentIndex(self.vistaMensaje_Index)
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
     
     def obtener_respuestas_ronda(self):
         # Llama al método del controlador de ronda
         return self.controlador_ronda.obtener_respuestas()
+    
+    def mostrar_mensaje_transitorio(self, texto: str):
+        self.vistaMensaje.setMensaje(texto)
+        self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
+
+    """
+    def mostrar_mensaje_transitorio_temporal(self, texto: str, siguiente_vista: str, duracion_ms=3000):
+        self.mostrar_mensaje_transitorio(texto)
+        QtCore.QTimer.singleShot(duracion_ms, lambda: self.mostrar(siguiente_vista))
+
+    """

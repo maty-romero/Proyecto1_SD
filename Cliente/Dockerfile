@@ -27,5 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el resto del código
 COPY . ./Cliente
 
-ENTRYPOINT [ "bash", "-c", "xhost +local:docker || true && python -m Cliente.mainClient" ]
+CMD ["python3", "-m", "Cliente.mainClient"]
+
 
