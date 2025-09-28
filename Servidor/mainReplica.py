@@ -23,6 +23,12 @@ from Servidor.Utils.ConsoleLogger import ConsoleLogger
 def medir_tiempo (t1,t2):
     return t2-t1
 
+def obtener_puerto_libre():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('', 0))  # el sistema asigna un puerto libre
+        _, puerto = s.getsockname()
+        s.close()
+        return puerto
 
 if __name__ == "__main__":
     logger = ConsoleLogger("MainReplica", "INFO")
@@ -30,7 +36,7 @@ if __name__ == "__main__":
     # ---------- Configuración ----------
     tipo_servicio = "_replica._tcp.local."
     ip_local = socket.gethostbyname(socket.gethostname())
-    puerto_local = 5001
+    puerto_local = obtener_puerto_libre()
     max_replicas = 3
     zeroconf = Zeroconf()
 
