@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QWidget
 #from ronda_view_ui import Ui_MainWindow
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,QMessageBox
 from PyQt6.QtGui import QFont
 from PyQt6 import QtCore
 from PyQt6.QtGui import QValidator
@@ -109,3 +109,11 @@ class VistaRonda(QWidget):
     def agregar_validadores(self, letra):
         for input in self.inputs:
             input.setValidator(PrimeraLetraValidator(f"{letra}", input))
+            
+    def aviso_completar_categorias(self, nombre):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle("Advertencia")
+        msg.setText(f"Respuestas incompletas {nombre}. Debes completar todas las categorías antes de presionar STOP.")
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
