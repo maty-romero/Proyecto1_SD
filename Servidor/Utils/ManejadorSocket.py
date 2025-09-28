@@ -1,19 +1,27 @@
 import socket
 import threading
 import time
+import traceback
 from datetime import datetime, timedelta
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 
 class ManejadorSocket:
-    def __init__(self, host: str, puerto: int, nombre_logico: str, callback_mensaje = None, es_servidor=False):
+    def __init__(self, host: str, puerto: int, nombre_logico: str, callback_mensaje = None, es_servidor=False,tipo_Nodo:str=None):
         self.host = host
         self.puerto = puerto
         self.callback_mensaje = callback_mensaje
         self.es_servidor = es_servidor
 
+        #Variable para determinar si se utiliza el hilo de heartbeat
+        self.tipo_nodo = tipo_Nodo
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conexiones = []  # lista de sockets conectados (para broadcast)
-        self._escuchando = False
+
+        #------------------metodos de logica de estado interno de escucha----------------------------------------------------------#
+        self._escuchando = False    #se dejan ambos para evitar modificaciones a ultimo momento
+        self.socket_listo_event = threading.Event()  # para saber cuándo el socket está listo
+        #----------------------------------------------------------------------------#
         self.logger = ConsoleLogger(name=f"Socket[{nombre_logico}]", level="INFO")
         self.hilo_heartbeat = None
 
@@ -42,20 +50,22 @@ class ManejadorSocket:
             self.socket.bind((self.host, self.puerto))
             self.socket.listen()
             self._escuchando = True
+            self.socket_listo_event.set()
             self.logger.info(f"Servidor escuchando en {self.host}:{self.puerto}")
             threading.Thread(target=self._aceptar_conexiones, daemon=True).start()
 
-            #verificacion de hilo vivo
-            if self.hilo_heartbeat is None or not self.hilo_heartbeat.is_alive():
+            if self.tipo_nodo=="SesionCliente":
                 self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
                 self.hilo_heartbeat.start()
+
         except Exception as e:
             self.logger.error(f"Error al iniciar el manejador de socket: {e}")
             self._escuchando = False
             if self.socket:
                 self.socket.close()
                 self.socket = None
-
+            
+            traceback.print_exc()
     # ---------------------------
     # Conectar como cliente a otro nodo
     # ---------------------------
