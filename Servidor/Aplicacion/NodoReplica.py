@@ -10,6 +10,7 @@ from time import sleep
 from datetime import datetime
 
 import Pyro5
+from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
@@ -67,6 +68,24 @@ class NodoReplica(Nodo):
 
         threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
 
+
+        #daemon = Pyro5.server.Daemon(host=ip_servidor)
+        daemon = Pyro5.server.Daemon(host=ip_localhost)
+
+        uri = ComunicationHelper.registrar_objeto_en_ns(
+            self,
+            "gestor.partida",
+            daemon
+        )
+
+        logger.info("ServicioJuego registrado correctamente.")
+        logger.debug(f"URI: {uri}")
+        logger.debug(f"Daemon: {daemon}")
+        daemon.requestLoop()
+
+
+
+
     # ---------------- Conectarse a coordinador ----------------
     def conectarse_a_coordinador(self, nodo_coordinador):
         self.logger.info(f"{self.get_nombre_completo()} conectándose a coordinador {nodo_coordinador.get_nombre_completo()}")
@@ -75,6 +94,9 @@ class NodoReplica(Nodo):
         self.coordinador_actual = nodo_coordinador.id
 
     # ---------------- Heartbeat ----------------
+   
+
+
     def _enviar_heartbeat(self):
         while True:
             sleep(self.heartbeat_interval)
@@ -136,6 +158,24 @@ class NodoReplica(Nodo):
             self.set_esCoordinador(self.id == coord_id)
             self.logger.info(f"Nuevo coordinador: {coord_id}")
 
+
+    # def broadcast_a_nodos(self, mensaje: str):
+    #     for nodo in self.ServComunic.nodos_cluster:
+    #         try:
+                    
+    #                 self.socket_manager.enviar(mensaje)
+    #         except Exception as e:
+    #             self.logger.warning(f"No se pudo enviar mensaje a nodo {nodo.get_nombre_completo()}: {e}")
+
+
+    # def enviar_a_nodo(self, id_nodo: int, mensaje: str):
+    #     nodo = self.obtener_nodo_por_id(id_nodo)
+    #     if nodo:
+    #         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #         conn.connect((ip, puerto))
+    #         self.socket_manager.enviar(mensaje)
+    #     else:
+    #         self.logger.warning(f"No se pudo enviar mensaje. Nodo {id_nodo} no encontrado o desconectado")
 
 
 """ VER

@@ -90,7 +90,7 @@ Replica_Local = NodoReplica(nro_nodo, ip_local, puerto_local_replica, "Replica",
 
 # ---------- Esperar a que se encuentren las réplicas vecinas ----------
 Replicas_Vecinas = []
-timeout = 15  # segundos
+timeout = 15000  # segundos
 inicio = time.time()
 
 while len(Replicas_Vecinas) < max_replicas:

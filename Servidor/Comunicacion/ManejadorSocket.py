@@ -25,7 +25,7 @@ class ManejadorSocket:
     # ---------------------------
     # Inicializar como servidor
     # ---------------------------
-    def iniciar_servidor(self):
+    def iniciar_manejador(self):
         self.socket.bind((self.host, self.puerto))
         self.socket.listen()
         self._escuchando = True
@@ -60,7 +60,7 @@ class ManejadorSocket:
             threading.Thread(target=self._escuchar, args=(conn,), daemon=True).start()
 
     # ---------------------------
-    # Escucha de mensajes
+    # Escucha de mensajes para el cliente y para el servidor
     # ---------------------------
     def _escuchar(self, conn):
         while self._escuchando:
@@ -69,10 +69,10 @@ class ManejadorSocket:
                 if not data:
                     break
                 mensaje = data.decode()
-                if mensaje == "HEARTBEAT":
+                if mensaje == "HEARTBEAT": #solo es heartbeat en servidor y en replica
                     self.timestamp = datetime.utcnow()
                     self.conectado = True
-                self.callback_mensaje(mensaje, conn)
+                self.callback_mensaje(mensaje, conn) 
             except OSError:
                 break
         conn.close()
@@ -97,7 +97,7 @@ class ManejadorSocket:
             self.logger.error(f"Error al enviar mensaje: {e}")
 
     # ---------------------------
-    # Heartbeat
+    # Heartbeat de cliente a replica
     # ---------------------------
     def _enviar_heartbeat(self):
         while self._escuchando:

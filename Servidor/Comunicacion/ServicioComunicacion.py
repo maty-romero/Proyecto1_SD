@@ -63,27 +63,12 @@ class ServicioComunicacion:
         if nodo not in self.nodos_cluster:
             self.nodos_cluster.append(nodo)
             self.logger.info(f"Nodo {nodo.get_nombre_completo()} registrado en cluster")
-
-    def broadcast_a_nodos(self, mensaje: str):
-        for nodo in self.nodos_cluster:
-            try:
-                if nodo.socket_manager:
-                    nodo.socket_manager.enviar(mensaje)
-            except Exception as e:
-                self.logger.warning(f"No se pudo enviar mensaje a nodo {nodo.get_nombre_completo()}: {e}")
-
+            
     def obtener_nodo_por_id(self, id_nodo: int) -> Nodo:
         for nodo in self.nodos_cluster:
             if nodo.id == id_nodo:
                 return nodo
         return None
-
-    def enviar_a_nodo(self, id_nodo: int, mensaje: str):
-        nodo = self.obtener_nodo_por_id(id_nodo)
-        if nodo and nodo.socket_manager:
-            nodo.socket_manager.enviar(mensaje)
-        else:
-            self.logger.warning(f"No se pudo enviar mensaje. Nodo {id_nodo} no encontrado o desconectado")
 
 
     # def desuscribir_cliente(self, nickname):

@@ -36,9 +36,6 @@ class ClienteConectado:
             self.logger.error(f"Error: No se pudo encontrar el objeto '{nombre_logico}'.")
             sys.exit(1)
             return None
-       
-                        
-
 
     def _procesar_mensaje(self, mensaje: str):
         if mensaje == "HEARTBEAT":

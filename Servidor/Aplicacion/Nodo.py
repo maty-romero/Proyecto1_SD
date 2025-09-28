@@ -7,7 +7,6 @@ class Nodo: # La logica esta sin implementar, hay que revisar
         self.puerto = puerto # uso de ip en pruebas
         self.nombre = nombre
         self.esCoordinador = esCoordinador #por lo pronto dos estados, o es nodo activo, o no lo es (es replica)
-        self.nodos_cluster:Nodo = []
          #si se complejiza funcionalidad, self.estado="activo"-->"inactivo"-->"sincronizando"
         self.estado = EstadoNodo.ACTIVO#selecciona el estado actual del nodo
     
