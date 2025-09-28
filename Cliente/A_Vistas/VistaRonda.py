@@ -4,9 +4,22 @@ from PyQt6.QtWidgets import QWidget
 #from ronda_view_ui import Ui_MainWindow
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,QMessageBox
 from PyQt6.QtGui import QFont
 from PyQt6 import QtCore
+from PyQt6.QtGui import QValidator
+
+class PrimeraLetraValidator(QValidator):
+    def __init__(self, letra, parent=None):
+        super().__init__(parent)
+        self.letra = letra.lower()
+
+    def validate(self, texto, pos):
+        if texto == "":
+            return (QValidator.State.Intermediate, texto, pos)
+        if texto.lower().startswith(self.letra):
+            return (QValidator.State.Acceptable, texto, pos)
+        return (QValidator.State.Invalid, texto, pos)
 
 class VistaRonda(QWidget):
     def __init__(self):
@@ -86,5 +99,21 @@ class VistaRonda(QWidget):
     def set_numero_ronda(self, ronda, totalRondas):
         self.nroronda_label.setText(f"{ronda}/{totalRondas}")
 
+    # def setLetraAleatoria(self, letra):
+    #     self.letra_label.setText(letra)
+    
     def setLetraAleatoria(self, letra):
-        self.letra_label.setText(letra)
+            self.letra_label.setText(letra)
+            self.agregar_validadores(letra)
+
+    def agregar_validadores(self, letra):
+        for input in self.inputs:
+            input.setValidator(PrimeraLetraValidator(f"{letra}", input))
+            
+    def aviso_completar_categorias(self, nombre):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle("Advertencia")
+        msg.setText(f"Respuestas incompletas {nombre}. Debes completar todas las categorías antes de presionar STOP.")
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()

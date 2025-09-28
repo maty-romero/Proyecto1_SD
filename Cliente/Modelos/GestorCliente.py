@@ -39,13 +39,13 @@ from Cliente.Utils.SerializeHelper import SerializeHelper
 networks:
   pyro_net:
     driver: bridge
-
     
     Permite lo siguiente
 
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
+#NOMBRE_PC_NS = "192.168.151.176"   # DESKTOP-HUREDOL
 #ip_local = socket.gethostbyname(socket.gethostname())
 NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
@@ -246,6 +246,8 @@ class GestorCliente:
                 mensaje_estado = f"Se ha unido '{nickname}' a la sala"
                 self.controlador_navegacion.controlador_sala.cambiar_estado_sala(mensaje_estado)
             # Procesar según tipo de mensaje
+            elif msg == "en_sala":
+                self.controlador_navegacion.mostrar('sala')
             elif msg == "nueva_ronda":
                 #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
@@ -271,6 +273,7 @@ class GestorCliente:
         except Exception as e:
             self.logger.error(f"[Socket] Error al procesar mensaje: {e}")
 
+    
     def inicializar_Deamon_Cliente(self):
         ip_cliente = ComunicationHelper.obtener_ip_local()
         objeto_cliente = ServicioCliente(self)
@@ -377,6 +380,7 @@ class GestorCliente:
     def get_proxy_partida(self):
         return self.get_proxy_partida_singleton()
     
+    
     """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
         #proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
@@ -389,10 +393,6 @@ class GestorCliente:
                 proxy.recibir_stop()
         except Exception as e:
             self.logger.error(f"Error enviando stop: {e}")
-    #------>
-    # def enviar_stop(self):
-    #     proxy = self.get_proxy_partida_singleton
-    #     proxy.recibir_stop()
 
     def provide_response(self):
         #se obtienenen las respuestas de RondaCliente
@@ -404,6 +404,11 @@ class GestorCliente:
     def enviar_votos_jugador(self):
         return self.controlador_navegacion.controlador_votaciones.enviar_votos()
     
+    def mostrar_vista_desconexion(self):
+        self.logger.info(f"3. [DEBUG] Desde GestorCliente - mostrar_vista_desconexion, se ejecuará un método de controlador navegacion - en hilo: {threading.current_thread().name}")
+        self.controlador_navegacion.mostrar("mensaje")
+        
+
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):
@@ -429,3 +434,4 @@ class GestorCliente:
         pass
 
 """
+

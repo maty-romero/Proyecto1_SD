@@ -13,6 +13,7 @@ class ServicioComunicacion:
         self.dispatcher = dispatcher
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
+        self.clientes_caidos: list[ClienteConectado] = []
         self.nodos_cluster: list[Nodo] = []  # nodos replicas
         threading.Thread(target=self._loop_verificacion_clientes, daemon=True).start()
 
@@ -38,15 +39,24 @@ class ServicioComunicacion:
             if cliente.esta_vivo():
                 activos.append(cliente)
             else:
+                self.logger.info(f"1. [DEBUG] Desde ServicioComunicacion - else: de verificar_cliente - en hilo: {threading.current_thread().name}")
                 self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
-                cliente.socket.cerrar()
-                self.dispatcher.manejar_llamada("juego", "eliminar_jugador", cliente.nickname)
+                cliente.socket.cerrar() # Se cierra el socket del cliente
+                self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname) #Se elimina al jugador
                 json = SerializeHelper.serializar(
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
                 )
+                import Pyro5.api
+                # ...existing code...
+                proxy_cliente = Pyro5.api.Proxy(str(cliente.uri_cliente_conectado))
+                proxy_cliente.mostrar_vista_desconexion()
+                # proxy_cliente = cliente.get_proxy_cliente()
+                # proxy_cliente._pyroClaimOwnership()
+                # proxy_cliente.mostrar_vista_desconexion()
+
                 self.broadcast_a_clientes(json)
-        self.clientes = activos
+        self.clientes = activos # se sobreescribe la lista
         self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
 
     def _loop_verificacion_clientes(self):
@@ -74,9 +84,6 @@ class ServicioComunicacion:
     def obtener_nodos_cluster(self):
         return self.nodos_cluster
 
-    # def desuscribir_cliente(self, nickname):
-    #     #self.clientes.pop(id_cliente, None)
-    #     pass
 
     """AGREGAR EXCEPCION POR SI CLIENTE DENIEGA CONEXION / NO EXISTE"""
 
@@ -178,6 +185,9 @@ class ServicioComunicacion:
                 votos_clientes[i] = {}
 
         return votos_clientes
+    
+
+
         """
         --> Codigo anterior
         votos_clientes: dict = {}
@@ -205,3 +215,8 @@ class ServicioComunicacion:
     def llamada_rpc(self, id_cliente, metodo, *args, **kwargs):
         pass
     """
+    #METODO PARA PODER OBTENER LOS DATOS DE CONEXION DEL CLIENTE
+    def getDatosCliente(self, usuario: str):
+        for cliente in self.clientes:
+            if usuario == cliente.nickname:
+                return cliente

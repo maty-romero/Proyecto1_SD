@@ -1,6 +1,5 @@
 import sys
 import uuid
-
 import Pyro5
 
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
@@ -12,6 +11,7 @@ class ClienteConectado:
         self.id = str(uuid.uuid4())
         self.nickname = nickname
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
+        self.uri_cliente_conectado = Pyro5.core.URI(uri_cliente)
         self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente,uri_cliente)
         self.logger.warning(f"proxy del cliente registrada: {self.proxy}")
         self.confirmado: bool = False
@@ -32,6 +32,7 @@ class ClienteConectado:
             sys.exit(1)
             return None
 
+    
     def _procesar_mensaje(self, mensaje: str):
         if mensaje == "HEARTBEAT":
             self.logger.info(f"Heartbeat recibido del cliente/jugador '{self.nickname}'")
@@ -42,8 +43,10 @@ class ClienteConectado:
 
     def esta_vivo(self) -> bool:
         if not self.conectado:
+            self.logger.debug(f"[DEBUG] {self.nickname} no está conectado (flag conectado=False)")
             return False
         if not self.timestamp:
+            self.logger.debug(f"[DEBUG] {self.nickname} no tiene timestamp de heartbeat")
             return False
         # timestamp menor a 35 seg ? False => Se asume que murio
         return datetime.utcnow() - self.timestamp < timedelta(seconds=3)

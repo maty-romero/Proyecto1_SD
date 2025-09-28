@@ -23,6 +23,11 @@ class ServicioCliente:
     def obtener_votos_cliente(self) -> dict:
         return self.gestor.enviar_votos_jugador()
 
+    def mostrar_vista_desconexion(self):
+        print(f"2. [DEBUG] Desde ServicioCliente se mostrará la vista de desconexion: {threading.current_thread().name}")
+        self.gestor.mostrar_vista_desconexion()
+
+        
     """
 
         def recibir_info_sala(self, info: str):

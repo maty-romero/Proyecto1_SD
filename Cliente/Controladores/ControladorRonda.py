@@ -50,6 +50,12 @@ class ControladorRonda:
 
     def finalizar_ronda(self):
         """Acción al presionar STOP!"""
+        # Obtiene los textos de los inputs
+        respuestas = [input_widget.text() for input_widget in self.vista.obtener_categorias_input()]
+        if not all(respuestas):
+            nickname = self.gestor_cliente.Jugador_cliente.to_dict()['nickname']
+            self.vista.aviso_completar_categorias(nickname)
+            return  # No envía el stop si hay campos vacíos
         self.gestor_cliente.enviar_stop()
 
 
