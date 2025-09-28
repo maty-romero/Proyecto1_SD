@@ -7,7 +7,7 @@
 import socket
 import sys
 import threading
-from time import sleep
+from time import sleep, time
 from datetime import datetime
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 import Pyro5
@@ -59,6 +59,9 @@ class NodoReplica(Nodo):
 
     # ---------------- Inicialización como coordinador ----------------
     def iniciar_como_coordinador(self, ip_ns, puerto_ns):
+        self.logger.warning(f"nodos que existen:{self.ServComunic.nodos_cluster}")
+        self.logger.warning(f"conexiones activas:{self.socket_manager.conexiones}")
+
         ns = Pyro5.api.locate_ns() #ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
         self.logger.info(f"Servidor de nombres en: {ns}")
 
@@ -86,6 +89,9 @@ class NodoReplica(Nodo):
         uri = ComunicationHelper.registrar_objeto_en_ns(self, "gestor.partida", daemon)
         self.logger.info("ServicioJuego registrado correctamente.")
         daemon.requestLoop()
+
+        #deja de aceptar conexiones una vez que se volvio coordinador
+        self.socket_manager.cerrar()
 
     # ---------------- Conexión ----------------
     def conectarse_a_coordinador(self, nodo_coordinador):
@@ -117,12 +123,13 @@ class NodoReplica(Nodo):
     # ---------------- Bully ----------------
     def iniciar_eleccion(self):
         self.logger.info(f"{self.get_nombre_completo()} inicia elección Bully")
+        self.recibio_respuesta = False
         self.socket_manager.iniciar_manejador()
 
         nodos_mayores = [n for n in self.ServComunic.nodos_cluster if n.id > self.id and n.obtener_estado() == EstadoNodo.ACTIVO]
+
         if not nodos_mayores:
             self.logger.info("No hay nodos mayores activos. Me proclamo coordinador.")
-            self.socket_manager.cerrar()
             self.convertirse_en_coordinador()
             return
 
@@ -133,7 +140,9 @@ class NodoReplica(Nodo):
             except Exception as e:
                 self.logger.warning(f"Error al enviar ELECCION a nodo {nodo.id}: {e}")
 
-        threading.Timer(3, self.convertirse_en_coordinador).start()
+        # Esperar 5 segundos para ver si alguien responde
+        # threading.Timer(5, self._evaluar_eleccion).start()
+
 
     def convertirse_en_coordinador(self):
         self.set_esCoordinador(True)
@@ -141,6 +150,14 @@ class NodoReplica(Nodo):
         self.conectarse_a_replicas()
         self.socket_manager.enviar(f"COORDINADOR:{self.id}")
         self.iniciar_como_coordinador(self.host, self.puerto)
+
+    def _evaluar_eleccion(self):
+        if not self.recibio_respuesta:
+            self.logger.info("No se recibió respuesta de nodos mayores. Me proclamo coordinador.")
+            self.convertirse_en_coordinador()
+        else:
+            self.logger.info("Esperando que el nodo mayor se proclame coordinador.")
+
 
     # ---------------- Callback ----------------
     def callback_mensaje(self, mensaje, conn=None):
@@ -154,11 +171,71 @@ class NodoReplica(Nodo):
                 self.iniciar_eleccion()
         elif mensaje.startswith("RESPUESTA"):
             self.logger.info("Nodo mayor respondió. Esperando COORDINADOR...")
+            self.recibio_respuesta = True
+            threading.Timer(5, self._evaluar_eleccion).start()
         elif mensaje.startswith("COORDINADOR"):
             coord_id = int(mensaje.split(":")[1])
             self.coordinador_actual = coord_id
             self.logger.info(f"Nuevo coordinador: {coord_id}")
             self.iniciar_como_replica()
+
+
+    # ----------------------------------- Prueba 
+
+    def nuevo_iniciar_eleccion(self):
+        if self.en_eleccion:
+            return
+        self.en_eleccion = True
+        threading.Thread(target=self._proceso_eleccion, daemon=True).start()
+
+
+    def _proceso_eleccion(self):
+        self.logger.info(f"{self.get_nombre_completo()} inicia elección Bully")
+        self.recibio_respuesta = False
+
+        nodos_mayores = [n for n in self.ServComunic.nodos_cluster if n.id > self.id]
+
+        if not nodos_mayores:
+            self.logger.info("No hay nodos mayores activos. Me proclamo coordinador.")
+            self.convertirse_en_coordinador()
+            return
+
+        for nodo in nodos_mayores:
+            try:
+                self.socket_manager.conectar_a_nodo(nodo.host, nodo.puerto)
+                self.socket_manager.enviar(f"ELECCION:{self.id}")
+            except Exception as e:
+                self.logger.warning(f"Error al enviar ELECCION a nodo {nodo.id}: {e}")
+
+        # Esperar hasta recibir respuesta o timeout
+        inicio = time.time()
+        while time.time() - inicio < 5:
+            if self.recibio_respuesta:
+                self.logger.info("Nodo mayor respondió. Esperando COORDINADOR...")
+                break
+            sleep(0.5)
+
+        if not self.recibio_respuesta:
+            self.logger.info("No se recibió respuesta. Me proclamo coordinador.")
+            self.convertirse_en_coordinador()
+        else:
+            # Esperar COORDINADOR
+            inicio = time.time()
+            while time.time() - inicio < 5:
+                if self.coordinador_actual:
+                    self.logger.info(f"Coordinador establecido: {self.coordinador_actual}")
+                    break
+                sleep(0.5)
+
+            if not self.coordinador_actual:
+                self.logger.warning("No se recibió COORDINADOR. Reiniciando elección.")
+                self.en_eleccion = False
+                self.iniciar_eleccion()
+            else:
+                self.en_eleccion = False
+
+
+
 
 
     #def broadcast_a_nodos(self):
