@@ -353,7 +353,7 @@ class ServicioJuego:
             uri_cliente = info_cliente['uri']
 
             reconectado= self.dispacher.manejar_llamada(
-                "comuniciacion",
+                "comunicacion",
                 "reconectar_cliente",
                 nickname
             )
@@ -510,9 +510,9 @@ class ServicioJuego:
             }
 
             if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
-                self.logger.info(f"Se agrego al jugador {cliente_conectado["nickname"]} a la lista de clientes_conectados")
+                self.logger.info(f"Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
             else: 
-                self.logger.warning(f"El jugador {cliente_conectado["nickname"]} no ha sido cargado en la DB")            
+                self.logger.warning(f"El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")            
             #---------------------------------------------------------------------------------------------------------------
 
             # Verificar si se puede iniciar la partida
