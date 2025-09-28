@@ -45,7 +45,7 @@ class ManejadorSocket:
             self.logger.info(f"Servidor escuchando en {self.host}:{self.puerto}")
             threading.Thread(target=self._aceptar_conexiones, daemon=True).start()
 
-             # verificacion de hilo vivo
+            #verificacion de hilo vivo
             if self.hilo_heartbeat is None or not self.hilo_heartbeat.is_alive():
                 self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
                 self.hilo_heartbeat.start()

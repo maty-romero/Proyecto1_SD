@@ -59,7 +59,7 @@ class NodoReplica(Nodo):
 
     # ---------------- Inicialización como coordinador ----------------
     def iniciar_como_coordinador(self, ip_ns, puerto_ns):
-        ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+        ns = Pyro5.api.locate_ns() #ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
         self.logger.info(f"Servidor de nombres en: {ns}")
 
         self.ServicioJuego = ServicioJuego(self.Dispatcher)
