@@ -25,7 +25,7 @@ class ControladorNavegacion:
     def __init__(self, main_window,controlador_nickname,
                  controlador_sala,controlador_ronda, vistaNickname,
                  vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, 
-                 vistaResultados):
+                 vistaResultados, vistaMensaje):
         
         self.main_window = main_window
 
@@ -43,7 +43,7 @@ class ControladorNavegacion:
         self.vistaRonda = vistaRonda
         self.vistaVotaciones = vistaVotaciones
         self.vistaResultados = vistaResultados
-        #self.vistaMensaje = VistaMensajeTransitorio()
+        self.vistaMensaje = vistaMensaje
 
         # Agregar vistas al stack
         self.vistaNickname_Index = self.main_window.stack.addWidget(self.vistaNickname)
@@ -51,7 +51,7 @@ class ControladorNavegacion:
         self.vistaRonda_Index = self.main_window.stack.addWidget(self.vistaRonda)
         self.vistaVotaciones_Index = self.main_window.stack.addWidget(self.vistaVotaciones)
         self.vistaResultados_Index = self.main_window.stack.addWidget(self.vistaResultados)
-        #elf.vistaMensaje_Index = self.main_window.stack.addWidget(self.vistaMensaje)
+        self.vistaMensaje_Index = self.main_window.stack.addWidget(self.vistaMensaje)
 
     # --- Métodos de navegación ---
       #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
@@ -89,9 +89,9 @@ class ControladorNavegacion:
         callback_reconexion: función a llamar si el usuario elige reconectar
         callback_fallo: función a llamar si elige no reconectar o se acaba el tiempo
         """
-        self.vistaMensaje = VistaMensajeTransitorio()
+        #self.vistaMensaje = VistaMensajeTransitorio()  esta en el constructor 
         self.vistaMensaje.setMensaje("¿Desea reconectarse? (10 segundos para decidir)")
-        self.vistaMensajeTransitorio_Index = self.main_window.stack.addWidget(self.vistaMensaje)
+        #self.vistaMensajeTransitorio_Index = self.main_window.stack.addWidget(self.vistaMensaje)esta ene le cosntructor 
         self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
 
         self._timer_reconexion = QTimer()

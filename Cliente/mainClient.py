@@ -34,7 +34,7 @@ if __name__ == "__main__":
     vista_ronda = VistaRonda()
     vista_votaciones = VistaVotaciones()
     vista_resultados=VistaResultados()
-    #vista_mensaje = VistaMensajeTransitorio()
+    vista_mensaje = VistaMensajeTransitorio()
     # Crear controladores de vistas
     controlador_nickname = ControladorNickName(
         vista_nickname,
@@ -73,7 +73,8 @@ if __name__ == "__main__":
         controlador_votaciones=controlador_votaciones,
         vistaVotaciones=vista_votaciones,
         controlador_resultados=controlador_resultados,
-        vistaResultados=vista_resultados
+        vistaResultados=vista_resultados,
+        vistaMensaje=    vista_mensaje
         
     )
     
