@@ -12,6 +12,7 @@ class ClienteConectado:
         self.id = str(uuid.uuid4())
         self.nickname = nickname
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
+        self.uri_cliente_conectado = Pyro5.core.URI(uri_cliente)
         self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente,uri_cliente)
         self.logger.warning(f"proxy del cliente registrada: {self.proxy}")
         self.confirmado: bool = False

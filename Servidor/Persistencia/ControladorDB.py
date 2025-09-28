@@ -13,19 +13,17 @@
 Esqueleto bd:
 PARTIDA:
 {
-  "codigo": 1,          // código de la partida
-   "clientes_Conectados": [
-        ip: "0.0.0.0",
-        puerto:"9090"
-        uri:PYRO:<nombre_logico>@<ip>:<puerto>
-   ],
-  "nro_ronda": 1,
-  "categorias": ["Animal", "Ciudad", "Color"],
-  "letra": "M",
-  "respuestas": [
-        { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
-        { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
-    ]
+    "codigo": 1,          // código de la partida
+    "clientes_Conectados": [
+            {nickname: "pepito", ip: "0.0.0.0", puerto: "9090", uri: "PYRO:<nombre_logico>@<ip>:<puerto>" }
+    ],
+    "nro_ronda": 1,
+    "categorias": ["Animal", "Ciudad", "Color"],
+    "letra": "M",
+    "respuestas": [
+            { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
+            { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
+        ]
 }   
 
 -PATRONES OPCIONALES:
@@ -110,3 +108,46 @@ class ControladorDB:
     def desconectar(self):
         if self.conexiondb:
             self.conexiondb.close()
+
+    #METODOS PARA AGREGAR
+    
+    def agregar_jugador(self, datos_cliente):
+        """ Agrega un cliente y sus datos a la clave "clientes_conectados" """
+        return self.partida.update_one({
+            'codigo': self.codigo_partida
+        }, {
+            "$push": {
+                "clientes_Conectados": datos_cliente
+            }
+        }).modified_count
+
+    def eliminar_jugador(self, nickname):
+        """ Elimina un cliente y sus datos del arreglo "clientes_conectados" mediante la clave "nickname" """
+        return self.partida.update_one({
+            'codigo': self.codigo_partida
+        }, {
+            "$pull": {
+                "clientes_Conectados": nickname
+            }
+        }).modified_count
+
+    def actualizar_letra(self, nueva_letra):
+        """ Actualiza la letra de la partida """
+        return self.partida.update_one(
+            {'codigo': self.codigo_partida},
+            {'$set': {'letra': nueva_letra}}
+    ).modified_count
+
+    def actualizar_nro_ronda(self, nroRonda):
+        """ Actualiza la ronda de la partida """
+        return self.partida.update_one(
+            {'codigo': self.codigo_partida},
+            {'$set': {'nro_ronda': nroRonda}}
+    ).modified_count
+
+    def actualizar_categorias(self, categorias):
+        """ Actualiza las categorías de la partida """
+        return self.partida.update_one(
+            {'codigo': self.codigo_partida},
+            {'$set': {'categorias': categorias}}
+    ).modified_count

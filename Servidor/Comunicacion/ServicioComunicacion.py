@@ -196,3 +196,8 @@ class ServicioComunicacion:
     def llamada_rpc(self, id_cliente, metodo, *args, **kwargs):
         pass
     """
+    #METODO PARA PODER OBTENER LOS DATOS DE CONEXION DEL CLIENTE
+    def getDatosCliente(self, usuario: str):
+        for cliente in self.clientes:
+            if usuario == cliente.nickname:
+                return cliente
