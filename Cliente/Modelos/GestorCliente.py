@@ -46,7 +46,8 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = " 192.168.100.22"
+#ip_local = socket.gethostbyname(socket.gethostname())
+NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
@@ -61,7 +62,6 @@ class GestorCliente:
         
         self.puertoNS = PUERTO_NS
         self.hostNS = NOMBRE_PC_NS
-        #self.hostNS = str(ComunicationHelper.obtener_ip_local())
         print(f"NameServer name : {self.hostNS}")
         
         # Estado interno (para ServicioCliente) - recepcion
@@ -81,13 +81,12 @@ class GestorCliente:
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
             try:
-                with Pyro5.api.locate_ns() as ns:
-                #with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+                #with Pyro5.api.locate_ns() as ns:
+                with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
                     uri = ns.lookup(self.nombre_logico_server)
                     self.proxy_partida = Pyro5.api.Proxy(uri)
-                    #self.proxy_partida = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
-                    print(f"PYRONAME:{self.nombre_logico_server}")
-                    print(uri)
+                    self.logger.info(f"PYRONAME:{self.nombre_logico_server}")
+                    self.logger.info(uri)
             except Pyro5.errors.NamingError:
                 self.logger.error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
                 self.logger.error("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
@@ -214,7 +213,8 @@ class GestorCliente:
                 puerto=puerto,
                 callback_mensaje=self._procesar_mensaje_socket,
                 nombre_logico=self.Jugador_cliente.get_nickname(),
-                es_servidor=False
+                es_servidor=False,
+                tipo_nodo="SesionCliente"
             )
 
             hilo_socket = threading.Thread(
