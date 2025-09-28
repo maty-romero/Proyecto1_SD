@@ -17,12 +17,7 @@ class ClienteConectado:
         self.confirmado: bool = False
         self.conectado: bool = False
         self.timestamp: datetime
-        self.socket = ManejadorSocket( # sesion cliente
-            ip_nodo=ip_cliente,
-            puerto_nodo=puerto_cliente,
-            callback_mensaje= lambda msg: self._procesar_mensaje(msg),
-            nickname_log=nickname
-        )
+        self.socket = ManejadorSocket(host=ip_cliente, puerto=puerto_cliente, nombre_logico=nickname)
         # Inyecta el callback como lambda
         #self.socket.callback_mensaje =
 

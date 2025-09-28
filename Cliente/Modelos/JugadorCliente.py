@@ -1,4 +1,4 @@
-from Cliente.Modelos.SesionClienteSocket import ManejadorSocket
+from Cliente.Modelos.ManejadorSocket import ManejadorSocket
 
 
 class JugadorCliente:

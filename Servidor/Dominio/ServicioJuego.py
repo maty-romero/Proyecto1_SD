@@ -54,7 +54,7 @@ class ServicioJuego:
         json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
         self.dispacher.manejar_llamada(
             "comunicacion",
-            "broadcast",
+            "broadcast_a_clientes",
             json)
 
     def enviar_respuestas_ronda(self):
@@ -62,13 +62,13 @@ class ServicioJuego:
         json = SerializeHelper.serializar(exito=True, msg="fin_ronda")
         self.dispacher.manejar_llamada(
             "comunicacion",
-            "broadcast",
+            "broadcast_a_clientes",
             json)
         
         json = SerializeHelper.serializar(exito=True, msg="inicio_votacion")
         self.dispacher.manejar_llamada(
             "comunicacion",
-            "broadcast",
+            "broadcast_a_clientes",
             json)
 
         # obtenerRespuesMemoriaClientes
@@ -367,7 +367,7 @@ class ServicioJuego:
             })
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
-                "broadcast",  # nombre_metodo
+                "broadcast_a_clientes",  # nombre_metodo
                  json_nuevo_jugador#args
             )
             # retorna info de sala a quien se unió

@@ -28,7 +28,7 @@ class ServicioComunicacion:
 
     def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente):
         cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente)
-        cliente.socket.conectar_un_nodo()
+        cliente.socket.conectar_a_nodo(ip_cliente, puerto_cliente)
         self.clientes.append(cliente)
         self.logger.info(f"Cliente '{nickname}' registrado y conectado")
 
@@ -47,6 +47,7 @@ class ServicioComunicacion:
                 )
                 self.broadcast_a_clientes(json)
         self.clientes = activos
+        self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
 
     def _loop_verificacion_clientes(self):
         while True:

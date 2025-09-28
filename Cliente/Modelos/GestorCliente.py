@@ -8,7 +8,7 @@ import Pyro5
 from Cliente.Controladores.ControladorNavegacion import ControladorNavegacion
 from Cliente.Modelos.JugadorCliente import JugadorCliente
 from Cliente.Modelos.ServicioCliente import ServicioCliente
-from Cliente.Modelos.SesionClienteSocket import ManejadorSocket
+from Cliente.Modelos.ManejadorSocket import ManejadorSocket
 from Cliente.Utils.ComunicationHelper import ComunicationHelper
 from Cliente.Utils.ConsoleLogger import ConsoleLogger
 from Cliente.Utils.SerializeHelper import SerializeHelper
@@ -46,7 +46,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = str(socket.gethostbyname(socket.gethostname()))
+NOMBRE_PC_NS = " 192.168.100.22"
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
@@ -81,7 +81,8 @@ class GestorCliente:
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
             try:
-                with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+                with Pyro5.api.locate_ns() as ns:
+                #with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
                     uri = ns.lookup(self.nombre_logico_server)
                     self.proxy_partida = Pyro5.api.Proxy(uri)
                     #self.proxy_partida = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
@@ -113,8 +114,8 @@ class GestorCliente:
 
     def buscar_partida(self):
         try:
-            #ns = Pyro5.api.locate_ns()
-            ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
+            ns = Pyro5.api.locate_ns()
+            #ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
             uri = ns.lookup(self.nombre_logico_server)
             self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
             return True
@@ -179,6 +180,8 @@ class GestorCliente:
         # registro del cliente
         info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
         info_cliente['uri'] = uri
+        self.logger.warning(f"INFO_CLIENTEEEEE: {info_cliente}")
+
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
         self.logger.warning(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
         self.logger.warning(f"InfoSala: {resultado_dict}")
@@ -205,14 +208,17 @@ class GestorCliente:
 
     def iniciar_sesion_socket_en_hilo(self, puerto: int):
         try:
+            #def __init__(self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False):
             self.Jugador_cliente.sesion_socket = ManejadorSocket(
-                puerto_fijo=puerto,
+                host=ComunicationHelper.obtener_ip_local(),
+                puerto=puerto,
                 callback_mensaje=self._procesar_mensaje_socket,
-                nickname_log=self.Jugador_cliente.get_nickname()
+                nombre_logico=self.Jugador_cliente.get_nickname(),
+                es_servidor=False
             )
 
             hilo_socket = threading.Thread(
-                target=self.Jugador_cliente.sesion_socket.iniciar,
+                target=self.Jugador_cliente.sesion_socket.iniciar_manejador,
                 daemon=True
             )
             hilo_socket.start()
@@ -274,7 +280,8 @@ class GestorCliente:
         def daemon_loop():
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
-                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
+                #ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
+                ns = Pyro5.api.locate_ns()
                 uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
                 self.logger.info(f"[Daemon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
                 uri_queue.put(uri)  # Enviar la URI al hilo principal
@@ -373,7 +380,8 @@ class GestorCliente:
         #proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
         #proxy.recibir_stop()
         try:
-            with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+            with Pyro5.api.locate_ns() as ns:
+            #with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
                 uri = ns.lookup(self.nombre_logico_server)
                 proxy = Pyro5.api.Proxy(uri)
                 proxy.recibir_stop()
