@@ -8,11 +8,8 @@ import Pyro5.api
 from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Partida import Partida
-<<<<<<< HEAD
-from Servidor.Dominio.Partida import EstadoJuego
-=======
 from Servidor.Persistencia.ControladorDB import ControladorDB
->>>>>>> 472613eb83b0ef8ab98c7b8e64b7a0aaa900e06a
+from Servidor.Dominio.Partida import EstadoJuego
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
 from Servidor.Comunicacion.ClienteConectado import ClienteConectado
