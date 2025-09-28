@@ -1,4 +1,4 @@
-from Cliente.A_Vistas import VistaMensajeTransitorio
+from Cliente.A_Vistas.VistaMensajeTransitorio import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaVotaciones import VistaVotaciones
 from Cliente.Controladores.ControladorVotaciones import ControladorVotaciones
 from Cliente.Modelos.GestorCliente import GestorCliente
@@ -99,6 +99,8 @@ if __name__ == "__main__":
     #     gestor.logger.info("FINALIZO EL UNIRSE A SALA")
     #     gestor.logger.info(gestor.Jugador_cliente)
     #     gestor.confirmar_jugador_partida(gestor.Jugador_cliente.get_nickname())
+    
+    
     
     """
     existe_partida = gestor.buscar_partida()
