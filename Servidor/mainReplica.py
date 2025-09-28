@@ -88,7 +88,7 @@ def obtener_id_unico_con_retry(zeroconf, tipo_servicio, ip_local, puerto_local, 
             )
             
             try:
-                zeroconf.register_service(info_test, allow_name_change=False)
+                zeroconf.register_service(info_test, allow_name_change=False)#False impide que se haya duplicidad de nombres
                 print(f"✅ Registro exitoso como {nombre_replica}")
                 return nro_nodo, nombre_replica, info_test
             except Exception as reg_error:

@@ -46,7 +46,8 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "192.168.100.22"   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = str(socket.gethostbyname(socket.gethostname()))
+   # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
 
@@ -171,6 +172,7 @@ class GestorCliente:
 
         #self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
         # espera a que sesion socket este listo
+        self.Jugador_cliente.sesion_socket.set_callback(self._procesar_mensaje_socket)
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
         self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
