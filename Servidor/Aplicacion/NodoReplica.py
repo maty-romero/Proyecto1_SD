@@ -11,7 +11,7 @@ from time import sleep
 from datetime import datetime
 
 import Pyro5
-from Cliente.Utils.ComunicationHelper import ComunicationHelper
+from Servidor.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
@@ -24,18 +24,23 @@ from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 
 class NodoReplica(Nodo):
     def __init__(self, id, host, puerto, nombre="Replica", esCoordinador=False):
-        super().__init__(id, host, puerto, nombre, esCoordinador)
+        #super().__init__(id, host, puerto, nombre, esCoordinador)
+        super().__init__(id=id, host=host, puerto=puerto, nombre=nombre, esCoordinador=esCoordinador)
+        self.logger = ConsoleLogger(name=f"Replica-{self.id}", level="INFO")
         self.Dispatcher = Dispatcher()
         self.ServComunic = ServicioComunicacion(self.Dispatcher)
         self.ServDB = ControladorDB()
         self.ServicioJuego = None
         self.socket_manager: ManejadorSocket = None
-        self.logger = ConsoleLogger(name=f"Replica-{self.id}", level="INFO")
+       
 
         self.coordinador_actual = None
         self.heartbeat_interval = 5
         self.timeout_heartbeat = 10
         self.ultimo_heartbeat = datetime.utcnow()
+
+        self.logger.error(f"Valor host pasado: {host};tipo:{type(host)}")
+        self.logger.error(f"Valor puerto pasado: {puerto};tipo:{type(puerto)}")
 
     # ---------------- Inicialización como coordinador ----------------
     def iniciar_como_coordinador(self, ip_ns, puerto_ns):
@@ -51,7 +56,8 @@ class NodoReplica(Nodo):
         #         self.logger.info("Eligio no buscar name server o se encontro name server")
         #         break
         #     self.logger.info("Buscando replica de nuevo...")
-        ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+        #ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+        ns = Pyro5.api.locate_ns()
         self.logger.info(f"Servidor de nombres en: {ns}")
 
         self.ServicioJuego = ServicioJuego(self.Dispatcher)
@@ -60,7 +66,10 @@ class NodoReplica(Nodo):
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
         self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como coordinador")
-        self.socket_manager = ManejadorSocket(self.host, self.puerto, self.callback_mensaje,self.get_nombre_completo(),True)
+        # self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False
+        self.logger.error(f"iniciar_como_coordinador(ip_ns={ip_ns}, puerto_ns={puerto_ns}):")
+        self.socket_manager = ManejadorSocket(
+            host=self.host, puerto=self.puerto, callback_mensaje=self.callback_mensaje, nombre_logico=self.get_nombre_completo(), es_servidor=True)
         self.socket_manager.iniciar_manejador()
 
         # BD inicial de prueba
@@ -146,7 +155,7 @@ class NodoReplica(Nodo):
         #             nodo.socket_manager.enviar(f"COORDINADOR:{self.id}")
         #     except:
         #         pass
-        self.iniciar_como_coordinador("10.85.175.119",9090)
+        self.iniciar_como_coordinador(self.host, self.puerto)
 
     # ---------------- Callback de mensajes ----------------
     def callback_mensaje(self, mensaje, conn=None):

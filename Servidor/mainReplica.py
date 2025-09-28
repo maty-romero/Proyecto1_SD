@@ -73,7 +73,7 @@ if __name__ == "__main__":
         properties={
             "replica-id": str(nro_nodo),
             "ip": ip_local,
-            "puerto": str(puerto_local)
+            "puerto": int(puerto_local)
         },
         server=f"{nombre_replica}.local."
     )
@@ -83,6 +83,8 @@ if __name__ == "__main__":
 
     # ---------- Instancia local ----------
     Replica_Local = NodoReplica(nro_nodo, ip_local, puerto_local, "Replica", False)
+
+    logger.error(f"Replica_Local: ip:{Replica_Local.host}; puerto{Replica_Local.puerto}")
 
     # ---------- Esperar réplicas vecinas ----------
     timeout = 15  # segundos
@@ -107,15 +109,15 @@ if __name__ == "__main__":
         # logger.info(replica['puerto'])
 
     # ---------- Mantener activo ----------
-    time.sleep(3)
+    #time.sleep(3)
         
     #no lo eliminamos para poder guardar el nombre de la terminal
     # logger.info("Eliminando registro del dns...")
     # zeroconf.unregister_service(info_local)
     # zeroconf.close()
 
-    logger.info("Iniciando booly de replica")
-    Replica_Local.iniciar_eleccion()
+logger.info("Iniciando booly de replica")
+Replica_Local.iniciar_eleccion()
 
 #-----------------------------------Buscar y conectar a servidor de nombres-----------------------------------#
  

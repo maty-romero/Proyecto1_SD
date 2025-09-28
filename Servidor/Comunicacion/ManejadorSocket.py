@@ -8,6 +8,11 @@ class ManejadorSocket:
     def __init__(self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False):
         self.host = host
         self.puerto = puerto
+
+        assert isinstance(self.host, str), f"host debe ser str, no {type(self.host)}; valor_host={self.host}"
+        assert isinstance(self.puerto, int), f"puerto debe ser int, no {type(self.puerto)}; valor_puerto={self.puerto}"
+
+
         self.callback_mensaje = callback_mensaje
         self.es_servidor = es_servidor
 
@@ -26,7 +31,9 @@ class ManejadorSocket:
     # Inicializar como servidor
     # ---------------------------
     def iniciar_manejador(self):
-        self.socket.bind((self.host, str(self.puerto)))
+        print(f"inicair_manejador; host:{self.host}:{self.puerto}")
+
+        self.socket.bind((self.host, self.puerto))
         self.socket.listen()
         self._escuchando = True
         self.logger.info(f"Servidor escuchando en {self.host}:{self.puerto}")
