@@ -8,6 +8,11 @@ from Servidor.Aplicacion.NodoReplica import NodoReplica
 from Servidor.Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
+import socket
+import time
+from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
+from Servidor.Aplicacion.NodoReplica import NodoReplica
+from Servidor.Utils.ConsoleLogger import ConsoleLogger
 
 """-Futura implementacion: Para manipular ids, podemos hacer que se registre una lista de nodos en el NS,
     o alguna otra similar para poder incrementar esa id y que cada nodo se identifique de manera unica,
@@ -18,111 +23,106 @@ from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
 def medir_tiempo (t1,t2):
     return t2-t1
 
-import socket
-import time
-from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
-from Servidor.Aplicacion.NodoReplica import NodoReplica
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
 
-logger = ConsoleLogger("MainReplica", "INFO")
+if __name__ == "__main__":
+    logger = ConsoleLogger("MainReplica", "INFO")
 
-# ---------- Configuración ----------
-tipo_servicio = "_replica._tcp.local."
-ip_local = socket.gethostbyname(socket.gethostname())
-puerto_local_replica = 5001  # puerto de la réplica local
-max_replicas = 3
+    # ---------- Configuración ----------
+    tipo_servicio = "_replica._tcp.local."
+    ip_local = socket.gethostbyname(socket.gethostname())
+    puerto_local = 5001
+    max_replicas = 3
+    zeroconf = Zeroconf()
 
-zeroconf = Zeroconf()
+    # ---------- Listener ----------
+    class ReplicaListener:
+        def __init__(self):
+            self.replicas = {}
 
-# ---------- Listener para descubrir réplicas ----------
-class ReplicaListener:
-    def __init__(self):
-        self.replicas_detectadas = {}
+        def add_service(self, zeroconf, tipo, name):
+            info = zeroconf.get_service_info(tipo, name)
+            if info:
+                rid = int(info.properties[b"replica-id"])
+                nombre_simple = name.split("._")[0]  # ✅ Extrae solo "replica-2"
+                self.replicas[rid] = {
+                    "id": rid,
+                    "nombre": nombre_simple,
+                    "ip": socket.inet_ntoa(info.addresses[0]),
+                    "puerto": info.port
+                }
+                logger.info(f"Detectada réplica: {nombre_simple} (ID {rid})")
 
-    def add_service(self, zeroconf, tipo, name):
-        info = zeroconf.get_service_info(tipo, name)
-        if info:
-            rid = int(info.properties[b"replica-id"])
-            self.replicas_detectadas[rid] = {
-                "name": name,
-                "ip": socket.inet_ntoa(info.addresses[0]),
-                "port": info.port
-            }
-            logger.info(f"Se detectó réplica: {name} (ID {rid})")
 
-    # Método requerido por Zeroconf (puede estar vacío)
-    def update_service(self, zeroconf, tipo, name):
-        pass
+        def update_service(self, *args): pass
+        def remove_service(self, *args): pass
 
-    def remove_service(self, zeroconf, tipo, name):
-        # Podés manejar desconexiones si querés
-        pass
+    listener = ReplicaListener()
+    ServiceBrowser(zeroconf, tipo_servicio, listener)
+    time.sleep(1.5)
 
-listener = ReplicaListener()
-browser = ServiceBrowser(zeroconf, tipo_servicio, listener)
+    # ---------- ID único ----------
+    nro_nodo = max(listener.replicas.keys(), default=0) + 1
+    nombre_replica = f"replica-{nro_nodo}"
 
-# ---------- Esperar un momento para detectar réplicas existentes ----------
-time.sleep(1.5)
+    # ---------- Registro DNS ----------
+    info_local = ServiceInfo(
+        type_=tipo_servicio,
+        name=f"{nombre_replica}.{tipo_servicio}",
+        addresses=[socket.inet_aton(ip_local)],
+        port=puerto_local,
+        properties={
+            "replica-id": str(nro_nodo),
+            "ip": ip_local,
+            "puerto": str(puerto_local)
+        },
+        server=f"{nombre_replica}.local."
+    )
 
-# ---------- Calcular ID único ----------
-ids_existentes = list(listener.replicas_detectadas.keys())
-nro_nodo = max(ids_existentes, default=0) + 1
+    zeroconf.register_service(info_local, allow_name_change=True)
+    logger.info(f"Réplica local registrada como {nombre_replica} con IP {ip_local}")
 
-# ---------- Registrar réplica local ----------
-info_local = ServiceInfo(
-    type_=tipo_servicio,
-    name=f"replica-{nro_nodo}._replica._tcp.local.",
-    addresses=[socket.inet_aton(ip_local)],
-    port=puerto_local_replica,
-    properties={
-        "replica-id": str(nro_nodo),
-        "ip": ip_local,
-        "puerto": str(puerto_local_replica)
-    },
-    server=f"replica-{nro_nodo}.local."
-)
+    # ---------- Instancia local ----------
+    Replica_Local = NodoReplica(nro_nodo, ip_local, puerto_local, "Replica", False)
 
-zeroconf.register_service(info_local, allow_name_change=True)
-logger.info(f"Réplica local registrada con ID {nro_nodo}")
+    # ---------- Esperar réplicas vecinas ----------
+    timeout = 15  # segundos
+    inicio = time.time()
 
-# ---------- Crear instancia de NodoReplica ----------
-Replica_Local = NodoReplica(nro_nodo, ip_local, puerto_local_replica, "Replica", False)
-
-# ---------- Esperar a que se encuentren las réplicas vecinas ----------
-Replicas_Vecinas = []
-timeout = 15000  # segundos
-inicio = time.time()
-
-while len(Replicas_Vecinas) < max_replicas:
-    Replicas_Vecinas = list(listener.replicas_detectadas.values())
-    if len(Replicas_Vecinas) < max_replicas:
-        logger.warning(f"Faltan replicas para iniciar. Detectadas: {len(Replicas_Vecinas)}")
+    while len(listener.replicas) < max_replicas and time.time() - inicio < timeout:
+        logger.warning(f"Esperando réplicas... Detectadas: {len(listener.replicas)}")
         time.sleep(1)
-    if time.time() - inicio > timeout:
-        logger.warning("Timeout alcanzado, continuando con las réplicas encontradas")
-        break
 
-logger.info(f"Réplicas detectadas: {Replicas_Vecinas}")
-logger.info("Iniciando NodoReplica local...")
+    Replicas_Vecinas = list(listener.replicas.values())
+    logger.info(f"Réplicas vecinas: {Replicas_Vecinas}")
+    logger.info("Iniciando NodoReplica local...")
 
-# ---------- Aquí podés iniciar la lógica de NodoReplica ----------
-# Replica_Local.iniciar_como_coordinador(...) o conectarse a un coordinador existente
+    # ---------- Lógica de réplica ----------
+    # Replica_Local.iniciar_como_coordinador() o conectarse a uno
+    logger.info("Registrando replicas")
+    for replica in Replicas_Vecinas:
+        Replica_Local.registrar_nodo(replica['id'],replica['nombre'],replica['ip'],replica['puerto'])
+        # logger.info(replica['nombre'])
+        # logger.info(replica['id'])
+        # logger.info(replica['ip'])
+        # logger.info(replica['puerto'])
 
-# ---------- Mantener la aplicación corriendo ----------
-try:
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    logger.info("Finalizando...")
-finally:
-    zeroconf.unregister_service(info_local)
-    zeroconf.close()
+    # ---------- Mantener activo ----------
+    time.sleep(3)
+        
+    #no lo eliminamos para poder guardar el nombre de la terminal
+    # logger.info("Eliminando registro del dns...")
+    # zeroconf.unregister_service(info_local)
+    # zeroconf.close()
+
+    logger.info("Iniciando booly de replica")
+    Replica_Local.iniciar_eleccion()
 
 #-----------------------------------Buscar y conectar a servidor de nombres-----------------------------------#
  
 
-
 #------------------------------------Inicio de Conexion Replicas--------------------------------------#
+   
+   
     # try:
 
 

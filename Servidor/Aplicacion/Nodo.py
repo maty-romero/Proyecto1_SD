@@ -16,9 +16,6 @@ class Nodo: # La logica esta sin implementar, hay que revisar
     def set_esCoordinador(self,atributo:bool):
         self.esCoordinador = atributo
 
-    def registrar_nodo_en_cluster(self, nodo):
-        self.nodos_cluster.append(nodo)
-
     def get_id_nodo(self):
         return self.id
 

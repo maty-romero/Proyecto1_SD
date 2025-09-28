@@ -4,6 +4,7 @@
 
 """
 # ---------------- NodoReplica ----------------
+import socket
 import sys
 import threading
 from time import sleep
@@ -15,7 +16,7 @@ from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
 from Servidor.Comunicacion.Dispacher import Dispatcher
-from Servidor.Dominio import ServicioJuego
+from Servidor.Dominio.ServicioJuego import ServicioJuego
 from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
@@ -38,21 +39,29 @@ class NodoReplica(Nodo):
 
     # ---------------- Inicialización como coordinador ----------------
     def iniciar_como_coordinador(self, ip_ns, puerto_ns):
-        try:
-            ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
-            self.logger.info("Servidor de nombres localizado correctamente.")
-        except Exception as e:
-            self.logger.error(f"No se pudo conectar al servidor de nombres: {e}")
-            sys.exit(1)
-        
-        self.ServicioJuego = ServicioJuego(self.Dispatcher,self.logger)
+        # ns = None
+        # while True or not ns:
+        #     try:
+        #         ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+        #         self.logger.info("Servidor de nombres localizado correctamente.")
+        #     except Exception as e:
+        #         self.logger.error(f"No se pudo conectar al servidor de nombres: {e}")
+        #     respuesta = input("¿Deseás buscar el name server de nuevo? (s/n): ").strip().lower()
+        #     if respuesta != "s" :
+        #         self.logger.info("Eligio no buscar name server o se encontro name server")
+        #         break
+        #     self.logger.info("Buscando replica de nuevo...")
+        ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+        self.logger.info(f"Servidor de nombres en: {ns}")
+
+        self.ServicioJuego = ServicioJuego(self.Dispatcher)
 
         self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
         self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como coordinador")
-        self.socket_manager = ManejadorSocket(self.host, self.puerto, self.callback_mensaje)
-        self.socket_manager.iniciar()
+        self.socket_manager = ManejadorSocket(self.host, self.puerto, self.callback_mensaje,self.get_nombre_completo(),True)
+        self.socket_manager.iniciar_manejador()
 
         # BD inicial de prueba
         datos = {
@@ -67,10 +76,7 @@ class NodoReplica(Nodo):
         self.logger.info(f"BD inicializada: {self.ServDB.obtener_partida()}")
 
         threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
-
-
-        #daemon = Pyro5.server.Daemon(host=ip_servidor)
-        daemon = Pyro5.server.Daemon(host=ip_localhost)
+        daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
 
         uri = ComunicationHelper.registrar_objeto_en_ns(
             self,
@@ -78,13 +84,14 @@ class NodoReplica(Nodo):
             daemon
         )
 
-        logger.info("ServicioJuego registrado correctamente.")
-        logger.debug(f"URI: {uri}")
-        logger.debug(f"Daemon: {daemon}")
+        self.logger.info("ServicioJuego registrado correctamente.")
+        self.logger.debug(f"URI: {uri}")
+        self.logger.debug(f"Daemon: {daemon}")
         daemon.requestLoop()
 
-
-
+    # ---------------- Registrar Vecinos ----------------
+    def registrar_nodo(self, id, nombre, ip, puerto):
+        self.ServComunic.registrar_nodo(Nodo(id,nombre,ip,puerto,False))
 
     # ---------------- Conectarse a coordinador ----------------
     def conectarse_a_coordinador(self, nodo_coordinador):
@@ -130,15 +137,16 @@ class NodoReplica(Nodo):
         threading.Timer(3, self.convertirse_en_coordinador).start()
 
     def convertirse_en_coordinador(self):
-        self.coordinador_actual = self.id
         self.set_esCoordinador(True)
         self.logger.warning(f"{self.get_nombre_completo()} se convierte en coordinador")
-        for nodo in self.ServComunic.nodos_cluster:
-            try:
-                if nodo.socket_manager:
-                    nodo.socket_manager.enviar(f"COORDINADOR:{self.id}")
-            except:
-                pass
+        #broadcast coordinacion
+        # for nodo in self.ServComunic.nodos_cluster:
+        #     try:
+        #         if nodo.socket_manager:
+        #             nodo.socket_manager.enviar(f"COORDINADOR:{self.id}")
+        #     except:
+        #         pass
+        self.iniciar_como_coordinador("10.85.175.119",9090)
 
     # ---------------- Callback de mensajes ----------------
     def callback_mensaje(self, mensaje, conn=None):

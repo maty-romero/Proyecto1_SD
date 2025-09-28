@@ -6,6 +6,10 @@ from Pyro5 import errors
 from ServidorNombres.ComunicationHelper import ComunicationHelper
 from ServidorNombres.ServidorNombres import ServidorNombres
 
+
+
+
+"""INCORPORAR REGISTRO DE NOMBRE DE LA TERMINAL EN EL DNS"""
 if __name__ == "__main__":
     
     NameServ = ServidorNombres(56, True)

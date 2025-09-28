@@ -26,7 +26,7 @@ class ManejadorSocket:
     # Inicializar como servidor
     # ---------------------------
     def iniciar_manejador(self):
-        self.socket.bind((self.host, self.puerto))
+        self.socket.bind((self.host, str(self.puerto)))
         self.socket.listen()
         self._escuchando = True
         self.logger.info(f"Servidor escuchando en {self.host}:{self.puerto}")
