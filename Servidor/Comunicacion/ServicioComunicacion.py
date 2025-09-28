@@ -70,6 +70,8 @@ class ServicioComunicacion:
                 return nodo
         return None
 
+    def obtener_nodos_cluster(self):
+        return self.nodos_cluster
 
     # def desuscribir_cliente(self, nickname):
     #     #self.clientes.pop(id_cliente, None)

@@ -85,7 +85,7 @@ if __name__ == "__main__":
     )
 
     zeroconf.register_service(info_local, allow_name_change=True)
-    logger.info(f"Réplica local registrada como {nombre_replica} con IP {ip_local}")
+    logger.info(f"Réplica local registrada como {nombre_replica} con IP {ip_local}:{puerto_local}")
 
     # ---------- Instancia local ----------
     Replica_Local = NodoReplica(nro_nodo, ip_local, puerto_local, "Replica", False)

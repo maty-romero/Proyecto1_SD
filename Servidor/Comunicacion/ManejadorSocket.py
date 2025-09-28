@@ -5,14 +5,9 @@ from datetime import datetime, timedelta
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 
 class ManejadorSocket:
-    def __init__(self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False):
+    def __init__(self, host: str, puerto: int, nombre_logico: str, callback_mensaje = None, es_servidor=False):
         self.host = host
         self.puerto = puerto
-
-        assert isinstance(self.host, str), f"host debe ser str, no {type(self.host)}; valor_host={self.host}"
-        assert isinstance(self.puerto, int), f"puerto debe ser int, no {type(self.puerto)}; valor_puerto={self.puerto}"
-
-
         self.callback_mensaje = callback_mensaje
         self.es_servidor = es_servidor
 
@@ -26,6 +21,9 @@ class ManejadorSocket:
         self.coordinador = None
         self.timestamp = None
         self.conectado = False
+
+    def set_callback(self, callback):
+        self.callback_mensaje = callback
 
     # ---------------------------
     # Inicializar como servidor
@@ -79,7 +77,10 @@ class ManejadorSocket:
                 if mensaje == "HEARTBEAT": #solo es heartbeat en servidor y en replica
                     self.timestamp = datetime.utcnow()
                     self.conectado = True
-                self.callback_mensaje(mensaje, conn) 
+
+                if self.callback_mensaje is not None:
+                    self.callback_mensaje(mensaje, conn)
+
             except OSError:
                 break
         conn.close()

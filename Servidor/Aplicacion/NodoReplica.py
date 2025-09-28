@@ -31,7 +31,9 @@ class NodoReplica(Nodo):
         self.ServComunic = ServicioComunicacion(self.Dispatcher)
         self.ServDB = ControladorDB()
         self.ServicioJuego = None
-        self.socket_manager: ManejadorSocket = None
+        # Callback_manejaje en None por default
+        self.socket_manager = ManejadorSocket(host=self.host, puerto=self.puerto,
+                nombre_logico=self.get_nombre_completo(), es_servidor=False)
        
 
         self.coordinador_actual = None
@@ -41,6 +43,15 @@ class NodoReplica(Nodo):
 
         self.logger.error(f"Valor host pasado: {host};tipo:{type(host)}")
         self.logger.error(f"Valor puerto pasado: {puerto};tipo:{type(puerto)}")
+
+    # ---------------- Inicialización como replica ----------------
+    def iniciar_como_replica(self):
+        """
+        1. Conectarse a coordinador 
+        2. Recepcionar Heartbeat y actualizar timestamp etc 
+        """
+        pass 
+
 
     # ---------------- Inicialización como coordinador ----------------
     def iniciar_como_coordinador(self, ip_ns, puerto_ns):
@@ -66,10 +77,10 @@ class NodoReplica(Nodo):
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
         self.Dispatcher.registrar_servicio("db", self.ServDB)
         self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como coordinador")
-        # self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False
-        self.logger.error(f"iniciar_como_coordinador(ip_ns={ip_ns}, puerto_ns={puerto_ns}):")
+        
         self.socket_manager = ManejadorSocket(
             host=self.host, puerto=self.puerto, callback_mensaje=self.callback_mensaje, nombre_logico=self.get_nombre_completo(), es_servidor=True)
+        
         self.socket_manager.iniciar_manejador()
 
         # BD inicial de prueba
@@ -105,9 +116,22 @@ class NodoReplica(Nodo):
     # ---------------- Conectarse a coordinador ----------------
     def conectarse_a_coordinador(self, nodo_coordinador):
         self.logger.info(f"{self.get_nombre_completo()} conectándose a coordinador {nodo_coordinador.get_nombre_completo()}")
-        self.socket_manager = ManejadorSocket(nodo_coordinador.host, nodo_coordinador.puerto, self.callback_mensaje)
-        self.socket_manager.conectar()
+        # No se utiliza la misma instancia de ManejadorSocket (ya abierta)
+        #self.socket_manager = ManejadorSocket(nodo_coordinador.host, nodo_coordinador.puerto, self.callback_mensaje)
+        self.socket_manager.conectar_a_nodo(nodo_coordinador.host, nodo_coordinador.puerto)
         self.coordinador_actual = nodo_coordinador.id
+
+    # ---------------- Conectarse a replicas ----------------
+    def conectarse_a_replicas(self):
+        self.logger.info(f"{self.get_nombre_completo()} conectándose a las replicas...")
+        # No se utiliza la misma instancia de ManejadorSocket (ya abierta)
+        #self.socket_manager = ManejadorSocket(nodo_coordinador.host, nodo_coordinador.puerto, self.callback_mensaje)
+        nodos_replicas = self.ServComunic.obtener_nodos_cluster()
+        for replica in nodos_replicas:
+            self.socket_manager.conexiones = [] # limpiar conexion previas
+            self.socket_manager.conectar_a_nodo(replica.host, replica.puerto)
+
+        #self.coordinador_actual = nodo_coordinador.id
 
     # ---------------- Heartbeat ----------------
    
@@ -131,14 +155,21 @@ class NodoReplica(Nodo):
     # ---------------- Bully ----------------
     def iniciar_eleccion(self):
         self.logger.info(f"{self.get_nombre_completo()} inicia elección Bully")
+
+        self.socket_manager.iniciar_manejador() # apertura socket para escucha
+
         nodos_mayores = [n for n in self.ServComunic.nodos_cluster if n.id > self.id and n.obtener_estado() == EstadoNodo.ACTIVO]
         if not nodos_mayores:
             self.logger.info("No hay nodos mayores activos. Me proclamo coordinador.")
+            self.socket_manager.cerrar() # no va a  recibir mensajes
             self.convertirse_en_coordinador()
             return
 
+        
+
         for nodo in nodos_mayores:
             try:
+                self.socket_manager.conectar_a_nodo(nodo.host, nodo.puerto)
                 self.socket_manager.enviar(f"ELECCION:{self.id}")
             except Exception as e:
                 self.logger.warning(f"Error al enviar ELECCION a nodo {nodo.id}: {e}")
@@ -155,6 +186,12 @@ class NodoReplica(Nodo):
         #             nodo.socket_manager.enviar(f"COORDINADOR:{self.id}")
         #     except:
         #         pass
+
+        # establecer conexion con nodos que son replicas (ya tienen socket abierto se supone)
+        self.conectarse_a_replicas() # lista conexiones actualizada
+        # Mandar mensaje a resto de replicas / nodos que este nodo es coordinador --> braodcast
+        self.socket_manager.enviar(f"COORDINADOR:{self.id}")
+
         self.iniciar_como_coordinador(self.host, self.puerto)
 
     # ---------------- Callback de mensajes ----------------
@@ -164,17 +201,24 @@ class NodoReplica(Nodo):
             self.ultimo_heartbeat = datetime.utcnow()
         elif mensaje.startswith("ELECCION"):
             remitente_id = int(mensaje.split(":")[1])
-            if remitente_id < self.id:
+            if remitente_id < self.id: # replica que recibe mensaje tiene ID mas grande
                 self.socket_manager.enviar(f"RESPUESTA:{self.id}")
                 self.iniciar_eleccion()
         elif mensaje.startswith("RESPUESTA"):
             self.logger.info("Nodo mayor respondió. Esperando COORDINADOR...")
+            # socket queda abierto para conexion que debe hacer nodo ppal -> Funcionamiento 'normal' 
         elif mensaje.startswith("COORDINADOR"):
+            # hay un nuevo coordinador, que no es el nodo actual
+            self.logger.warning(f"MENSAJE DE CORDINAAADOROOROR => {mensaje}")
             coord_id = int(mensaje.split(":")[1])
             self.coordinador_actual = coord_id
-            self.set_esCoordinador(self.id == coord_id)
+            #self.set_esCoordinador(self.id == coord_id) # esto lo deberia hacer el coordinador 
             self.logger.info(f"Nuevo coordinador: {coord_id}")
+            self.iniciar_como_replica() # PENDIENTE
 
+    #def broadcast_a_nodos(self):
+        #self.socket_manager
+        #pass
 
     # def broadcast_a_nodos(self, mensaje: str):
     #     for nodo in self.ServComunic.nodos_cluster:
