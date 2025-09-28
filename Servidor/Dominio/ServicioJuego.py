@@ -345,6 +345,7 @@ class ServicioJuego:
             ip_cliente = info_cliente['ip']
             puerto_cliente = info_cliente['puerto']
             uri_cliente = info_cliente['uri']
+            self.logger.warning(f"informacion Cliente Recibida:{info_cliente}")
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
                 "suscribir_cliente",  # nombre_metodo

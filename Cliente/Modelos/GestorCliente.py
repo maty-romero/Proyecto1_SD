@@ -181,6 +181,8 @@ class GestorCliente:
         info_cliente['uri'] = uri
         self.logger.warning(f"INFO_CLIENTEEEEE: {info_cliente}")
 
+        self.logger.error(f"RETURN DE UNIRSE A SALA: {self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)}")
+
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
         self.logger.warning(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
         self.logger.warning(f"InfoSala: {resultado_dict}")
@@ -214,7 +216,7 @@ class GestorCliente:
                 callback_mensaje=self._procesar_mensaje_socket,
                 nombre_logico=self.Jugador_cliente.get_nickname(),
                 es_servidor=False,
-                tipo_nodo="SesionCliente"
+                tipo_Nodo="SesionCliente"
             )
 
             hilo_socket = threading.Thread(
@@ -280,8 +282,8 @@ class GestorCliente:
         def daemon_loop():
             self._daemon = Pyro5.api.Daemon(host=ip_cliente)
             try:
-                #ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
-                ns = Pyro5.api.locate_ns()
+                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
+                #ns = Pyro5.api.locate_ns()
                 uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
                 self.logger.info(f"[Daemon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
                 uri_queue.put(uri)  # Enviar la URI al hilo principal

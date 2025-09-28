@@ -1,9 +1,9 @@
 @echo off
 set CONDA_ENV=base
 
-cd /d "C:\Users\Hans\Documents\Github\Universidad\Proyecto1_SD"
+cd /d "C:\Users\Elías\OneDrive\UNIVERSIDAD 2025\2do Cuatrimestre\Sistemas Distribuidos\Repositorio\Tutti Frutti\Proyecto1_SD-1"
 
-start "NameServer" cmd /k "call C:\Users\Hans\miniconda3\Scripts\activate.bat %CONDA_ENV% && python -m ServidorNombres.mainNameServer"
+start "NameServer" cmd /k "call C:\ProgramData\miniconda3\Scripts\activate.bat %CONDA_ENV% && python -m ServidorNombres.mainNameServer"
 
 
 echo Creando scripts auxiliares...
