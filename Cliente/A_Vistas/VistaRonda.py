@@ -10,6 +10,7 @@ from PyQt6 import QtCore
 from PyQt6.QtGui import QValidator
 
 class PrimeraLetraValidator(QValidator):
+    def __init__(self, letra, parent=None):
         super().__init__(parent)
         self.letra = letra.lower()
 
