@@ -1,4 +1,4 @@
-from Cliente.A_Vistas import VistaMensajeTransitorio
+from Cliente.A_Vistas.VistaMensajeTransitorio import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaVotaciones import VistaVotaciones
 from Cliente.Controladores.ControladorVotaciones import ControladorVotaciones
 from Cliente.Modelos.GestorCliente import GestorCliente
@@ -15,6 +15,7 @@ from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorSala import ControladorSala
 from Cliente.Controladores.ControladorRonda import ControladorRonda
 from Cliente.Controladores.ControladorResultados import ControladorResultados
+from Cliente.Controladores.ControladorMensajeTransitorio import ControladorMensajeTransitorio
 from Cliente.Modelos.GestorCliente import GestorCliente
 from Cliente.A_Vistas.MainWindow import MainWindow
 
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     vista_ronda = VistaRonda()
     vista_votaciones = VistaVotaciones()
     vista_resultados=VistaResultados()
-    #vista_mensaje = VistaMensajeTransitorio()
+    vista_mensaje = VistaMensajeTransitorio()
     # Crear controladores de vistas
     controlador_nickname = ControladorNickName(
         vista_nickname,
@@ -61,6 +62,10 @@ if __name__ == "__main__":
         gestor
     )
 
+    controlador_mensaje = ControladorMensajeTransitorio(
+        vista_mensaje, gestor
+    )
+
     # Crear controlador de navegación
     controlador_navegacion = ControladorNavegacion(
         main_window=main_window,
@@ -73,8 +78,9 @@ if __name__ == "__main__":
         controlador_votaciones=controlador_votaciones,
         vistaVotaciones=vista_votaciones,
         controlador_resultados=controlador_resultados,
-        vistaResultados=vista_resultados
-        
+        vistaResultados=vista_resultados,
+        controlador_mensaje= controlador_mensaje ,
+        vistaMensaje= vista_mensaje
     )
     
     controlador_nickname.setNavegacion(controlador_navegacion)
@@ -82,6 +88,7 @@ if __name__ == "__main__":
     controlador_ronda.setNavegacion(controlador_navegacion)
     controlador_votaciones.setNavegacion(controlador_navegacion)
     controlador_resultados.setNavegacion(controlador_navegacion)
+    controlador_mensaje.setNavegacion(controlador_navegacion)
 
     gestor.set_controlador_navegacion(controlador_navegacion)
 
@@ -98,6 +105,8 @@ if __name__ == "__main__":
     #     gestor.logger.info("FINALIZO EL UNIRSE A SALA")
     #     gestor.logger.info(gestor.Jugador_cliente)
     #     gestor.confirmar_jugador_partida(gestor.Jugador_cliente.get_nickname())
+    
+    
     
     """
     existe_partida = gestor.buscar_partida()

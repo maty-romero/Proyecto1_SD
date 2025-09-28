@@ -10,11 +10,13 @@
     - Va a haber acoplamiento, dado que este controlador conocera a todos los demas
     """
 
-from Cliente.A_Vistas import VistaMensajeTransitorio
+from PyQt6.QtCore import QTimer
+from Cliente.A_Vistas.VistaMensajeTransitorio import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
 from Cliente.A_Vistas.VistaRonda import VistaRonda
 #from Cliente.A_Vistas.ResultadosView import VistaResultados
+import threading
 
 from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorRonda import ControladorRonda
@@ -24,7 +26,7 @@ class ControladorNavegacion:
     def __init__(self, main_window,controlador_nickname,
                  controlador_sala,controlador_ronda, vistaNickname,
                  vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, 
-                 vistaResultados):
+                 vistaResultados,  controlador_mensaje, vistaMensaje):
         
         self.main_window = main_window
 
@@ -34,7 +36,8 @@ class ControladorNavegacion:
         self.controlador_ronda = controlador_ronda
         self.controlador_votaciones = controlador_votaciones
         self.controlador_resultados = controlador_resultados
-        # self.controlador_mensaje No hace falta controlador, control de transiciones - controlador nav 
+        # self.controlador_mensaje No hace falta controlador, control de transiciones - controlador nav
+        self.controlador_mensaje = controlador_mensaje
 
         # Guardar referencias a vistas
         self.vistaNickname = vistaNickname
@@ -42,7 +45,7 @@ class ControladorNavegacion:
         self.vistaRonda = vistaRonda
         self.vistaVotaciones = vistaVotaciones
         self.vistaResultados = vistaResultados
-        #self.vistaMensaje = VistaMensajeTransitorio()
+        self.vistaMensaje = vistaMensaje
 
         # Agregar vistas al stack
         self.vistaNickname_Index = self.main_window.stack.addWidget(self.vistaNickname)
@@ -69,8 +72,10 @@ class ControladorNavegacion:
             self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
             self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
-        # elif eleccion == "mensaje": 
-        #     self.main_window.stack.setCurrentIndex(self.vistaMensaje_Index)
+        elif eleccion == "mensaje":
+            print(f"4. [DEBUG] Desde ControladorNvegacion - se selecciona la vista del stack mainWindow - en hilo: {threading.current_thread().name}")
+            self.main_window.show()
+            self.main_window.stack.setCurrentIndex(self.vistaMensaje_Index)
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
     
@@ -78,9 +83,9 @@ class ControladorNavegacion:
         # Llama al método del controlador de ronda
         return self.controlador_ronda.obtener_respuestas()
     
-    def mostrar_mensaje_transitorio(self, texto: str):
-        self.vistaMensaje.setMensaje(texto)
-        self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
+    # def mostrar_mensaje_transitorio(self, texto: str):
+    #     self.vistaMensaje.setMensaje(texto)
+    #     self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
 
     """
     def mostrar_mensaje_transitorio_temporal(self, texto: str, siguiente_vista: str, duracion_ms=3000):

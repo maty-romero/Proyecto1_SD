@@ -1,7 +1,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QWidget
 
-from PyQt6.QtWidgets import QWidget, QLabel, QTextEdit, QPushButton, QVBoxLayout, QMessageBox
+from PyQt6.QtWidgets import QWidget, QLabel, QTextEdit, QPushButton, QVBoxLayout, QMessageBox, QHBoxLayout
 from PyQt6 import QtCore, QtGui
 
 class VistaMensajeTransitorio(QWidget):
@@ -21,5 +21,15 @@ class VistaMensajeTransitorio(QWidget):
 
         layout.addWidget(self.mensaje_label)
 
+        # Botones de acción
+        botones_layout = QHBoxLayout()
+        self.boton_si = QPushButton("Sí")
+        self.boton_no = QPushButton("No")
+        botones_layout.addWidget(self.boton_si)
+        botones_layout.addWidget(self.boton_no)
+        layout.addLayout(botones_layout)
+
     def setMensaje(self, texto: str):
         self.mensaje_label.setText(texto)
+        
+    
