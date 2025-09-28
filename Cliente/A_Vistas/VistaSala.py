@@ -83,9 +83,6 @@ class VistaSala(QWidget):
         self.estado_sala_label.setStyleSheet("color: #990000;")
         
         self.setStyleSheet("""
-            QWidget {
-                background-color: #f4f6f9;
-            }
             QLabel {
                 color: #333;
             }

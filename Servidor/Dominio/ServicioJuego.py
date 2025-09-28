@@ -8,9 +8,14 @@ import Pyro5.api
 from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Partida import Partida
+<<<<<<< HEAD
 from Servidor.Dominio.Partida import EstadoJuego
+=======
+from Servidor.Persistencia.ControladorDB import ControladorDB
+>>>>>>> 472613eb83b0ef8ab98c7b8e64b7a0aaa900e06a
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Utils.SerializeHelper import SerializeHelper
+from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 
 @Pyro5.api.expose
 class ServicioJuego:
@@ -23,6 +28,7 @@ class ServicioJuego:
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
+        self.db = ControladorDB()
 
     """
         ServicioJuego --> Entran las llamadas Pyro
@@ -490,6 +496,27 @@ class ServicioJuego:
             # Confirmar jugador
             self.Jugadores[nickname] = True
             self.logger.info(f"[confirmar_jugador] Jugador {nickname} confirmado")
+            #---------------------------------------------------------------------------------------------------------------
+            #ACA TENGO QUE AGREGAR EL NUEVO CLIENTE A LA BD?
+            #Acá traigo el cliente confirmado para poder obtener sus datos de conexión
+            cliente_confirmado: ClienteConectado = self.dispacher.manejar_llamada(
+            "comunicacion", # nombre_servicio
+            "getDatosCliente", # nombre_metodo
+            nickname # args
+            ) 
+            # Creo cliente_conectado, que es el diccionario para agregar en la BDD, dentro de los clientes conectados.
+            cliente_conectado = {
+                "nickname": cliente_confirmado.nickname,
+                "ip": cliente_confirmado.socket.ip_cliente,
+                "puerto": cliente_confirmado.socket.puerto_cliente,
+                "uri": str(cliente_confirmado.uri_cliente_conectado)
+            }
+
+            if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
+                self.logger.info(f"Se agrego al jugador {cliente_conectado["nickname"]} a la lista de clientes_conectados")
+            else: 
+                self.logger.warning(f"El jugador {cliente_conectado["nickname"]} no ha sido cargado en la DB")            
+            #---------------------------------------------------------------------------------------------------------------
 
             # Verificar si se puede iniciar la partida
             jugadores_suficientes = self._verificar_jugadores_suficientes()

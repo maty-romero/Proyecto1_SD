@@ -16,6 +16,7 @@ class ClienteConectado:
         self.ip_cliente = ip_cliente
         self.puerto_cliente = puerto_cliente
         self.uri_cliente = uri_cliente
+        self.uri_cliente_conectado = Pyro5.core.URI(uri_cliente)
         self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente,uri_cliente)
         self.logger.warning(f"proxy del cliente registrada: {self.proxy}")
         self.confirmado: bool = False
