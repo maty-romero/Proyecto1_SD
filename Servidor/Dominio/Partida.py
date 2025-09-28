@@ -23,6 +23,12 @@ class Partida:
         self.ronda_actual: Ronda = None
         self.jugadores: list[Jugador] = []
         self.estado_actual = EstadoJuego.EN_SALA
+        
+    def get_estado_actual(self):
+        return self.estado_actual
+        
+    def set_estado_actual(self,estado_actual):
+        self.estado_actual=estado_actual
 
     def eliminar_jugador_partida(self, nickname: str):
         for jugador in self.jugadores:

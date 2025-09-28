@@ -236,6 +236,8 @@ class GestorCliente:
                 mensaje_estado = f"Se ha unido '{nickname}' a la sala"
                 self.controlador_navegacion.controlador_sala.cambiar_estado_sala(mensaje_estado)
             # Procesar según tipo de mensaje
+            elif msg == "en_sala":
+                self.controlador_navegacion.mostrar('sala')
             elif msg == "nueva_ronda":
                 #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
@@ -260,7 +262,26 @@ class GestorCliente:
 
         except Exception as e:
             self.logger.error(f"[Socket] Error al procesar mensaje: {e}")
+            
+    
+    def cerrar_app(self):
+        import sys
+        self.logger.info("Cerrando aplicación por decisión del usuario o timeout de reconexión.")
+        sys.exit(0)
+        
+        
+    def intentar_reconexion(self):
+        # Arma el diccionario info_cliente igual que al inicio
+        info_cliente = self.Jugador_cliente.to_dict()
+        info_cliente['uri'] = self.inicializar_Deamon_Cliente()  # o el uri actual si ya está
+        resultado = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
+        if resultado and resultado.get('exito'):
+            # Pide al servidor que le mande la vista correcta
+            self.get_proxy_partida_singleton().restaurar_vista_general(self.Jugador_cliente.get_nickname())
+        else:
+            self.cerrar_app()
 
+    
     def inicializar_Deamon_Cliente(self):
         ip_cliente = ComunicationHelper.obtener_ip_local()
         objeto_cliente = ServicioCliente(self)
@@ -366,6 +387,9 @@ class GestorCliente:
     def get_proxy_partida(self):
         return self.get_proxy_partida_singleton()
     
+
+
+    
     """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
         #proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
@@ -391,6 +415,7 @@ class GestorCliente:
 
     def enviar_votos_jugador(self):
         return self.controlador_navegacion.controlador_votaciones.enviar_votos()
+    
     
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---

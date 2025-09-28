@@ -10,7 +10,8 @@
     - Va a haber acoplamiento, dado que este controlador conocera a todos los demas
     """
 
-from Cliente.A_Vistas import VistaMensajeTransitorio
+from PyQt6.QtCore import QTimer
+from Cliente.A_Vistas.VistaMensajeTransitorio import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
 from Cliente.A_Vistas.VistaRonda import VistaRonda
@@ -78,9 +79,46 @@ class ControladorNavegacion:
         # Llama al método del controlador de ronda
         return self.controlador_ronda.obtener_respuestas()
     
-    def mostrar_mensaje_transitorio(self, texto: str):
-        self.vistaMensaje.setMensaje(texto)
+    # def mostrar_mensaje_transitorio(self, texto: str):
+    #     self.vistaMensaje.setMensaje(texto)
+    #     self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
+
+    def mostrar_mensaje_reconexion(self, cliente, callback_reconexion, callback_fallo):
+        """
+        Muestra la vista de mensaje transitorio con opción de reconectar por 10 segundos.
+        callback_reconexion: función a llamar si el usuario elige reconectar
+        callback_fallo: función a llamar si elige no reconectar o se acaba el tiempo
+        """
+        self.vistaMensaje = VistaMensajeTransitorio()
+        self.vistaMensaje.setMensaje("¿Desea reconectarse? (10 segundos para decidir)")
+        self.vistaMensajeTransitorio_Index = self.main_window.stack.addWidget(self.vistaMensaje)
         self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
+
+        self._timer_reconexion = QTimer()
+        self._timer_reconexion.setSingleShot(True)
+        self._timer_reconexion.timeout.connect(lambda: self._on_reconexion_fallo(callback_fallo))
+        self._timer_reconexion.start(10000)  # 10 segundos
+
+        self.vistaMensaje.boton_si.clicked.connect(lambda: self._on_reconexion_si(callback_reconexion, cliente))
+        self.vistaMensaje.boton_no.clicked.connect(lambda: self._on_reconexion_fallo(callback_fallo))
+
+    def _on_reconexion_si(self, callback_reconexion, cliente):
+        self._timer_reconexion.stop()
+        dict_cliente_reconectado = {
+            'nickname': cliente.nickname,
+            'nombre_logico': cliente.nombre_logico,
+            'ip': cliente.ip_cliente,
+            'puerto': cliente.puerto_cliente,
+            'uri': cliente.uri_cliente
+        }
+        callback_reconexion(dict_cliente_reconectado)
+
+    def _on_reconexion_fallo(self, callback_fallo):
+        if hasattr(self, '_timer_reconexion'):
+            self._timer_reconexion.stop()
+        self.vistaMensaje.setMensaje("No se pudo reconectar. Cerrando la aplicación.")
+        if callback_fallo:
+            callback_fallo()
 
     """
     def mostrar_mensaje_transitorio_temporal(self, texto: str, siguiente_vista: str, duracion_ms=3000):

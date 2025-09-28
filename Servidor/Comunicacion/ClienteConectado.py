@@ -12,6 +12,10 @@ class ClienteConectado:
         self.id = str(uuid.uuid4())
         self.nickname = nickname
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
+        self.nombre_logico = nombre_logico
+        self.ip_cliente = ip_cliente
+        self.puerto_cliente = puerto_cliente
+        self.uri_cliente = uri_cliente
         self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente,uri_cliente)
         self.logger.warning(f"proxy del cliente registrada: {self.proxy}")
         self.confirmado: bool = False
@@ -36,10 +40,7 @@ class ClienteConectado:
             self.logger.error(f"Error: No se pudo encontrar el objeto '{nombre_logico}'.")
             sys.exit(1)
             return None
-       
-                        
-
-
+    
     def _procesar_mensaje(self, mensaje: str):
         if mensaje == "HEARTBEAT":
             self.logger.info(f"Heartbeat recibido del cliente/jugador '{self.nickname}'")

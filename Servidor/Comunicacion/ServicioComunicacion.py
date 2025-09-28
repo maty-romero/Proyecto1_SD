@@ -16,6 +16,7 @@ class ServicioComunicacion:
         # self.sockets_registrados =  []
         self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
         self.clientes: list[ClienteConectado] = []
+        self.clientes_caidos: list[ClienteConectado] = []
         # hilo que maneja verificacion clientes vivos
         threading.Thread(target=self.loop_verificacion, daemon=True).start()
 
@@ -48,22 +49,53 @@ class ServicioComunicacion:
             if cliente.esta_vivo():
                 clientes_activos.append(cliente)
             else:
+                self.clientes_caidos.append(cliente)
+                self.reintentar_conexion(cliente)
                 self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
-                cliente.socket.cerrar()
-                self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname)
+                cliente.socket.cerrar() # Se cierra el socket del cliente
+                self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname) #Se elimina al jugador
                 json = SerializeHelper.serializar(
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
                 )
                 self.broadcast(json)
-        self.clientes = clientes_activos # nos quedamos con clientes vivos
+        self.clientes = clientes_activos # nos quedamos con clientes vivos, se sobreescribe la lista
         self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
+
+
+    def reintentar_conexion(self, cliente):
+        try:
+            proxy = cliente.get_proxy_cliente()
+            proxy._pyroClaimOwnership()
+            proxy.mostrar_pregunta_desconexion_definitiva(cliente)
+        except Exception as e : 
+            self.logger.warning(f"No se puede conectar a {cliente.nickname} para reconexion :{e}")
 
     # Metodos de Suscripcion
     def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente):
         cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente)
         cliente.socket.conectar() # inicio sesion por socket
         self.clientes.append(cliente)
+
+    def reconectar_cliente(self, nickname):
+        """
+        Mueve un cliente de la lista de caídos a la de conectados si el nickname coincide.
+        Devuelve True si reconectó, False si no estaba en la lista de caídos.
+        """
+        for cliente in self.clientes_caidos:
+            if cliente.nickname == nickname:
+                try:
+                    cliente.socket.conectar()
+                except Exception:
+                    pass  # Si ya está conectado o hay error, lo ignora
+                self.clientes.append(cliente)
+                self.clientes_caidos.remove(cliente)
+                self.logger.info(f"Cliente {nickname} reconectado correctamente.")
+                return True
+        self.logger.warning(f"Intento de reconexión fallido para {nickname}. No estaba en la lista de caídos.")
+        return False
+
+
 
     # def desuscribir_cliente(self, nickname):
     #     #self.clientes.pop(id_cliente, None)
@@ -169,6 +201,9 @@ class ServicioComunicacion:
                 votos_clientes[i] = {}
 
         return votos_clientes
+    
+
+
         """
         --> Codigo anterior
         votos_clientes: dict = {}

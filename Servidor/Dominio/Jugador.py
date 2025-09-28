@@ -10,3 +10,4 @@ class Jugador:
 
     def get_puntaje(self) -> int:
         return self.puntaje_total
+    
