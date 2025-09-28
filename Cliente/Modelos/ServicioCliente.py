@@ -23,12 +23,10 @@ class ServicioCliente:
     def obtener_votos_cliente(self) -> dict:
         return self.gestor.enviar_votos_jugador()
 
-    def mostrar_pregunta_desconexion_definitiva(self, cliente):
-        self.gestor.controlador_navegacion.mostrar_mensaje_reconexion(cliente,
-            callback_reconexion=self.gestor.intentar_reconexion,
-            callback_fallo=self.gestor.cerrar_app
-        )
-        
+    def mostrar_vista_desconexion(self):
+        print(f"2. [DEBUG] Desde ServicioCliente se mostrará la vista de desconexion: {threading.current_thread().name}")
+        self.gestor.mostrar_vista_desconexion()
+
         
     """
 

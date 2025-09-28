@@ -15,6 +15,7 @@ from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorSala import ControladorSala
 from Cliente.Controladores.ControladorRonda import ControladorRonda
 from Cliente.Controladores.ControladorResultados import ControladorResultados
+from Cliente.Controladores.ControladorMensajeTransitorio import ControladorMensajeTransitorio
 from Cliente.Modelos.GestorCliente import GestorCliente
 from Cliente.A_Vistas.MainWindow import MainWindow
 
@@ -61,6 +62,10 @@ if __name__ == "__main__":
         gestor
     )
 
+    controlador_mensaje = ControladorMensajeTransitorio(
+        vista_mensaje, gestor
+    )
+
     # Crear controlador de navegación
     controlador_navegacion = ControladorNavegacion(
         main_window=main_window,
@@ -74,8 +79,8 @@ if __name__ == "__main__":
         vistaVotaciones=vista_votaciones,
         controlador_resultados=controlador_resultados,
         vistaResultados=vista_resultados,
-        vistaMensaje=    vista_mensaje
-        
+        controlador_mensaje= controlador_mensaje ,
+        vistaMensaje= vista_mensaje
     )
     
     controlador_nickname.setNavegacion(controlador_navegacion)
@@ -83,6 +88,7 @@ if __name__ == "__main__":
     controlador_ronda.setNavegacion(controlador_navegacion)
     controlador_votaciones.setNavegacion(controlador_navegacion)
     controlador_resultados.setNavegacion(controlador_navegacion)
+    controlador_mensaje.setNavegacion(controlador_navegacion)
 
     gestor.set_controlador_navegacion(controlador_navegacion)
 

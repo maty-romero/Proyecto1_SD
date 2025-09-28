@@ -49,8 +49,7 @@ class ServicioComunicacion:
             if cliente.esta_vivo():
                 clientes_activos.append(cliente)
             else:
-                self.clientes_caidos.append(cliente)
-                self.reintentar_conexion(cliente)
+                self.logger.info(f"1. [DEBUG] Desde ServicioComunicacion - else: de verificar_cliente - en hilo: {threading.current_thread().name}")
                 self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
                 cliente.socket.cerrar() # Se cierra el socket del cliente
                 self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname) #Se elimina al jugador
@@ -58,18 +57,19 @@ class ServicioComunicacion:
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
                 )
+                import Pyro5.api
+                # ...existing code...
+                proxy_cliente = Pyro5.api.Proxy(str(cliente.uri_cliente_conectado))
+                proxy_cliente.mostrar_vista_desconexion()
+                # proxy_cliente = cliente.get_proxy_cliente()
+                # proxy_cliente._pyroClaimOwnership()
+                # proxy_cliente.mostrar_vista_desconexion()
+
                 self.broadcast(json)
         self.clientes = clientes_activos # nos quedamos con clientes vivos, se sobreescribe la lista
         self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
 
 
-    def reintentar_conexion(self, cliente):
-        try:
-            proxy = cliente.get_proxy_cliente()
-            proxy._pyroClaimOwnership()
-            proxy.mostrar_pregunta_desconexion_definitiva(cliente)
-        except Exception as e : 
-            self.logger.warning(f"No se puede conectar a {cliente.nickname} para reconexion :{e}")
 
     # Metodos de Suscripcion
     def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente):
@@ -77,29 +77,6 @@ class ServicioComunicacion:
         cliente.socket.conectar() # inicio sesion por socket
         self.clientes.append(cliente)
 
-    def reconectar_cliente(self, nickname):
-        """
-        Mueve un cliente de la lista de caídos a la de conectados si el nickname coincide.
-        Devuelve True si reconectó, False si no estaba en la lista de caídos.
-        """
-        for cliente in self.clientes_caidos:
-            if cliente.nickname == nickname:
-                try:
-                    cliente.socket.conectar()
-                except Exception:
-                    pass  # Si ya está conectado o hay error, lo ignora
-                self.clientes.append(cliente)
-                self.clientes_caidos.remove(cliente)
-                self.logger.info(f"Cliente {nickname} reconectado correctamente.")
-                return True
-        self.logger.warning(f"Intento de reconexión fallido para {nickname}. No estaba en la lista de caídos.")
-        return False
-
-
-
-    # def desuscribir_cliente(self, nickname):
-    #     #self.clientes.pop(id_cliente, None)
-    #     pass
 
     """AGREGAR EXCEPCION POR SI CLIENTE DENIEGA CONEXION / NO EXISTE"""
 

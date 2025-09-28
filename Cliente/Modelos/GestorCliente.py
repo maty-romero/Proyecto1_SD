@@ -39,7 +39,6 @@ from Cliente.Utils.SerializeHelper import SerializeHelper
 networks:
   pyro_net:
     driver: bridge
-
     
     Permite lo siguiente
 
@@ -262,24 +261,6 @@ class GestorCliente:
 
         except Exception as e:
             self.logger.error(f"[Socket] Error al procesar mensaje: {e}")
-            
-    
-    def cerrar_app(self):
-        import sys
-        self.logger.info("Cerrando aplicación por decisión del usuario o timeout de reconexión.")
-        sys.exit(0)
-        
-        
-    def intentar_reconexion(self):
-        # Arma el diccionario info_cliente igual que al inicio
-        info_cliente = self.Jugador_cliente.to_dict()
-        info_cliente['uri'] = self.inicializar_Deamon_Cliente()  # o el uri actual si ya está
-        resultado = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
-        if resultado and resultado.get('exito'):
-            # Pide al servidor que le mande la vista correcta
-            self.get_proxy_partida_singleton().restaurar_vista_general(self.Jugador_cliente.get_nickname())
-        else:
-            self.cerrar_app()
 
     
     def inicializar_Deamon_Cliente(self):
@@ -387,8 +368,6 @@ class GestorCliente:
     def get_proxy_partida(self):
         return self.get_proxy_partida_singleton()
     
-
-
     
     """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
@@ -401,10 +380,6 @@ class GestorCliente:
                 proxy.recibir_stop()
         except Exception as e:
             self.logger.error(f"Error enviando stop: {e}")
-    #------>
-    # def enviar_stop(self):
-    #     proxy = self.get_proxy_partida_singleton
-    #     proxy.recibir_stop()
 
     def provide_response(self):
         #se obtienenen las respuestas de RondaCliente
@@ -416,7 +391,11 @@ class GestorCliente:
     def enviar_votos_jugador(self):
         return self.controlador_navegacion.controlador_votaciones.enviar_votos()
     
-    
+    def mostrar_vista_desconexion(self):
+        self.logger.info(f"3. [DEBUG] Desde GestorCliente - mostrar_vista_desconexion, se ejecuará un método de controlador navegacion - en hilo: {threading.current_thread().name}")
+        self.controlador_navegacion.mostrar("mensaje")
+        
+
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---
     def on_info(self, tipo: str, info: str):
@@ -442,3 +421,4 @@ class GestorCliente:
         pass
 
 """
+
