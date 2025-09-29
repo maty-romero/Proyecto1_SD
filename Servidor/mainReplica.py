@@ -109,7 +109,7 @@ if __name__ == "__main__":
     tipo_servicio = "_replica._tcp.local."
     ip_local = socket.gethostbyname(socket.gethostname())
     puerto_local = obtener_puerto_libre()
-    max_replicas = 1
+    max_replicas = 3
     zeroconf = Zeroconf()
 
     # ---------- Listener ----------
@@ -168,8 +168,22 @@ if __name__ == "__main__":
     # ---------- Lógica de réplica ----------
     logger.info("Registrando replicas")
     for replica in Replicas_Vecinas:
-        info = f"id_replica={replica['id']},nombre_replica={replica['nombre']},ip_replica={replica['ip']},puerto_replica={replica['puerto']}"
-        Replica_Local.registrar_nodo(replica['id'],replica['nombre'],replica['ip'],replica['puerto'])
+        # Evitar registrar la réplica local
+        if replica['id'] == nro_nodo:
+            continue
+
+        info = (
+            f"id_replica={replica['id']},"
+            f"nombre_replica={replica['nombre']},"
+            f"ip_replica={replica['ip']},"
+            f"puerto_replica={replica['puerto']}"
+        )
+        Replica_Local.registrar_nodo(
+            replica['id'],
+            replica['nombre'],
+            replica['ip'],
+            replica['puerto']
+        )
         logger.warning(f"Replica agregada con datos:{info}")
 
     # ---------- Mantener activo ----------
