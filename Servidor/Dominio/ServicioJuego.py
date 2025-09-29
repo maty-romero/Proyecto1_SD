@@ -18,13 +18,12 @@ from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 class ServicioJuego:
     def __init__(self, dispacher: Dispatcher):
         self.dispacher = dispacher
-        self.partida = Partida()
+        self.Partida = None
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
-        self.db = ControladorDB()
 
     """
         ServicioJuego --> Entran las llamadas Pyro
@@ -42,25 +41,29 @@ class ServicioJuego:
         return  self.jugadores_min
 
     def obtener_info_sala(self) -> dict:
-        return self.partida.get_info_sala()
+        return self.Partida.get_info_sala()
 
     def obtener_info_sala(self) -> dict:
-        return self.partida.get_info_sala()
+        return self.Partida.get_info_sala()
 
     def iniciar_partida(self):
         # Inicia la 1ra Ronda
-        self.partida.iniciar_nueva_ronda() # Ronda 1
+        #------------Se inicializa la partida desde cero------------------------------------------------#
+        self.Partida = Partida() 
+        self.Partida.iniciar_nueva_ronda() # Ronda 1
+        #self.logger.info(f"Contenido en self.jugadores:{self.Jugadores}")
 
+        #si ya tenemos jugadores en partida, podemos guardar el true o false de la confirmacion ahi mismo. Facilita recuperacion de bd
         jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
-        self.partida.cargar_jugadores_partida(jugadores)
+        self.Partida.cargar_jugadores_partida(jugadores)
 
-        info_ronda: dict = self.partida.get_info_ronda()
+        info_ronda: dict = self.Partida.get_info_ronda()
         json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
         self.dispacher.manejar_llamada(
             "comunicacion",
             "broadcast_a_clientes",
             json) 
-        self.cargarRondaDB(info_ronda)
+        #self.cargarRondaDB(info_ronda)?
 
     def enviar_respuestas_ronda(self):
         # Aviso a Clientes que termino la ronda
@@ -81,12 +84,12 @@ class ServicioJuego:
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
 
-        self.partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
+        self.Partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
         
         info_completa_votacion = {
-            'nro_ronda' : self.partida.nro_ronda_actual,
-            'total_rondas':self.partida.rondas_maximas,
-            'letra_ronda': self.partida.ronda_actual.letra_ronda,
+            'nro_ronda' : self.Partida.nro_ronda_actual,
+            'total_rondas':self.Partida.rondas_maximas,
+            'letra_ronda': self.Partida.ronda_actual.letra_ronda,
             'respuestas_clientes': respuestas_clientes
         }
 
@@ -130,18 +133,17 @@ class ServicioJuego:
 
         
     def evaluar_ultima_ronda(self):
-        if self.partida.nro_ronda_actual == self.partida.rondas_maximas:
+        if self.Partida.nro_ronda_actual == self.Partida.rondas_maximas:
             self.finalizar_partida() #manda señal para ir a resultado
         else:
-            self.partida.iniciar_nueva_ronda()
-            info_ronda = self.partida.get_info_ronda()
+            self.Partida.iniciar_nueva_ronda()
+            info_ronda = self.Partida.get_info_ronda()
             json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
                 "broadcast_a_clientes",  # nombre_metodo
                 json #args
             )
-
 
     def obtener_votos_jugadores(self):
         votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
@@ -216,7 +218,7 @@ class ServicioJuego:
     def procesar_votos_y_asignar_puntaje(self, votos):
         from collections import defaultdict
 
-        respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
+        respuestas_clientes = self.Partida.ronda_actual.get_respuestas_ronda()
         conteo_respuestas = defaultdict(lambda: defaultdict(int))
         validez = defaultdict(dict)
 
@@ -275,7 +277,7 @@ class ServicioJuego:
         # --- Totales y asignación ---
         totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
 
-        for jugador in self.partida.jugadores:
+        for jugador in self.Partida.jugadores:
             total = totales.get(jugador.nickname, 0)  # evita KeyError
             jugador.sumar_puntaje(total)
             self.logger.info(f"El puntaje del jugador {jugador.nickname} es {total}")
@@ -287,7 +289,7 @@ class ServicioJuego:
     def finalizar_partida(self):
         """Notifica el fin de la partida y envía los datos finales"""
 
-        puntajes_totales, ganador = self.partida.calcular_puntos_partida()
+        puntajes_totales, ganador = self.Partida.calcular_puntos_partida()
 
         resultados_partida = {
             'jugadores' : list(self.Jugadores.keys()),
@@ -301,28 +303,53 @@ class ServicioJuego:
             "broadcast_a_clientes",  # nombre_metodo
                 json #args
         )
+        #------------se resetean los datos de la partida------------------------------------------------#
+        self.Partida=None
+        for nickname in self.Jugadores:
+            self.Jugadores[nickname]= False 
+        self.logger.warning("La partida finalizo y se borro su instancia de servicio de juego, Inicie una nueva partida")
+        #llegada a esta instancia se limpia la bd, ya no se necesita persistencia de datos
+        # self.dispacher.manejar_llamada(
+        #     "db",  # nombre_servicio
+        #     "limpiar_BD"#,  # nombre_metodo
+        #         #json #args
+        # )
 
 
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
-    def solicitar_acceso(self):
-        hay_lugar: bool = self.dispacher.manejar_llamada(
-            "comunicacion", # nombre_servicio
-            "hay_lugar_disponible", # nombre_metodo
-            self.jugadores_min # args
-        )
-
-        if not hay_lugar:
-            return SerializeHelper.respuesta(
-                exito=False,
-                msg="La sala está llena, no puede unirse."
+    def solicitar_acceso(self):#(self,nickname)
+        #si no existe una partida, se evalua si hay lugar
+        if not self.Partida:
+            hay_lugar: bool = self.dispacher.manejar_llamada(
+                "comunicacion", # nombre_servicio
+                "hay_lugar_disponible", # nombre_metodo
+                self.jugadores_min # args
             )
 
-        # hay lugar
-        return SerializeHelper.respuesta(
-            exito=True,
-            msg="Hay lugar disponible, puede unirse."
-        )
+            if not hay_lugar:
+                return SerializeHelper.respuesta(
+                    exito=False,
+                    msg="La sala está llena, no puede unirse."
+                )
 
+            # hay lugar
+            return SerializeHelper.respuesta(
+                exito=True,
+                msg="Hay lugar disponible, puede unirse."
+            ) 
+        else:#si existe partida es porque se inicio un juego
+        #elif nickname in self.Partida.jugadores    # se procede a verificar si existe jugador
+            #return SerializeHelper.respuesta(
+            #     exito=True,
+            #     msg="Hay partida disponible pero ya habias entrado, puedes unirte de nuevo"
+            # )
+            #aca iria el self
+            #En caso de implementar, comentar el siguiente return
+
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg="Ya hay una partida en curso, no puede unirse"
+            )
 
     def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
@@ -352,7 +379,7 @@ class ServicioJuego:
 
         return SerializeHelper.respuesta(exito=True, msg="NickName disponible")
 
-    def unirse_a_sala(self, info_cliente: dict):
+    def unirse_a_sala(self, info_cliente: dict):#falta atajar reconexion en este metodo!! 
         """
         1. Verificar si existe ya jugador en sala ???
         2. Suscribir / Registrar Jugador
@@ -361,6 +388,14 @@ class ServicioJuego:
         5. Obtener info Sala
         6. Retornar info Sala via Pyro
         """
+        #si existe la partida, y pudo unirse a sala, es porque se le permitio el acceso
+        #if self.Partida
+            #self.Jugadores.append[info_cliente['nickname'],True]
+            # return SerializeHelper.respuesta(
+            #     exito=True,
+            #     msg="Has vuelto a unirte a la partida, bienvenido",
+            #     datos=info_sala
+            # )
         try:
             nickname = info_cliente['nickname']
             nombre_logico = info_cliente['nombre_logico']
@@ -382,7 +417,7 @@ class ServicioJuego:
                 "listado_nicknames",  # nombre_metodo
             )
 
-            info_sala: dict = self.partida.get_info_sala()
+            info_sala: dict = self.Partida.get_info_sala()
             info_sala['jugadores'] = nicknames_jugadores
 
             self.Jugadores[nickname] = False
@@ -425,10 +460,10 @@ class ServicioJuego:
         return nicknames_jugadores_conectados
 
     def get_sala(self):
-        return self.partida.get_info_sala()
+        return self.Partida.get_info_sala()
     
     def get_info_ronda_actual(self):
-        return self.partida.get_info_ronda()
+        return self.Partida.get_info_ronda()
     
     def obtener_jugadores_en_partida(self) -> list[str]:
         nicknames_jugadores_conectados: list[str] = self.dispacher.manejar_llamada("comunicacion", "listado_nicknames")
@@ -436,9 +471,9 @@ class ServicioJuego:
 
     def recibir_stop(self):
         with self.lock_confirmacion:
-            if self.partida.ronda_actual.get_estado_ronda():
+            if self.Partida.ronda_actual.get_estado_ronda():
                 return  # Ya se finalizó la ronda, ignora llamadas extra
-            self.partida.ronda_actual.set_estado_ronda(True)
+            self.Partida.ronda_actual.set_estado_ronda(True)
             threading.Thread(target=self.enviar_respuestas_ronda, daemon=True).start()
 
 
@@ -516,5 +551,10 @@ class ServicioJuego:
             # para cuando inicie la ronda a todos
 
     def eliminar_jugador(self,nickname):
-        self.partida.eliminar_jugador_partida(nickname)
-        self.Jugadores.pop(nickname)
+        #Si existe la partida, elimina el jugador
+        #Esta logica puede modificarse para aceptar reconexion si se implementa la linea 339 en solicitar_acceso
+        if self.Partida:
+            #self.Partida.eliminar_jugador_partida(nickname)
+            self.Jugadores.pop(nickname) #si se permite reconexion, esta linea se borra, pero
+
+#NOTA: en vez de eliminar el jugador de la lista de partida, conviene borrarlo solo de la lista local, para evitar tener que cargar todos los datos de nuevo

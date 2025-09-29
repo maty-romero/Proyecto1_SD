@@ -78,7 +78,7 @@ class Partida:
         return self.jugadores
 
     def eliminar_jugador_partida(self, nickname: str):
-        #self.jugadores.pop() # Desconexion o fallo del cliente ?
+        self.jugadores.pop(nickname) # Desconexion o fallo del cliente ?
         pass
 
     # GETS INFO

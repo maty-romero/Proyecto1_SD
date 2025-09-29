@@ -4,6 +4,15 @@ class Jugador:
         self.confirmado: bool = False
         self.puntaje_total = 0
 
+    def set_confirmar(self):
+        self.confirmado=True
+
+    def reset_confirmar(self):
+        self.confirmado=False
+
+    def get_confirmacion(self):
+        return self.confirmado
+
     def sumar_puntaje(self, puntos: int):
         if(not (puntos < 0)):
             self.puntaje_total += puntos
