@@ -46,21 +46,19 @@ class NodoServidor(Nodo):
 
         #datos de prueba para testear la bd
         datos = {
-            "codigo": 1,          # código de la partida
-            "jugadores": ["Ana", "Luis"],
-            "nro_ronda": 1,
-            "categorias": ["Animal", "Ciudad", "Color"],
-            "letra": "M",
-            "respuestas": [
-                    { "jugador": "Ana", "Animal": "Mono", "Ciudad": "Madrid", "Color": "Marrón" },
-                    { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
-                ]
-            }
+                    "codigo": None,          # código de la partida
+                    "clientes_Conectados": [],
+                    "nro_ronda": 0,
+                    "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
+                    "letra": "",
+                    "respuestas": []
+                } 
 
         dataI = self.ServDB.obtener_partida()
         #deberia imprimir la data vacia 
         self.logger.info(dataI)
-        self.ServDB.crear_partida(datos)
+        if (self.ServDB.getUltimoCodPartida() >= 1):
+            self.ServDB.crear_partida_prueba(datos)
         #deberia imprimir la data cargada en la linea anterior
         data2 = self.ServDB.obtener_partida()
         self.logger.info(data2)

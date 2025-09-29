@@ -41,7 +41,7 @@ from bson.objectid import ObjectId
 """
 class ControladorDB:
 
-    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):
+    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=0):
         self.uri= uri
         self.db_name = db_name      
         self.registroDatos = [] #lista para imprimir con informacion relevante
@@ -56,7 +56,7 @@ class ControladorDB:
             self.partida = self.db["Partida"]           # lo mismo para la colección
 
             # Creamos un índice por código de partida (opcional, recomendado)
-            self.partida.create_index("code", unique=True)
+            #self.partida.create_index("code", unique=True)
 
             # Si no hay partidas, insertamos una inicial
             if self.partida.count_documents({}) == 0:
@@ -65,11 +65,9 @@ class ControladorDB:
                     "codigo": 1,          # código de la partida
                     "clientes_Conectados": [],
                     "nro_ronda": 0,
-                    "categorias": [],
+                    "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
                     "letra": "",
-                    "respuestas": [
-                            { }
-                        ]
+                    "respuestas": []
                     }   
                 )
                 self.registroDatos.append("[ControladorDB] Base creada con partida inicial ABCD")
@@ -89,6 +87,14 @@ class ControladorDB:
             upsert=True
         )
         return resultado.upserted_id
+
+#Prueba para crear partidas desde el ultimo codigo de partida
+    def crear_partida_prueba(self, datos_partida): 
+        #Busco ultimo codigo de partida, para crear una nueva a partir de esa
+        ultimo_codigo = self.getUltimoCodPartida()
+        self.codigo_partida = ultimo_codigo + 1 #Incremento a un nuevo codigo de partida para la nueva partida
+        datos_partida['codigo'] = self.codigo_partida
+        return self.partida.insert_one(datos_partida)
 
     def obtener_partida(self):
         """Obtiene el documento de la partida actual"""
@@ -151,3 +157,34 @@ class ControladorDB:
             {'codigo': self.codigo_partida},
             {'$set': {'categorias': categorias}}
     ).modified_count
+
+    def getClientesConectadosRonda(self, rondaAnterior):
+        """ Devuelve los clientes conectados de la ronda anterior """
+        doc = self.partida.find_one(
+            {"codigo": self.codigo_partida, "nro_ronda": rondaAnterior},
+            {"_id": 0, "clientes_Conectados": 1}
+        )
+        
+        clientes = doc['clientes_Conectados']
+        return clientes
+
+    def insertarNuevaRonda(self, nuevaRonda):
+        """ Inserta una nueva ronda en la partida """
+        nuevaRonda['codigo'] = self.codigo_partida
+        return self.partida.insert_one(nuevaRonda)
+
+    def actualizarRespuestasRonda(self, nroRonda, respuestas):
+        """ Actualiza las respuestas de la partida """
+        return self.partida.update_one(
+            {"codigo": self.codigo_partida, "nro_ronda": nroRonda},
+            {"$push": {"respuestas": respuestas}}
+        ).modified_count
+
+    def getUltimoCodPartida(self):
+        """ Devuelve el ultimo codigo de partida """
+        ultimo = self.partida.find_one(
+            {}, #Sin filtro
+            sort = [("codigo", -1)], #Me los ordena descendente: De MAYOR a MENOR
+            projection = {"_id": 0, "codigo": 1}
+        )
+        return ultimo["codigo"]
