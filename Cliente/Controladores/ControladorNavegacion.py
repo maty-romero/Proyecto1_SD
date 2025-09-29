@@ -10,7 +10,7 @@
     - Va a haber acoplamiento, dado que este controlador conocera a todos los demas
     """
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, QObject, pyqtSignal
 from Cliente.A_Vistas.VistaMensajeTransitorio import VistaMensajeTransitorio
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
@@ -22,13 +22,19 @@ from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorRonda import ControladorRonda
 from Cliente.Controladores.ControladorSala import ControladorSala
 
-class ControladorNavegacion:
+class ControladorNavegacion(QObject):
+    # Signal para navegación thread-safe
+    navegacion_signal = pyqtSignal(str)
     def __init__(self, main_window,controlador_nickname,
                  controlador_sala,controlador_ronda, vistaNickname,
                  vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, 
                  vistaResultados,  controlador_mensaje, vistaMensaje):
         
+        super().__init__()
         self.main_window = main_window
+        
+        # Conectar signal a slot para navegación thread-safe
+        self.navegacion_signal.connect(self._mostrar_internal)
 
         # Guardar referencias a controladores
         self.controlador_nickname = controlador_nickname
@@ -59,6 +65,15 @@ class ControladorNavegacion:
       #  Cada método cambia la vista actual del stack a la vista correspondiente, metodo unico para favorecer desacoplamiento
     
     def mostrar(self, eleccion: str):
+        """Método thread-safe para navegación desde cualquier hilo"""
+        if threading.current_thread() == threading.main_thread():
+            # Si estamos en el hilo principal, llamar directamente
+            self._mostrar_internal(eleccion)
+        else:
+            # Si estamos en otro hilo, usar signal
+            self.navegacion_signal.emit(eleccion)
+    
+    def _mostrar_internal(self, eleccion: str):
         if eleccion == "nickname":
             self.main_window.stack.setCurrentIndex(self.vistaNickname_Index)
         elif eleccion == "sala":
