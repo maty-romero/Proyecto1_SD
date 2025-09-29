@@ -8,7 +8,7 @@ import Pyro5.api
 from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Partida import Partida
-from Servidor.Persistencia.ControladorDB import ControladorDB
+#from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Dominio.Partida import EstadoJuego
 from Utils.ConsoleLogger import ConsoleLogger
 from Utils.SerializeHelper import SerializeHelper
@@ -24,7 +24,7 @@ class ServicioJuego:
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
-        self.db = ControladorDB()
+        #self.db = ControladorDB()
 
     """
         ServicioJuego --> Entran las llamadas Pyro
@@ -58,8 +58,14 @@ class ServicioJuego:
         json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
         self.dispacher.manejar_llamada(
             "comunicacion",
+<<<<<<< HEAD
             "broadcast_a_clientes",
             json)
+=======
+            "broadcast",
+            json) 
+        self.cargarRondaDB(info_ronda)
+>>>>>>> partida_prueba_mainwindow
 
     def enviar_respuestas_ronda(self):
         # Aviso a Clientes que termino la ronda
@@ -79,6 +85,14 @@ class ServicioJuego:
         respuestas_clientes: dict = self.dispacher.manejar_llamada(
             "comunicacion",
             "respuestas_memoria_clientes_ronda")
+
+        #Carga de respuestas de la ronda a la DB
+        #db_u_respuestas = self.db.actualizarRespuestasRonda(self.partida.nro_ronda_actual, respuestas_clientes)
+        db_u_respuestas = self.dispacher.manejar_llamada("db", "actualizarRespuestasRonda", self.partida.nro_ronda_actual, respuestas_clientes)
+        if db_u_respuestas > 0:
+            self.logger.info("[DB] Se actualizaron las respuestas de la ronda")
+        else:
+            self.logger.warning("[DB] Hubo un problema al actualizar las respuestas de la ronda")
 
         self.partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
         
@@ -119,9 +133,15 @@ class ServicioJuego:
             json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
+<<<<<<< HEAD
                 "broadcast_a_clientes",  # nombre_metodo
                     json#args
+=======
+                "broadcast",  # nombre_metodo
+                json #args
+>>>>>>> partida_prueba_mainwindow
             )
+            self.cargarRondaDB(info_ronda) #CARGO RONDA NUEVA EN DB
 
 
     def obtener_votos_jugadores(self):
@@ -279,8 +299,13 @@ class ServicioJuego:
         json = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=resultados_partida)
         self.dispacher.manejar_llamada(
             "comunicacion",  # nombre_servicio
+<<<<<<< HEAD
             "broadcast_a_clientes",  # nombre_metodo
                 json#args
+=======
+            "broadcast",  # nombre_metodo
+                json #args
+>>>>>>> partida_prueba_mainwindow
         )
 
 
@@ -459,6 +484,7 @@ class ServicioJuego:
                 "uri": str(cliente_confirmado.uri_cliente_conectado)
             }
 
+<<<<<<< HEAD
             if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
                 self.logger.info(f"Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
                 """
@@ -466,8 +492,18 @@ class ServicioJuego:
                 json = SerializeHelper.serializar(exito=True, msg="confirmar_jugador", datos=cliente_conectado)
                 self.dispacher.manejar_llamada("nodo_ppal", "broadcast_a_nodos", json)
                 """
+=======
+            """ if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
+                self.logger.info(f"[DB] Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
+>>>>>>> partida_prueba_mainwindow
             else: 
-                self.logger.warning(f"El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")            
+                self.logger.warning(f"[DB] El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")   """       
+            
+            new_cliente_conectado = self.dispacher.manejar_llamada("db","agregar_jugador", cliente_conectado)
+            if new_cliente_conectado > 0: #agrego el jugador y devuelvo un log confirmando
+                self.logger.info(f"[DB] Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
+            else: 
+                self.logger.warning(f"[DB] El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")
             #---------------------------------------------------------------------------------------------------------------
 
             # Verificar si se puede iniciar la partida
@@ -493,3 +529,48 @@ class ServicioJuego:
     def eliminar_jugador(self,nickname):
         self.partida.eliminar_jugador_partida(nickname)
         self.Jugadores.pop(nickname)
+        #Elimino el jugador de clientes conectados de la DB - *VER* Si es necesario guardar en una lista de clientes caidos
+        """ db_d_cliente = self.db.eliminar_jugador(nickname)
+        db_d_cliente = self.dispacher.manejar_llamada("db", "eliminar_jugador", nickname)
+        if db_d_cliente > 0:
+                self.logger.info("[DB] Se elimino el cliente caido.")
+        else: 
+            self.logger.warning(f"[DB] No se ha podido eliminar al cliente caido.") """
+        #Queda en STAND-BY a ver que hacemos
+
+    def cargarRondaDB(self, info_ronda):
+        """Si es la 1era ronda, actualizo los valores de la DB"""
+        if info_ronda['nro_ronda'] == 1:
+            #Agrego la letra de la ronda a la DB
+            db_u_letra = self.dispacher.manejar_llamada("db", "actualizar_letra", info_ronda['letra_ronda'])
+            if db_u_letra > 0:
+                self.logger.info("[DB] Se actualizó la letra de la ronda.")
+            else: 
+                self.logger.warning(f"[DB] No se ha podido actualizar la letra.")            
+            #Actualizo el numero de ronda en la DB
+            #db_u_ronda = self.db.actualizar_nro_ronda(info_ronda['nro_ronda'])
+            db_u_ronda = self.dispacher.manejar_llamada("db", "actualizar_nro_ronda", info_ronda['nro_ronda'])
+            if db_u_ronda > 0:
+                self.logger.info("[DB] Se actualizo el numero de ronda.")
+            else: 
+                self.logger.warning(f"[DB] No se ha podido actualizar el numero de ronda.")  
+        else:
+            ronda_anterior = info_ronda['nro_ronda'] - 1 
+            #clientes_Conectados = self.db.getClientesConectadosRonda(ronda_anterior) 
+            #Traigo los ultimos clientes conectados de la ronda anterior
+            clientes_Conectados = self.dispacher.manejar_llamada("db", "getClientesConectadosRonda", ronda_anterior)
+            nuevaRonda: dict = {
+                        "codigo": None,          
+                        "clientes_Conectados": clientes_Conectados,
+                        "nro_ronda": info_ronda['nro_ronda'],
+                        "categorias": self.partida.categorias,
+                        "letra": info_ronda['letra_ronda'],
+                        "respuestas": []
+                    }
+            
+            #db_i_nuevaRonda = self.db.insertarNuevaRonda(nuevaRonda)
+            db_i_nuevaRonda = self.dispacher.manejar_llamada("db", "insertarNuevaRonda", nuevaRonda)
+            if db_i_nuevaRonda.inserted_id:
+                self.logger.info("[DB] Se ha guardado una nueva ronda de la partida.")
+            else: 
+                self.logger.warning(f"[DB] No se ha podido guardar la nueva ronda de la partida.")
