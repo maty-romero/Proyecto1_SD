@@ -45,8 +45,10 @@ class ServicioJuego:
 
     def iniciar_partida(self):
         # Inicia la 1ra Ronda
-        #------------Se inicializa la partida desde cero------------------------------------------------#
-        #self.Partida = Partida()
+        #------------Se inicializa la ronda------------------------------------------------#
+        #La partida se encuentra en None la primera vez que se vuelve de la votacion, ahi no muestra categorias ni otros datos correctamente
+        if not self.Partida:
+            self.Partida = Partida()
         self.Partida.iniciar_nueva_ronda() # Ronda 1
         #self.logger.info(f"Contenido en self.jugadores:{self.Jugadores}")
 
@@ -316,23 +318,29 @@ class ServicioJuego:
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):#(self,nickname)
         #si no existe una partida, se evalua si hay lugar
-        hay_lugar: bool = self.dispacher.manejar_llamada(
-            "comunicacion",  # nombre_servicio
-            "hay_lugar_disponible",  # nombre_metodo
-            self.jugadores_min  # args
-        )
-
-        if not hay_lugar:
+        if self.Partida:
             return SerializeHelper.respuesta(
                 exito=False,
-                msg="La sala está llena, no puede unirse."
+                msg="Ya hay una partida en curso, no puede unirse"
+            )
+        else:
+            hay_lugar: bool = self.dispacher.manejar_llamada(
+                "comunicacion",  # nombre_servicio
+                "hay_lugar_disponible",  # nombre_metodo
+                self.jugadores_min  # args
             )
 
-        # hay lugar
-        return SerializeHelper.respuesta(
-            exito=True,
-            msg="Hay lugar disponible, puede unirse."
-        )
+            if not hay_lugar:
+                return SerializeHelper.respuesta(
+                    exito=False,
+                    msg="La sala está llena, no puede unirse."
+                )
+
+            # hay lugar
+            return SerializeHelper.respuesta(
+                exito=True,
+                msg="Hay lugar disponible, puede unirse."
+            )
         """
         if not self.Partida:
 
