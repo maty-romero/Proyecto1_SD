@@ -3,16 +3,16 @@ import time
 import traceback
 import Pyro5.server
 
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Aplicacion.NodoReplica import NodoReplica
-from Servidor.Utils.ComunicationHelper import ComunicationHelper
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ComunicationHelper import ComunicationHelper
+from Utils.ConsoleLogger import ConsoleLogger
 from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
 import socket
 import time
 from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
 from Servidor.Aplicacion.NodoReplica import NodoReplica
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ConsoleLogger import ConsoleLogger
 
 """-Futura implementacion: Para manipular ids, podemos hacer que se registre una lista de nodos en el NS,
     o alguna otra similar para poder incrementar esa id y que cada nodo se identifique de manera unica,
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     tipo_servicio = "_replica._tcp.local."
     ip_local = socket.gethostbyname(socket.gethostname())
     puerto_local = obtener_puerto_libre()
-    max_replicas = 3
+    max_replicas = 1
     zeroconf = Zeroconf()
 
     # ---------- Listener ----------

@@ -4,7 +4,7 @@ from Cliente.A_Vistas.VistaMensajeTransitorio import VistaMensajeTransitorio
 from PyQt6.QtWidgets import QWidget
 
 from Cliente.Modelos import GestorCliente
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ConsoleLogger import ConsoleLogger
 
 
 class ControladorMensajeTransitorio:

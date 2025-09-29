@@ -10,8 +10,8 @@ from Servidor.Dominio.Jugador import Jugador
 from Servidor.Dominio.Partida import Partida
 from Servidor.Persistencia.ControladorDB import ControladorDB
 from Servidor.Dominio.Partida import EstadoJuego
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Utils.SerializeHelper import SerializeHelper
+from Utils.ConsoleLogger import ConsoleLogger
+from Utils.SerializeHelper import SerializeHelper
 from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 
 @Pyro5.api.expose

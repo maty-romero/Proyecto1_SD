@@ -2,10 +2,10 @@ import sys
 import uuid
 import Pyro5
 
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
-from datetime import datetime, timedelta
-
+from Utils.ConsoleLogger import ConsoleLogger
+from Utils.ManejadorSocket import ManejadorSocket
+from datetime import UTC, datetime, timedelta
+TIMEOUT_CLIENTE = 6
 class ClienteConectado:
     def __init__(self, nickname: str, nombre_logico: str, ip_cliente: str, puerto_cliente: int,uri_cliente:str):
         self.id = str(uuid.uuid4())
@@ -15,11 +15,14 @@ class ClienteConectado:
         self.proxy = self.crear_proxy_cliente(nombre_logico,ip_cliente,puerto_cliente,uri_cliente)
         self.logger.warning(f"proxy del cliente registrada: {self.proxy}")
         self.confirmado: bool = False
-        self.conectado: bool = False
-        self.timestamp: datetime
+        self.conectado: bool = True
+
+        self.timestamp: datetime = datetime.now(UTC)
+        self.logger.warning(f"datos del timestamp constructor{self.timestamp}")
         self.socket = ManejadorSocket(host=ip_cliente, puerto=puerto_cliente, nombre_logico=nickname)
         # Inyecta el callback como lambda
-        #self.socket.callback_mensaje =
+        self.socket.set_callback(self._procesar_mensaje)
+
 
     def get_proxy_cliente(self):
         return self.proxy
@@ -32,11 +35,10 @@ class ClienteConectado:
             sys.exit(1)
             return None
 
-    
     def _procesar_mensaje(self, mensaje: str):
         if mensaje == "HEARTBEAT":
             self.logger.info(f"Heartbeat recibido del cliente/jugador '{self.nickname}'")
-            self.timestamp = datetime.utcnow()
+            self.timestamp = datetime.now(UTC)
             self.conectado = True
         else:
             self.logger.info(f"Mensaje recibido: {mensaje}") # Otro tipo de mensajes desde el cliente?
@@ -49,6 +51,6 @@ class ClienteConectado:
             self.logger.debug(f"[DEBUG] {self.nickname} no tiene timestamp de heartbeat")
             return False
         # timestamp menor a 35 seg ? False => Se asume que murio
-        return datetime.utcnow() - self.timestamp < timedelta(seconds=3)
+        return datetime.now(UTC) - self.timestamp < timedelta(seconds=TIMEOUT_CLIENTE)
 
 

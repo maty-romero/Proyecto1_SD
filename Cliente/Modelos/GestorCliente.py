@@ -8,10 +8,10 @@ import Pyro5
 from Cliente.Controladores.ControladorNavegacion import ControladorNavegacion
 from Cliente.Modelos.JugadorCliente import JugadorCliente
 from Cliente.Modelos.ServicioCliente import ServicioCliente
-from Cliente.Modelos.ManejadorSocket import ManejadorSocket
-from Cliente.Utils.ComunicationHelper import ComunicationHelper
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
-from Cliente.Utils.SerializeHelper import SerializeHelper
+from Utils.ManejadorSocket import ManejadorSocket
+from Utils.ComunicationHelper import ComunicationHelper
+from Utils.ConsoleLogger import ConsoleLogger
+from Utils.SerializeHelper import SerializeHelper
 
 """Para el uso en docker, un compose de la siguiente forma:
 
@@ -74,6 +74,7 @@ class GestorCliente:
 
         # referencias a controladores
         self.controlador_navegacion = None
+        self.ya_se_unio = False
 
     def registrar_controlador_navegador(self, controlador: ControladorNavegacion):
         self.controlador_navegacion = controlador
@@ -138,6 +139,10 @@ class GestorCliente:
             respuesta Server a Cliente -  via Pyro (Mismo return de ServicioJuego)
             Mostrar info Sala
         """
+        if self.ya_se_unio:
+            self.logger.warning("Ya se ejecutó unirse_a_sala. Ignorando segundo intento.")
+            return
+        self.ya_se_unio = True
         resu_dict = self.solicitar_acceso_sala()
         if not resu_dict['exito']:
             self.logger.info(resu_dict['msg'])
@@ -151,8 +156,12 @@ class GestorCliente:
 
         self.logger.info(f"NickName '{nickname_valido}' disponible!")
         # inicializacion deamon Cliente y sesion de socket
-        self.Jugador_cliente = JugadorCliente(nickname_valido)
-        uri = self.inicializar_Deamon_Cliente()
+        if self.Jugador_cliente is None:
+            self.Jugador_cliente = JugadorCliente(nickname_valido)
+        else:
+            self.logger.warning("Jugador ya inicializado. Ignorando duplicado.")
+
+        uri = self.inicializar_Daemon_Cliente()
 
 
         # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
@@ -164,7 +173,13 @@ class GestorCliente:
         self.logger.warning(f"|SIMULACION N CLIENTES| => Cliente '{nickname_valido}' escuchando en puerto {puerto_libre}")
 
         # Iniciar sesión socket en puerto dinámico
-        self.iniciar_sesion_socket_en_hilo(puerto_libre)
+        if hasattr(self.Jugador_cliente, "sesion_socket") and self.Jugador_cliente.sesion_socket is not None:
+            self.logger.warning("Sesión de socket ya iniciada. Ignorando segundo intento.")
+            return
+        else:
+            self.logger.warning("se inicia sesion de socket en hilo")
+            self.iniciar_sesion_socket_en_hilo(puerto_libre)
+            self.logger.warning("se termino de iniciar sesion de socket en hilo")
         # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
         """
         --> comentar: self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
@@ -172,7 +187,6 @@ class GestorCliente:
 
         #self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
         # espera a que sesion socket este listo
-        self.Jugador_cliente.sesion_socket.set_callback(self._procesar_mensaje_socket)
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
         self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
@@ -181,25 +195,10 @@ class GestorCliente:
         info_cliente['uri'] = uri
         self.logger.warning(f"INFO_CLIENTEEEEE: {info_cliente}")
 
-        self.logger.error(f"RETURN DE UNIRSE A SALA: {self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)}")
-
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
         self.logger.warning(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
         self.logger.warning(f"InfoSala: {resultado_dict}")
-        
-
-        # REFACTORIZAR POR ALGO MEJOR - Tal vez con eventos?
-        # try:
-        #     self.logger.error("**** Iniciando loop cliente ****")
-        #     self.logger.error("\nPresione [CTRL + C] para terminar hilo principal Cliente")
-        #     while True:
-        #         time.sleep(1)
-        # except KeyboardInterrupt:
-        #     self.jugador_cliente.sesion_socket.cerrar()
-        #     print("Sesión cerrada por interrupción.")
-
-
-    
+   
     #usamos en controladorSalaView
     def ingresar_nickname_valido(self,formated_nickname) -> str:
         resu_dict = self.get_proxy_partida_singleton().CheckNickNameIsUnique(formated_nickname)
@@ -274,7 +273,10 @@ class GestorCliente:
             self.logger.error(f"[Socket] Error al procesar mensaje: {e}")
 
     
-    def inicializar_Deamon_Cliente(self):
+    def inicializar_Daemon_Cliente(self):
+        if self._daemon is not None:
+            self.logger.warning("Daemon ya inicializado. Ignorando segundo intento.")
+            return None
         ip_cliente = ComunicationHelper.obtener_ip_local()
         objeto_cliente = ServicioCliente(self)
         nombre_logico: str = self.Jugador_cliente.get_nombre_logico()
@@ -407,7 +409,7 @@ class GestorCliente:
     def mostrar_vista_desconexion(self):
         self.logger.info(f"3. [DEBUG] Desde GestorCliente - mostrar_vista_desconexion, se ejecuará un método de controlador navegacion - en hilo: {threading.current_thread().name}")
         self.controlador_navegacion.mostrar("mensaje")
-        
+
 
 """
     # --- métodos que ServicioCliente llamará (callbacks locales) ---

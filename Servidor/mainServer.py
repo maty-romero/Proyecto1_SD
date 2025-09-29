@@ -5,7 +5,6 @@ from Pyro5.errors import NamingError, CommunicationError
 
 from Servidor.Aplicacion.NodoReplica import NodoReplica
 from Servidor.Utils.ComunicationHelper import ComunicationHelper
-from Servidor.Aplicacion.NodoServidor import NodoServidor
 from Servidor.Utils.ConsoleLogger import ConsoleLogger
 
 """-Futura implementacion: Para manipular ids, podemos hacer que se registre una lista de nodos en el NS,

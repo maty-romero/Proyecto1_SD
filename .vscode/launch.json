@@ -2,12 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Servidor.mainServer",
+            "name": "Python: Servidor.mainReplica",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/Servidor/mainServer.py",
+            "program": "${workspaceFolder}/Servidor/mainReplica.py",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env"
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
         }
     ]
 }

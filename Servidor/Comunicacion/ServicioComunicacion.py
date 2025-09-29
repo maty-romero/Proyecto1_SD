@@ -5,8 +5,8 @@ import time
 import Pyro5
 from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 from Servidor.Aplicacion.Nodo import Nodo
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
-from Servidor.Utils.SerializeHelper import SerializeHelper
+from Utils.ConsoleLogger import ConsoleLogger
+from Utils.SerializeHelper import SerializeHelper
 
 class ServicioComunicacion:
     def __init__(self, dispatcher):
@@ -28,6 +28,12 @@ class ServicioComunicacion:
         return not any(c.nickname == nickname for c in self.clientes)
 
     def suscribir_cliente(self, nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente):
+        # Verificar si ya existe un cliente con ese nickname
+        for cliente in self.clientes:
+            if cliente.nickname == nickname:
+                self.logger.error(f"Cliente '{nickname}' ya está registrado. Ignorando duplicado.")
+                return
+
         cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente)
         cliente.socket.conectar_a_nodo(ip_cliente, puerto_cliente)
         self.clientes.append(cliente)
@@ -50,7 +56,7 @@ class ServicioComunicacion:
                 import Pyro5.api
                 # ...existing code...
                 proxy_cliente = Pyro5.api.Proxy(str(cliente.uri_cliente_conectado))
-                proxy_cliente.mostrar_vista_desconexion()
+                # proxy_cliente.mostrar_vista_desconexion()
                 # proxy_cliente = cliente.get_proxy_cliente()
                 # proxy_cliente._pyroClaimOwnership()
                 # proxy_cliente.mostrar_vista_desconexion()

@@ -2,8 +2,8 @@ import socket
 import threading
 import time
 import traceback
-from datetime import datetime, timedelta
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
+from datetime import UTC, datetime, timedelta
+from Utils.ConsoleLogger import ConsoleLogger
 
 class ManejadorSocket:
     def __init__(self, host: str, puerto: int, nombre_logico: str, callback_mensaje = None, es_servidor=False,tipo_Nodo:str=None):
@@ -15,7 +15,7 @@ class ManejadorSocket:
         #Variable para determinar si se utiliza el hilo de heartbeat
         self.tipo_nodo = tipo_Nodo
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #es el socket de escucha
         self.conexiones = []  # lista de sockets conectados (para broadcast)
 
         #------------------metodos de logica de estado interno de escucha----------------------------------------------------------#
@@ -46,7 +46,7 @@ class ManejadorSocket:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            #self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.bind((self.host, self.puerto))
             self.socket.listen()
             self._escuchando = True
@@ -74,7 +74,9 @@ class ManejadorSocket:
             conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             conn.connect((ip_destino, puerto_destino))
             self.logger.info(f"Conectado a nodo en {ip_destino}:{puerto_destino}")
-            self.conexiones.append(conn)
+            if conn.fileno() != -1:
+                self.conexiones.append(conn)
+            self.logger.info(f"Registro de conexiones pos conexion:{self.conexiones}")
             threading.Thread(target=self._escuchar, args=(conn,), daemon=True).start()
         except Exception as e:
             self.logger.error(f"Error al conectar con nodo: {e}")
@@ -88,6 +90,7 @@ class ManejadorSocket:
                 conn, addr = self.socket.accept()
                 self.conexiones.append(conn)
                 self.logger.info(f"Nodo conectado desde {addr}")
+                self.logger.info(f"Registro de conexiones pos aceptar conexion:{self.conexiones}")
                 threading.Thread(target=self._escuchar, args=(conn,), daemon=True).start()
             except OSError as e:
                 self.logger.warning(f"Error al aceptar conexión: {e}")
@@ -102,33 +105,49 @@ class ManejadorSocket:
                 data = conn.recv(1024)
                 if not data:
                     break
+                self.logger.error(f"Se recibio informacion mediante el socket:{data}")
                 mensaje = data.decode()
                 if mensaje == "HEARTBEAT": #solo es heartbeat en servidor y en replica
-                    self.timestamp = datetime.utcnow()
+                    self.timestamp = datetime.now(UTC)
                     self.conectado = True
 
                 if self.callback_mensaje is not None:
-                    self.callback_mensaje(mensaje, conn)
-
-            except OSError:
-                break
+                    self.callback_mensaje(mensaje)#self.callback_mensaje(mensaje, conn)
+            except Exception as e:
+                self.logger.error(f"Error en recepcion de mensaje: {e}")
         conn.close()
+        if conn in self.conexiones:
+            self.conexiones.remove(conn)
 
     # ---------------------------
     # Enviar mensajes
     # ---------------------------
     def enviar(self, mensaje: str, conn=None):
         try:
-            data = mensaje.encode()
+            if not isinstance(mensaje, bytes):
+                data = mensaje.encode()  # si el mensaje no esta codificado, lo codifica
+            else:
+                data = mensaje
             if conn:
                 conn.sendall(data)
             else:
                 # broadcast si no se especifica conexión
                 for c in list(self.conexiones):
+                    if c.fileno() == -1:#revisar si corresponde
+                        self.logger.warning("Socket cerrado detectado antes de enviar, eliminando")
+                        self.conexiones.remove(c)
+                        continue
                     try:
+                        self.logger.warning(f"conexiones antes de hacer sendall: {self.conexiones}")
+                        import traceback
+                        traceback.print_exc()
                         c.sendall(data)
-                    except:
-                        self.logger.warning("Conexión rota, eliminando")
+                        self.logger.warning(f"conexiones luego de hacer sendall: {self.conexiones}")
+                    except Exception as e:
+                        self.logger.warning(f"Conexión rota, motivo: {e}")
+                        #falta un self.conexiones[c].cerrar() o socket close
+                        import traceback
+                        traceback.print_exc()
                         self.conexiones.remove(c)
         except Exception as e:
             self.logger.error(f"Error al enviar mensaje: {e}")
@@ -138,15 +157,15 @@ class ManejadorSocket:
     # ---------------------------
     def _enviar_heartbeat(self):
         while self._escuchando:
-            self.enviar("HEARTBEAT")
-            time.sleep(3)
+            self.enviar(b"HEARTBEAT")
+            time.sleep(2)
 
     def esta_vivo(self) -> bool:
         if not self.conectado:
             return False
         if not self.timestamp:
             return False
-        return datetime.utcnow() - self.timestamp < timedelta(seconds=5)
+        return datetime.now(UTC) - self.timestamp < timedelta(seconds=5)
 
     def cerrar(self):
         self.logger.info("Cerrando manejador de socket...")

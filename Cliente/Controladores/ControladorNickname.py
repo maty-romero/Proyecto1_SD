@@ -3,7 +3,7 @@ from PyQt6 import QtWidgets
 from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.Controladores.ControladorSala import ControladorSala
 from Cliente.Modelos.JugadorCliente import JugadorCliente
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ConsoleLogger import ConsoleLogger
 
 
 class ControladorNickName:

@@ -18,10 +18,11 @@ class ComunicationHelper:
 
 
     @staticmethod
-    def registrar_objeto_en_ns(objeto, nombre_logico: str, daemon):
+    def registrar_objeto_en_ns(objeto, nombre_logico: str, daemon, ns=None):
         """Registra un objeto remoto en el servidor de nombres."""
         # arg(ns): Pyro5.api.NameServer
-        ns = Pyro5.api.locate_ns()
+        if not ns:
+            ns = Pyro5.api.locate_ns()
         uri = daemon.register(objeto, f"{nombre_logico}")
         ns.register(nombre_logico, uri) # ns: Pyro5.api.NameServer
         print(f"[Registro] Objeto '{nombre_logico}' disponible en URI: {uri}")

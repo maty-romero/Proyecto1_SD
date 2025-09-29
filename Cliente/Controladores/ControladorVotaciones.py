@@ -2,7 +2,7 @@ from Cliente.A_Vistas.VistaVotaciones import VistaVotaciones
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6.QtCore import Qt, pyqtSignal, QObject, QMetaObject
 
-from Cliente.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ConsoleLogger import ConsoleLogger
 class VotacionesSignals(QObject):
     """Clase que hereda de QObject para poder utilizar señales pyqtSignal"""
     actualizar_vista_signal = pyqtSignal(dict) #Esta señal sirve para comunicarse desde un hilo secundario al hilo de la gui, de lo contrario no se puede modificar la gui

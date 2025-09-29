@@ -11,14 +11,14 @@ from time import sleep, time
 from datetime import datetime
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 import Pyro5
-from Servidor.Utils.ComunicationHelper import ComunicationHelper
+from Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.Nodo import Nodo
-from Servidor.Comunicacion.ManejadorSocket import ManejadorSocket
+from Utils.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
 from Servidor.Comunicacion.Dispacher import Dispatcher
 from Servidor.Dominio.ServicioJuego import ServicioJuego
 from Servidor.Persistencia.ControladorDB import ControladorDB
-from Servidor.Utils.ConsoleLogger import ConsoleLogger
+from Utils.ConsoleLogger import ConsoleLogger
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 
 
@@ -59,8 +59,7 @@ class NodoReplica(Nodo):
 
     # ---------------- Inicialización como coordinador ----------------
     def iniciar_como_coordinador(self, ip_ns, puerto_ns):
-        self.logger.warning(f"nodos que existen:{self.ServComunic.nodos_cluster}")
-        self.logger.warning(f"conexiones activas:{self.socket_manager.conexiones}")
+        self.logger.info(f"conexiones activas:{self.socket_manager.conexiones}")
 
         ns = Pyro5.api.locate_ns() #ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
         self.logger.info(f"Servidor de nombres en: {ns}")
@@ -101,6 +100,13 @@ class NodoReplica(Nodo):
 
     def conectarse_a_replicas(self):
         self.logger.info(f"{self.get_nombre_completo()} conectándose a las réplicas...")
+        #limpia conexiones previamente
+        for conn in self.socket_manager.conexiones:
+            try:
+                conn.shutdown(socket.SHUT_RDWR)
+                conn.close()
+            except Exception as e:
+                self.logger.warning(f"Error al cerrar conexión previa: {e}")
         self.socket_manager.conexiones = []
         for replica in self.ServComunic.obtener_nodos_cluster():
             self.socket_manager.conectar_a_nodo(replica.host, replica.puerto)
