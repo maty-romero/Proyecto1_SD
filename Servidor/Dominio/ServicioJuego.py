@@ -89,10 +89,28 @@ class ServicioJuego:
             'letra_ronda': self.partida.ronda_actual.letra_ronda,
             'respuestas_clientes': respuestas_clientes
         }
-        
+
+        """VER SI ESTA BIEN IMPLEMENTADO --> Guardado en BD y Broadcast a Replicas"""
+        self.dispacher.self.dispacher.manejar_llamada("db","actualizarRespuestasRonda", 
+            info_completa_votacion['nro_ronda'], 
+            info_completa_votacion['respuestas_clientes']
+        ) 
+        # Letra?
+        self.dispacher.self.dispacher.manejar_llamada("db","actualizar_letra", 
+            info_completa_votacion['letra_ronda']
+        )
+
         self.dispacher.manejar_llamada("comunicacion",
         "enviar_datos_para_votacion",
         info_completa_votacion)
+
+        # Broadcast a replcias para actualizacion - VER
+        """
+        Actualizacion a replicas 
+        json = SerializeHelper.serializar(exito=True, msg="info_ronda", datos=info_completa_votacion)
+        self.dispacher.manejar_llamada("nodo_ppal", "broadcast_a_nodos", json)
+        """
+
 
         """Se ejecuta el timer en un hilo separado para no bloquear la llamada remota del cliente que hace STOP"""
         hilo_timer = threading.Thread(target=self.timer_votacion, daemon=True)
