@@ -21,6 +21,23 @@ class PrimeraLetraValidator(QValidator):
             return (QValidator.State.Acceptable, texto, pos)
         return (QValidator.State.Invalid, texto, pos)
 
+class CustomLineEdit(QLineEdit):
+    # Extiende QLineEdit y sobreescribe el método keyPressEvent para capturar el Enter antes de que PrimeraLetraValidator lo bloequee
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.stop_button = None
+    
+    def set_stop_button(self, button):
+        self.stop_button = button
+    
+    def keyPressEvent(self, event):
+        #Captura el evento antes de que que el validador lo procese
+        if event.key() == QtCore.Qt.Key.Key_Return or event.key() == QtCore.Qt.Key.Key_Enter:
+            if self.stop_button:
+                self.stop_button.clicked.emit()
+            return
+        super().keyPressEvent(event)
+
 class VistaRonda(QWidget):
     def __init__(self):
         super().__init__()
@@ -78,7 +95,7 @@ class VistaRonda(QWidget):
             self.labels_categorias.append(label)
             grid_layout.addWidget(label, i, 0)
 
-            line_edit = QLineEdit()
+            line_edit = CustomLineEdit()
             self.inputs.append(line_edit)
             grid_layout.addWidget(line_edit, i, 1)
 
@@ -122,6 +139,9 @@ class VistaRonda(QWidget):
             }
         """)
 
+        # Conectar evento Enter en los inputs para activar el botón STOP
+        self.conectar_eventos_enter()
+
     # --- Métodos de acceso / actualización ---
     def obtener_categorias_input(self):
         """Devuelve la lista de QLineEdit de las categorías"""
@@ -144,6 +164,12 @@ class VistaRonda(QWidget):
     def agregar_validadores(self, letra):
         for input in self.inputs:
             input.setValidator(PrimeraLetraValidator(f"{letra}", input))
+    
+    def conectar_eventos_enter(self):
+        """Conecta el evento Enter de todos los inputs al botón STOP"""
+        for input in self.inputs:
+            input.set_stop_button(self.enviar_respuestas_btn)
+
             
     def aviso_completar_categorias(self, nombre):
         msg = QMessageBox()

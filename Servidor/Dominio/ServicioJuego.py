@@ -312,7 +312,7 @@ class ServicioJuego:
                 json #args
         )
         #------------se resetean los datos de la partida------------------------------------------------#
-        self.Partida=None
+        self.Partida=self.Partida.crear_nueva_partida()
         for nickname in self.Jugadores:
             self.Jugadores[nickname]= False 
         self.logger.warning("La partida finalizo y se borro su instancia de servicio de juego, Inicie una nueva partida")

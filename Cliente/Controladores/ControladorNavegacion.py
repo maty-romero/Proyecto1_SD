@@ -88,7 +88,6 @@ class ControladorNavegacion(QObject):
         elif eleccion == "resultados":
             self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
         elif eleccion == "mensaje":
-            print(f"4. [DEBUG] Desde ControladorNvegacion - se selecciona la vista del stack mainWindow - en hilo: {threading.current_thread().name}")
             self.main_window.show()
             self.main_window.stack.setCurrentIndex(self.vistaMensaje_Index)
         else:
@@ -98,9 +97,6 @@ class ControladorNavegacion(QObject):
         # Llama al método del controlador de ronda
         return self.controlador_ronda.obtener_respuestas()
     
-    # def mostrar_mensaje_transitorio(self, texto: str):
-    #     self.vistaMensaje.setMensaje(texto)
-    #     self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
 
     """
     def mostrar_mensaje_transitorio_temporal(self, texto: str, siguiente_vista: str, duracion_ms=3000):

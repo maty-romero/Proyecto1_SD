@@ -15,7 +15,10 @@ class EstadoJuego(Enum):
 """---------------------------------------------------------------------------------------------------------------------"""
 
 class Partida:
-    def __init__(self):
+    def init(self):
+        self.crear_nueva_partida()
+
+    def crear_nueva_partida (self):
         self.categorias = ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"]
         self.rondas_maximas = 2
         self.nro_ronda_actual = 0

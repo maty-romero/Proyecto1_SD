@@ -23,7 +23,7 @@ class VistaVotaciones(QWidget):
         self.labelLetraRandom = QLabel("Letra: -")
         self.labelLetraRandom.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
     
-        self.labelMensajeVotacion = QLabel("Esperando jugadores para la Votacion!!")
+        self.labelMensajeVotacion = QLabel("Esperando jugadores para la votación...")
         self.labelMensajeVotacion.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
         self.labelMensajeVotacion.setStyleSheet("color: orange;")
         self.labelMensajeVotacion.setAlignment(Qt.AlignmentFlag.AlignCenter)

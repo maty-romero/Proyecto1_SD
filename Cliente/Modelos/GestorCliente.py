@@ -45,9 +45,9 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "192.168.100.22"   # DESKTOP-HUREDOL
+#NOMBRE_PC_NS = "192.168.100.22"   # DESKTOP-HUREDOL
 #ip_local = socket.gethostbyname(socket.gethostname())
-#NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
+NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
@@ -240,16 +240,15 @@ class GestorCliente:
                 return
             """
             self.logger.info(f"[Socket] Mensaje recibido: {msg}")
+            # Procesar según tipo de mensaje
             if msg == "nuevo_jugador_sala":
                 self.logger.warning("Recepcion mje Socket: nuevo_jugador_sala")
                 nickname = datos.get("nickname", "¿?")
                 mensaje_estado = f"Se ha unido '{nickname}' a la sala"
                 self.controlador_navegacion.controlador_sala.cambiar_estado_sala(mensaje_estado)
-            # Procesar según tipo de mensaje
             elif msg == "en_sala":
                 self.controlador_navegacion.mostrar('sala')
             elif msg == "nueva_ronda":
-                #self._actualizar_estado_ronda(datos)
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
                 self.controlador_navegacion.controlador_ronda.habilitar_btn_stop()
                 self.controlador_navegacion.mostrar('ronda')

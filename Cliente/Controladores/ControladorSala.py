@@ -47,7 +47,7 @@ class ControladorSala(QObject):
         """Actualiza la vista con la información de la sala - Thread-safe"""
         if threading.current_thread() == threading.main_thread():
             # Si estamos en el hilo principal, llamar directamente
-            self._mostrar_info_sala_internal()
+            self._mostrar_info_sala_internal() #Acá no generaría un error porque se está llamando desde el hilo principal de la GUI
         else:
             # Si estamos en otro hilo, obtener datos y usar signal
             try:
@@ -60,8 +60,6 @@ class ControladorSala(QObject):
                 self.actualizar_sala_signal.emit(info, jugadores_conectados)
             except Exception as e:
                 self.logger.error(f"Error obteniendo info de sala desde hilo secundario: {e}")
-                # Fallback: intentar desde hilo principal
-                QTimer.singleShot(0, self._mostrar_info_sala_internal)
     
     def _mostrar_info_sala_internal(self):
         """Método interno para actualizar vista (solo desde hilo principal)"""
@@ -74,21 +72,27 @@ class ControladorSala(QObject):
     
     def _actualizar_vista_sala(self, info: dict, jugadores_conectados: list):
         """Actualiza los elementos de la vista con los datos proporcionados"""
-        self.vista.setRonda(str(info.get('rondas', 0)))
-        categorias = ", ".join(info.get('categorias', []))
-        self.vista.setListaCategoria(categorias)
-        self.vista.setEstadoSala("")
-        
-        self.logger.warning(f"jugadores_conectados: {jugadores_conectados}")
-        jugadores_str = ", ".join(jugadores_conectados)
-        self.vista.setListaJugadores(jugadores_str)
-        self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
+        # Si es solo un mensaje de estado (no info completa de sala)
+        if 'msg' in info and len(info) == 1:
+            msg = info['msg']
+            jugadores_str = ", ".join(jugadores_conectados)
+            self.vista.setListaJugadores(jugadores_str)
+            self.vista.setEstadoSala(msg)
+            self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
+        else:
+            # Info completa de sala
+            self.vista.setRonda(str(info.get('rondas', 0)))
+            categorias = ", ".join(info.get('categorias', []))
+            self.vista.setListaCategoria(categorias)
+            self.vista.setEstadoSala("")
+            
+            jugadores_str = ", ".join(jugadores_conectados)
+            self.vista.setListaJugadores(jugadores_str)
+            self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
 
 
     def cambiar_estado_sala(self, msg: str):
         """Actualiza la vista con la union de nuevos jugadores - Thread-safe"""
-        self.logger.warning(f"Cambio_estado_sala, msg: {msg}")
-        
         if threading.current_thread() == threading.main_thread():
             # Hilo principal: usar proxy existente
             try:
@@ -105,8 +109,9 @@ class ControladorSala(QObject):
                 proxy = Pyro5.api.Proxy(self.gestor_cliente.get_proxy_partida_singleton()._pyroUri)
                 jugadores_conectados = proxy.obtener_jugadores_en_partida()
                 
-                # Usar QTimer para actualizar UI desde hilo principal
-                QTimer.singleShot(0, lambda: self._actualizar_estado_ui(msg, jugadores_conectados))
+                # Crear datos con estado y emitir signal (thread-safe)
+                info_temporal = {'msg': msg, 'jugadores': jugadores_conectados}
+                self.actualizar_sala_signal.emit({'msg': msg}, jugadores_conectados)
             except Exception as e:
                 self.logger.error(f"Error en cambiar_estado_sala desde hilo secundario: {e}")
     
