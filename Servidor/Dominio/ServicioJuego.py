@@ -48,6 +48,9 @@ class ServicioJuego:
         #------------Se inicializa la partida desde cero------------------------------------------------#
         #self.Partida = Partida()
         self.Partida.iniciar_nueva_ronda() # Ronda 1
+
+        letra_ronda = self.Partida.ronda_actual.letra_ronda
+        self.dispacher.manejar_llamada("db", "actualizar_letra", letra_ronda)
         #self.logger.info(f"Contenido en self.jugadores:{self.Jugadores}")
 
         #si ya tenemos jugadores en partida, podemos guardar el true o false de la confirmacion ahi mismo. Facilita recuperacion de bd
@@ -90,14 +93,13 @@ class ServicioJuego:
             'respuestas_clientes': respuestas_clientes
         }
 
+        #self.logger.error(f"RESPUESTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAS: {info_completa_votacion['respuestas_clientes']}")
+
+        # Dentro del metodo, se formatea previo a la insercion en BD
         """VER SI ESTA BIEN IMPLEMENTADO --> Guardado en BD y Broadcast a Replicas"""
-        self.dispacher.manejar_llamada("db","actualizarRespuestasRonda", 
+        self.dispacher.manejar_llamada("db","reemplazar_respuestas_ronda",
             info_completa_votacion['nro_ronda'], 
             info_completa_votacion['respuestas_clientes']
-        ) 
-        # Letra?
-        self.dispacher.manejar_llamada("db","actualizar_letra", 
-            info_completa_votacion['letra_ronda']
         )
 
         self.dispacher.manejar_llamada("comunicacion",
@@ -134,6 +136,13 @@ class ServicioJuego:
             self.finalizar_partida() #manda señal para ir a resultado
         else:
             self.Partida.iniciar_nueva_ronda()
+
+            letra_ronda = self.Partida.ronda_actual.letra_ronda
+            nro_ronda = self.Partida.nro_ronda_actual
+            self.dispacher.manejar_llamada("db", "actualizar_letra", letra_ronda)
+            self.dispacher.manejar_llamada("db", "actualizar_nro_ronda", nro_ronda)
+
+
             info_ronda = self.Partida.get_info_ronda()
             json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
             self.dispacher.manejar_llamada(

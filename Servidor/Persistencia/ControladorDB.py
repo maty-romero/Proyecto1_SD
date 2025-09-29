@@ -174,12 +174,45 @@ class ControladorDB:
         nuevaRonda['codigo'] = self.codigo_partida
         return self.partida.insert_one(nuevaRonda)
 
+    """ # Reemplazado por 'reemplazar_respuestas_ronda' 
     def actualizarRespuestasRonda(self, nroRonda, respuestas):
-        """ Actualiza las respuestas de la partida """
+        # Actualiza las respuestas de la partida 
         return self.partida.update_one(
             {"codigo": self.codigo_partida, "nro_ronda": nroRonda},
-            {"$push": {"respuestas": respuestas}}
+            {"$push": {"respuestas": respuestas }}
         ).modified_count
+    """
+
+    # respuestas_clientes no formateado --> Viene de ServicioJuego.enviar_respuestas_ronda
+    def _safe_key(self, key: str) -> str:
+        # Normaliza claves: reemplaza espacios, puntos y $ por '_'
+        return key.replace(".", "_").replace("$", "_").replace(" ", "_")
+    # Nuevo actualizarRespuestasRonda
+    def reemplazar_respuestas_ronda(self, nroRonda, respuestas_clientes: dict):
+        """
+        Construye un dict con todas las respuestas por nickname (normalizando
+        las claves internas de categoría) y hace $set de 'respuestas' completo.
+        """
+        new_respuestas = {}
+        for key, cliente_info in respuestas_clientes.items():
+            nickname = cliente_info.get("nickname", key)
+            safe_nick = self._safe_key(nickname)  # si querés normalizar nick también
+            respuestas_originales = cliente_info.get("respuestas", {})
+
+            # normalizar las claves internas de categoria
+            respuestas_normalizadas = {
+                self._safe_key(categoria): valor
+                for categoria, valor in respuestas_originales.items()
+            }
+
+            new_respuestas[safe_nick] = respuestas_normalizadas
+
+        result = self.partida.update_one(
+            {"codigo": self.codigo_partida, "nro_ronda": nroRonda},
+            {"$set": {"respuestas": new_respuestas}}
+        )
+        return result.modified_count
+
 
     def getUltimoCodPartida(self):
         """ Devuelve el ultimo codigo de partida """

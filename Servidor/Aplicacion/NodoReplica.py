@@ -76,12 +76,13 @@ class NodoReplica(Nodo):
 
         datos = {
             "codigo": 1,
-            "clientes_Conectados": [{"nickname": "pepito", "ip": "0.0.0.0", "puerto": "9090", "uri": "PYRO:<nombre_logico>@<ip>:<puerto>" }],
+            "clientes_Conectados": [{"nickname": "NNNN", "ip": "0.0.0.0", "puerto": "9090", "uri": "PYRO:<nombre_logico>@<ip>:<puerto>" }],
             "nro_ronda": 1,
-            "categorias": ["Animal", "Ciudad", "Color"],
-            "letra": "M",
+            "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
+            "letra": "",
             "respuestas": []
         }
+
         self.ServDB.crear_partida(datos)
 
         threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
