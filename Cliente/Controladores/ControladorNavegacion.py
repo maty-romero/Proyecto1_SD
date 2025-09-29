@@ -16,6 +16,7 @@ from Cliente.A_Vistas.VistaNickname import VistaNickname
 from Cliente.A_Vistas.VistaSala import VistaSala
 from Cliente.A_Vistas.VistaRonda import VistaRonda
 #from Cliente.A_Vistas.ResultadosView import VistaResultados
+import threading
 
 from Cliente.Controladores.ControladorNickname import ControladorNickName
 from Cliente.Controladores.ControladorRonda import ControladorRonda
@@ -25,7 +26,7 @@ class ControladorNavegacion:
     def __init__(self, main_window,controlador_nickname,
                  controlador_sala,controlador_ronda, vistaNickname,
                  vistaSala, vistaRonda, controlador_votaciones, vistaVotaciones,controlador_resultados, 
-                 vistaResultados, vistaMensaje):
+                 vistaResultados,  controlador_mensaje, vistaMensaje):
         
         self.main_window = main_window
 
@@ -35,7 +36,8 @@ class ControladorNavegacion:
         self.controlador_ronda = controlador_ronda
         self.controlador_votaciones = controlador_votaciones
         self.controlador_resultados = controlador_resultados
-        # self.controlador_mensaje No hace falta controlador, control de transiciones - controlador nav 
+        # self.controlador_mensaje No hace falta controlador, control de transiciones - controlador nav
+        self.controlador_mensaje = controlador_mensaje
 
         # Guardar referencias a vistas
         self.vistaNickname = vistaNickname
@@ -70,7 +72,9 @@ class ControladorNavegacion:
             self.main_window.stack.setCurrentIndex(self.vistaVotaciones_Index)
         elif eleccion == "resultados":
             self.main_window.stack.setCurrentIndex(self.vistaResultados_Index)
-        elif eleccion == "mensaje": 
+        elif eleccion == "mensaje":
+            print(f"4. [DEBUG] Desde ControladorNvegacion - se selecciona la vista del stack mainWindow - en hilo: {threading.current_thread().name}")
+            self.main_window.show()
             self.main_window.stack.setCurrentIndex(self.vistaMensaje_Index)
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
@@ -82,43 +86,6 @@ class ControladorNavegacion:
     # def mostrar_mensaje_transitorio(self, texto: str):
     #     self.vistaMensaje.setMensaje(texto)
     #     self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
-
-    def mostrar_mensaje_reconexion(self, cliente, callback_reconexion, callback_fallo):
-        """
-        Muestra la vista de mensaje transitorio con opción de reconectar por 10 segundos.
-        callback_reconexion: función a llamar si el usuario elige reconectar
-        callback_fallo: función a llamar si elige no reconectar o se acaba el tiempo
-        """
-        #self.vistaMensaje = VistaMensajeTransitorio()  esta en el constructor 
-        self.vistaMensaje.setMensaje("¿Desea reconectarse? (10 segundos para decidir)")
-        #self.vistaMensajeTransitorio_Index = self.main_window.stack.addWidget(self.vistaMensaje)esta ene le cosntructor 
-        self.main_window.stack.setCurrentIndex(self.vistaMensajeTransitorio_Index)
-
-        self._timer_reconexion = QTimer()
-        self._timer_reconexion.setSingleShot(True)
-        self._timer_reconexion.timeout.connect(lambda: self._on_reconexion_fallo(callback_fallo))
-        self._timer_reconexion.start(10000)  # 10 segundos
-
-        self.vistaMensaje.boton_si.clicked.connect(lambda: self._on_reconexion_si(callback_reconexion, cliente))
-        self.vistaMensaje.boton_no.clicked.connect(lambda: self._on_reconexion_fallo(callback_fallo))
-
-    def _on_reconexion_si(self, callback_reconexion, cliente):
-        self._timer_reconexion.stop()
-        dict_cliente_reconectado = {
-            'nickname': cliente.nickname,
-            'nombre_logico': cliente.nombre_logico,
-            'ip': cliente.ip_cliente,
-            'puerto': cliente.puerto_cliente,
-            'uri': cliente.uri_cliente
-        }
-        callback_reconexion(dict_cliente_reconectado)
-
-    def _on_reconexion_fallo(self, callback_fallo):
-        if hasattr(self, '_timer_reconexion'):
-            self._timer_reconexion.stop()
-        self.vistaMensaje.setMensaje("No se pudo reconectar. Cerrando la aplicación.")
-        if callback_fallo:
-            callback_fallo()
 
     """
     def mostrar_mensaje_transitorio_temporal(self, texto: str, siguiente_vista: str, duracion_ms=3000):

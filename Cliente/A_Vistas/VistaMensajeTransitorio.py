@@ -31,3 +31,5 @@ class VistaMensajeTransitorio(QWidget):
 
     def setMensaje(self, texto: str):
         self.mensaje_label.setText(texto)
+        
+    

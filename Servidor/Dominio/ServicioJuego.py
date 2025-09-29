@@ -362,24 +362,15 @@ class ServicioJuego:
             puerto_cliente = info_cliente['puerto']
             uri_cliente = info_cliente['uri']
 
-            reconectado= self.dispacher.manejar_llamada(
-                "comunicacion",
-                "reconectar_cliente",
-                nickname
+            
+            # Suscribir como nuevo
+            self.dispacher.manejar_llamada(
+                "comunicacion", # nombre_servicio
+                "suscribir_cliente", # nombre_metodo
+                nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente# args
             )
+            self.logger.info(f"Jugador {nickname} suscripto como nuevo.")
             
-            if reconectado:
-                self.logger.info(f"Jugador {nickname} reconectado correctamente.")
-            else:
-                # Suscribir como nuevo
-                self.dispacher.manejar_llamada(
-                    "comunicacion", # nombre_servicio
-                    "suscribir_cliente", # nombre_metodo
-                    nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente# args
-                )
-                self.logger.info(f"Jugador {nickname} suscripto como nuevo.")
-            
-
 
             # obtener info sala
             nicknames_jugadores: list[str] = self.dispacher.manejar_llamada(
@@ -391,18 +382,6 @@ class ServicioJuego:
             info_sala['jugadores'] = nicknames_jugadores
 
             self.Jugadores[nickname] = False
-            
-            
-            if not reconectado:
-
-                json_nuevo_jugador = SerializeHelper.serializar(exito=True, msg="nuevo_jugador_sala", datos={
-                    'nickname': nickname
-                })
-                self.dispacher.manejar_llamada(
-                    "comunicacion",  # nombre_servicio
-                    "broadcast",  # nombre_metodo
-                    json_nuevo_jugador#args
-                )
 
             # retorna info de sala a quien se unió
             return SerializeHelper.respuesta(
@@ -412,38 +391,6 @@ class ServicioJuego:
             )
         except Exception as e:  # Catches any other exception
             self.logger.error(f"Ocurrio un error al unirse a la sala: {e}")
-
-
-
-
-    def restaurar_vista_general(self, nickname):
-        estado = self.partida.estado_actual
-        if estado == EstadoJuego.EN_SALA:
-            msg = SerializeHelper.serializar(exito=True, msg="en_sala", datos={'nickname': nickname})
-            self.dispacher.manejar_llamada("comunicacion", "enviar_a_cliente", nickname, msg)
-        elif estado == EstadoJuego.RONDA_EN_CURSO:
-            info_ronda = self.partida.get_info_ronda()
-            msg = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
-            self.dispacher.manejar_llamada("comunicacion", "enviar_a_cliente", nickname, msg)
-        elif estado == EstadoJuego.EN_VOTACIONES:
-            info_votacion = {
-                'nro_ronda': self.partida.nro_ronda_actual,
-                'total_rondas': self.partida.rondas_maximas,
-                'letra_ronda': self.partida.ronda_actual.letra_ronda if self.partida.ronda_actual else None,
-                'respuestas_clientes': self.partida.ronda_actual.get_respuestas_ronda() if self.partida.ronda_actual else None
-            }
-            msg = SerializeHelper.serializar(exito=True, msg="inicio_votacion", datos=info_votacion)
-            self.dispacher.manejar_llamada("comunicacion", "enviar_a_cliente", nickname, msg)
-        elif estado == EstadoJuego.MOSTRANDO_RESULTADOS_FINALES:
-            puntajes_totales, ganador = self.partida.calcular_puntos_partida()
-            datos_resultados = {
-                'jugadores': [j.nickname for j in self.partida.jugadores],
-                'puntajes_totales': puntajes_totales,
-                'ganador': ganador
-            }
-            msg = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=datos_resultados)
-            self.dispacher.manejar_llamada("comunicacion", "enviar_a_cliente", nickname, msg)
-
 
 
     def salir_de_sala(self, nickname: str):
