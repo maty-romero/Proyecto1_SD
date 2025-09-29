@@ -41,7 +41,7 @@ from bson.objectid import ObjectId
 """
 class ControladorDB:
 
-    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=0):
+    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):
         self.uri= uri
         self.db_name = db_name      
         self.registroDatos = [] #lista para imprimir con informacion relevante

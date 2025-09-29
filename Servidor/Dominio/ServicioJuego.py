@@ -91,12 +91,12 @@ class ServicioJuego:
         }
 
         """VER SI ESTA BIEN IMPLEMENTADO --> Guardado en BD y Broadcast a Replicas"""
-        self.dispacher.self.dispacher.manejar_llamada("db","actualizarRespuestasRonda", 
+        self.dispacher.manejar_llamada("db","actualizarRespuestasRonda", 
             info_completa_votacion['nro_ronda'], 
             info_completa_votacion['respuestas_clientes']
         ) 
         # Letra?
-        self.dispacher.self.dispacher.manejar_llamada("db","actualizar_letra", 
+        self.dispacher.manejar_llamada("db","actualizar_letra", 
             info_completa_votacion['letra_ronda']
         )
 

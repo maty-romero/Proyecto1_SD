@@ -58,7 +58,7 @@ class NodoReplica(Nodo):
             self.verificar_heartbeat()
 
     # ---------------- Inicialización como coordinador ----------------
-    def iniciar_como_coordinador(self, ip_ns, puerto_ns):
+    def iniciar_como_coordinador(self):
         self.logger.info(f"conexiones activas:{self.socket_manager.conexiones}")
 
         ns = Pyro5.api.locate_ns() #ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
@@ -75,7 +75,7 @@ class NodoReplica(Nodo):
 
         datos = {
             "codigo": 1,
-            "clientes": {"Ana": "", "Luis": {"ip": "", "puerto": "", "uri": ""}},
+            "clientes_Conectados": [{"nickname": "pepito", "ip": "0.0.0.0", "puerto": "9090", "uri": "PYRO:<nombre_logico>@<ip>:<puerto>" }],
             "nro_ronda": 1,
             "categorias": ["Animal", "Ciudad", "Color"],
             "letra": "M",
@@ -85,8 +85,9 @@ class NodoReplica(Nodo):
 
         threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
 
-        daemon = Pyro5.server.Daemon("192.168.56.1", 9090)
-        #daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+        #daemon = Pyro5.server.Daemon()
+        #daemon = Pyro5.server.Daemon(self.host,self.puerto)
+        daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
         uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
         self.logger.info("ServicioJuego registrado correctamente.")
         daemon.requestLoop()
@@ -157,7 +158,7 @@ class NodoReplica(Nodo):
         self.logger.warning(f"{self.get_nombre_completo()} se convierte en coordinador")
         self.conectarse_a_replicas()
         self.socket_manager.enviar(f"COORDINADOR:{self.id}")
-        self.iniciar_como_coordinador(self.host, self.puerto)
+        self.iniciar_como_coordinador()
 
     def _evaluar_eleccion(self):
         if not self.recibio_respuesta:

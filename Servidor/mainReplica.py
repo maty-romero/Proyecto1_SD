@@ -109,7 +109,7 @@ if __name__ == "__main__":
     tipo_servicio = "_replica._tcp.local."
     ip_local = socket.gethostbyname(socket.gethostname())
     puerto_local = obtener_puerto_libre()
-    max_replicas = 3
+    max_replicas = 1
     zeroconf = Zeroconf()
 
     # ---------- Listener ----------
