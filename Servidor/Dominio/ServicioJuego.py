@@ -18,7 +18,7 @@ from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 class ServicioJuego:
     def __init__(self, dispacher: Dispatcher):
         self.dispacher = dispacher
-        self.Partida = None
+        self.Partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
@@ -43,13 +43,10 @@ class ServicioJuego:
     def obtener_info_sala(self) -> dict:
         return self.Partida.get_info_sala()
 
-    def obtener_info_sala(self) -> dict:
-        return self.Partida.get_info_sala()
-
     def iniciar_partida(self):
         # Inicia la 1ra Ronda
         #------------Se inicializa la partida desde cero------------------------------------------------#
-        self.Partida = Partida() 
+        #self.Partida = Partida()
         self.Partida.iniciar_nueva_ronda() # Ronda 1
         #self.logger.info(f"Contenido en self.jugadores:{self.Jugadores}")
 
@@ -319,24 +316,26 @@ class ServicioJuego:
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):#(self,nickname)
         #si no existe una partida, se evalua si hay lugar
-        if not self.Partida:
-            hay_lugar: bool = self.dispacher.manejar_llamada(
-                "comunicacion", # nombre_servicio
-                "hay_lugar_disponible", # nombre_metodo
-                self.jugadores_min # args
+        hay_lugar: bool = self.dispacher.manejar_llamada(
+            "comunicacion",  # nombre_servicio
+            "hay_lugar_disponible",  # nombre_metodo
+            self.jugadores_min  # args
+        )
+
+        if not hay_lugar:
+            return SerializeHelper.respuesta(
+                exito=False,
+                msg="La sala está llena, no puede unirse."
             )
 
-            if not hay_lugar:
-                return SerializeHelper.respuesta(
-                    exito=False,
-                    msg="La sala está llena, no puede unirse."
-                )
+        # hay lugar
+        return SerializeHelper.respuesta(
+            exito=True,
+            msg="Hay lugar disponible, puede unirse."
+        )
+        """
+        if not self.Partida:
 
-            # hay lugar
-            return SerializeHelper.respuesta(
-                exito=True,
-                msg="Hay lugar disponible, puede unirse."
-            ) 
         else:#si existe partida es porque se inicio un juego
         #elif nickname in self.Partida.jugadores    # se procede a verificar si existe jugador
             #return SerializeHelper.respuesta(
@@ -350,7 +349,7 @@ class ServicioJuego:
                 exito=False,
                 msg="Ya hay una partida en curso, no puede unirse"
             )
-
+        """
     def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
 

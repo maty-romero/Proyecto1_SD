@@ -61,7 +61,8 @@ class NodoReplica(Nodo):
     def iniciar_como_coordinador(self):
         self.logger.info(f"conexiones activas:{self.socket_manager.conexiones}")
 
-        ns = Pyro5.api.locate_ns() #ns = Pyro5.api.locate_ns(ip_ns, puerto_ns)
+        ns = Pyro5.api.locate_ns()
+        #ns = Pyro5.api.locate_ns(self.host, self.puerto)
         self.logger.info(f"Servidor de nombres en: {ns}")
 
         self.ServicioJuego = ServicioJuego(self.Dispatcher)

@@ -33,8 +33,9 @@ PARTIDA:
         Asegura que una clase tenga una única instancia y proporciona un punto de acceso global a ella.
         Útil para controladores de base de datos, ya que evita múltiples conexiones.    
 """
+
+
 from pymongo import MongoClient, errors
-from bson.objectid import ObjectId
 
 """Los Datos ya tienen que llegar formateados a la clase. No se pueden actualizar datos particulares,
     la clase esta diseñada para que llegue todo el conjunto de datos

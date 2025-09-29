@@ -45,9 +45,9 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-#NOMBRE_PC_NS = "192.168.56.1"   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = "192.168.100.22"   # DESKTOP-HUREDOL
 #ip_local = socket.gethostbyname(socket.gethostname())
-NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
+#NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
@@ -115,8 +115,8 @@ class GestorCliente:
 
     def buscar_partida(self):
         try:
-            ns = Pyro5.api.locate_ns()
-            #ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
+            #ns = Pyro5.api.locate_ns()
+            ns = Pyro5.api.locate_ns(self.hostNS,self.puertoNS)
             uri = ns.lookup(self.nombre_logico_server)
             self.logger.info(f"Partida encontrada (Deamon disponible) | URI: {uri}")
             return True
@@ -389,8 +389,8 @@ class GestorCliente:
         #proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
         #proxy.recibir_stop()
         try:
-            with Pyro5.api.locate_ns() as ns:
-            #with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+            #with Pyro5.api.locate_ns() as ns:
+            with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
                 uri = ns.lookup(self.nombre_logico_server)
                 proxy = Pyro5.api.Proxy(uri)
                 proxy.recibir_stop()
