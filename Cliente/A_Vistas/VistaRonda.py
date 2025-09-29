@@ -82,10 +82,45 @@ class VistaRonda(QWidget):
             self.inputs.append(line_edit)
             grid_layout.addWidget(line_edit, i, 1)
 
+        for line_edit in self.inputs:
+            line_edit.setMinimumHeight(55)
+            line_edit.setFont(QFont("Verdana", 16))
+            line_edit.setStyleSheet("""
+                QLineEdit {
+                    padding: 8px;
+                    border: 2px solid #cccccc;
+                    border-radius: 8px;
+                    background-color: white;
+                }
+                QLineEdit:focus {
+                    border: 1px solid #4CAF50;
+                }
+            """)
+
         # --- Botón STOP! ---
         self.enviar_respuestas_btn = QPushButton("STOP!", parent=self)
-        self.enviar_respuestas_btn.setFont(QFont("Verdana", 14, QFont.Weight.Bold))
+        self.enviar_respuestas_btn.setFont(QFont("Verdana", 26, QFont.Weight.Bold))
+        self.enviar_respuestas_btn.setMinimumSize(320, 85)
+        self.enviar_respuestas_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         main_layout.addWidget(self.enviar_respuestas_btn, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.enviar_respuestas_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #d32f2f;
+                color: white;
+                border: 4px solid #b71c1c;
+                border-radius: 18px;
+                padding: 12px;
+            }
+            QPushButton:hover {
+                background-color: #f44336;
+                border: 4px solid #d32f2f;
+            }
+            QPushButton:pressed {
+                background-color: #b71c1c;
+                padding-top: 14px;
+                padding-bottom: 10px;
+            }
+        """)
 
     # --- Métodos de acceso / actualización ---
     def obtener_categorias_input(self):
