@@ -102,10 +102,8 @@ class ServicioJuego:
         tiempos = [30, 20, 10]
         for t in tiempos:
             mensaje = SerializeHelper.serializar(exito=True, msg="aviso_tiempo_votacion", datos=f"Te quedan {t} segundos para votar")
-            self.dispacher.manejar_llamada("comunicacion", "broadcast", mensaje)
-            time.sleep(10)  # Espera 10 segundos entre avisos
-
-        #se quedaría 
+            self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", mensaje)
+            time.sleep(10)
 
         hilo_pedir_votos = threading.Thread(target=self.obtener_votos_jugadores, daemon=True)
         hilo_pedir_votos.start()
@@ -121,7 +119,7 @@ class ServicioJuego:
             json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
             self.dispacher.manejar_llamada(
                 "comunicacion",  # nombre_servicio
-                "broadcast",  # nombre_metodo
+                "broadcast_a_clientes",  # nombre_metodo
                     json#args
             )
 
@@ -281,7 +279,7 @@ class ServicioJuego:
         json = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=resultados_partida)
         self.dispacher.manejar_llamada(
             "comunicacion",  # nombre_servicio
-            "broadcast",  # nombre_metodo
+            "broadcast_a_clientes",  # nombre_metodo
                 json#args
         )
 
