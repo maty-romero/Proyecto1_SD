@@ -28,7 +28,7 @@ if __name__ == "__main__":
     #se registra como un nodo en su lista
     #NO SE TIENE QUE REGISTRAR A SI MISMA
     #Replica_Local.registrar_nodo(Replica_Local.id,Replica_Local.nombre,ip_local,puerto_local)
-    logger.warning(f"Replica creada con datos:{nro_nodo, ip_local, puerto_local, "Replica"}")
+    logger.warning(f"Replica creada con datos:{nro_nodo, ip_local, puerto_local, 'Replica'}")
         # ---------- Mantener activo ----------
     logger.info("Iniciando booly de replica")
     Replica_Local.iniciar_eleccion()

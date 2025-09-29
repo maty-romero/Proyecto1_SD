@@ -20,7 +20,7 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 2 # pasar por constructor?
+        self.jugadores_min = 1 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
@@ -456,8 +456,8 @@ class ServicioJuego:
             # Creo cliente_conectado, que es el diccionario para agregar en la BDD, dentro de los clientes conectados.
             cliente_conectado = {
                 "nickname": cliente_confirmado.nickname,
-                "ip": cliente_confirmado.socket.ip_cliente,
-                "puerto": cliente_confirmado.socket.puerto_cliente,
+                "ip": cliente_confirmado.socket.host,
+                "puerto": cliente_confirmado.socket.puerto,
                 "uri": str(cliente_confirmado.uri_cliente_conectado)
             }
 

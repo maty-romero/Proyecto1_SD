@@ -54,9 +54,13 @@ class ManejadorSocket:
             self.logger.info(f"Servidor escuchando en {self.host}:{self.puerto}")
             threading.Thread(target=self._aceptar_conexiones, daemon=True).start()
 
-            if self.tipo_nodo=="SesionCliente":
+            self.logger.info(f"[DEBUG] Verificando si iniciar heartbeat: tipo_nodo='{self.tipo_nodo}', es_servidor={self.es_servidor}")
+            if self.tipo_nodo=="SesionCliente" or self.es_servidor == False:
+                self.logger.info(f"[DEBUG] Iniciando hilo heartbeat para tipo_nodo='{self.tipo_nodo}'")
                 self.hilo_heartbeat = threading.Thread(target=self._enviar_heartbeat, daemon=True)
                 self.hilo_heartbeat.start()
+            else:
+                self.logger.info(f"[DEBUG] NO se inicia heartbeat - condición no cumplida")
 
         except Exception as e:
             self.logger.error(f"Error al iniciar el manejador de socket: {e}")
@@ -77,6 +81,10 @@ class ManejadorSocket:
             if conn.fileno() != -1:
                 self.conexiones.append(conn)
             self.logger.info(f"Registro de conexiones pos conexion:{self.conexiones}")
+            # Asegurar que el estado permita escuchar
+            if not self._escuchando:
+                self._escuchando = True
+                self.logger.info(f"[DEBUG] Activando _escuchando para conexión cliente")
             threading.Thread(target=self._escuchar, args=(conn,), daemon=True).start()
         except Exception as e:
             self.logger.error(f"Error al conectar con nodo: {e}")
@@ -100,21 +108,37 @@ class ManejadorSocket:
     # Escucha de mensajes para el cliente y para el servidor
     # ---------------------------
     def _escuchar(self, conn):
-        while self._escuchando:
+        # Para conexiones individuales, siempre escuchar mientras la conexión esté activa
+        escuchando_activo = True
+        self.logger.info(f"[DEBUG] Iniciando escucha en conexión. _escuchando global: {self._escuchando}")
+        
+        while escuchando_activo and (self._escuchando or conn in self.conexiones):
             try:
                 data = conn.recv(1024)
                 if not data:
+                    self.logger.warning(f"Conexión cerrada por el otro extremo")
                     break
-                self.logger.error(f"Se recibio informacion mediante el socket:{data}")
+                self.logger.info(f"[DEBUG] Datos recibidos: {data}")
                 mensaje = data.decode()
+                self.logger.info(f"[DEBUG] Mensaje decodificado: '{mensaje}'")
+                
                 if mensaje == "HEARTBEAT": #solo es heartbeat en servidor y en replica
+                    self.logger.info(f"[DEBUG] HEARTBEAT detectado, actualizando timestamp")
                     self.timestamp = datetime.now(UTC)
                     self.conectado = True
 
                 if self.callback_mensaje is not None:
+                    self.logger.info(f"[DEBUG] Llamando callback con mensaje: '{mensaje}'")
                     self.callback_mensaje(mensaje)#self.callback_mensaje(mensaje, conn)
+                else:
+                    self.logger.warning(f"[DEBUG] No hay callback configurado para procesar: '{mensaje}'")
             except Exception as e:
                 self.logger.error(f"Error en recepcion de mensaje: {e}")
+                import traceback
+                traceback.print_exc()
+                break
+        
+        self.logger.info(f"[DEBUG] Cerrando conexión y limpiando")
         conn.close()
         if conn in self.conexiones:
             self.conexiones.remove(conn)
@@ -156,8 +180,52 @@ class ManejadorSocket:
     # Heartbeat de cliente a replica
     # ---------------------------
     def _enviar_heartbeat(self):
+        # Esperar a que haya al menos una conexión antes de empezar
+        self.logger.info("Hilo heartbeat iniciado, esperando conexiones...")
+        wait_count = 0
+        while self._escuchando and not self.conexiones:
+            wait_count += 1
+            self.logger.info(f"[DEBUG] Esperando conexiones... intento {wait_count}, conexiones actuales: {len(self.conexiones)}")
+            time.sleep(0.5)  # Esperar medio segundo y volver a verificar
+            if wait_count > 20:  # Timeout después de 10 segundos
+                self.logger.warning("Timeout esperando conexiones para heartbeat")
+                return
+        
+        if not self._escuchando:
+            self.logger.warning("Hilo heartbeat terminado - _escuchando es False")
+            return
+            
+        self.logger.info(f"Conexiones detectadas ({len(self.conexiones)}), iniciando envío de heartbeats")
+        
         while self._escuchando:
-            self.enviar(b"HEARTBEAT")
+            self.logger.warning("*** ENVIANDO HEARTBEAT *** ...")
+            current_connections = list(self.conexiones)  # Snapshot de conexiones
+            self.logger.warning(f"[DEBUG] Conexiones disponibles para heartbeat: {len(current_connections)}")
+            
+            if current_connections:
+                # Enviar heartbeat a cada conexión específicamente
+                for conn in current_connections:
+                    try:
+                        if conn.fileno() != -1:
+                            peer = conn.getpeername()
+                            self.logger.info(f"[DEBUG] Enviando HEARTBEAT a conexión específica: {peer}")
+                            conn.sendall(b"HEARTBEAT")
+                        else:
+                            self.logger.warning("Conexión cerrada detectada durante heartbeat")
+                            if conn in self.conexiones:
+                                self.conexiones.remove(conn)
+                    except Exception as e:
+                        self.logger.error(f"Error enviando heartbeat a conexión específica: {e}")
+                        if conn in self.conexiones:
+                            self.conexiones.remove(conn)
+            else:
+                self.logger.warning("No hay conexiones disponibles para enviar heartbeat - reiniciando espera")
+                # Si perdimos todas las conexiones, esperar a que vuelvan
+                wait_count = 0
+                while self._escuchando and not self.conexiones and wait_count < 10:
+                    wait_count += 1
+                    self.logger.info(f"[DEBUG] Reesperando conexiones... intento {wait_count}")
+                    time.sleep(0.5)
             time.sleep(2)
 
     def esta_vivo(self) -> bool:
