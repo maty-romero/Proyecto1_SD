@@ -461,6 +461,11 @@ class ServicioJuego:
 
             if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
                 self.logger.info(f"Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
+                """
+                Actualizacion a replicas 
+                json = SerializeHelper.serializar(exito=True, msg="confirmar_jugador", datos=cliente_conectado)
+                self.dispacher.manejar_llamada("nodo_ppal", "broadcast_a_nodos", json)
+                """
             else: 
                 self.logger.warning(f"El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")            
             #---------------------------------------------------------------------------------------------------------------

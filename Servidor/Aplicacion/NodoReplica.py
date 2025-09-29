@@ -68,6 +68,7 @@ class NodoReplica(Nodo):
         self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
         self.Dispatcher.registrar_servicio("db", self.ServDB)
+        self.Dispatcher.registrar_servicio("nodo_ppal", self)
 
         self.logger.info(f"Nodo {self.get_nombre_completo()} inicializado como coordinador")
         self.socket_manager.iniciar_manejador()
@@ -84,7 +85,8 @@ class NodoReplica(Nodo):
 
         threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
 
-        daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+        daemon = Pyro5.server.Daemon("192.168.56.1", 9090)
+        #daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
         uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
         self.logger.info("ServicioJuego registrado correctamente.")
         daemon.requestLoop()
@@ -185,12 +187,9 @@ class NodoReplica(Nodo):
             self.logger.info(f"Nuevo coordinador: {coord_id}")
             self.iniciar_como_replica()
 
-
-
-
-    #def broadcast_a_nodos(self):
-        #self.socket_manager
-        #pass
+    def broadcast_a_nodos(self, mensaje: str):
+        self.socket_manager.enviar(mensaje=mensaje) # Ya es broadcast
+        
 
     # def broadcast_a_nodos(self, mensaje: str):
     #     for nodo in self.ServComunic.nodos_cluster:
