@@ -101,6 +101,20 @@ class ManejadorUDP:
                         self.owner.on_siguiente_muerto()
                     break
        
+    def ping_directo(self, nodo, timeout=1.0):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(timeout)
+            msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
+            s.sendto(msg, (nodo.host, nodo.puerto))
+            data, _ = s.recvfrom(4096)
+            resp = json.loads(data.decode())
+            return resp.get("type") == "PONG"
+        except (socket.timeout, OSError, json.JSONDecodeError):
+            return False
+        finally:
+            s.close()
+
 class Nodo:
     def __init__(self, id_nodo, nombre, host, puerto, esCoordinador=False):
         self.id = id_nodo
@@ -164,10 +178,26 @@ class NodoReplica(Nodo):
             print(f"[{self.id}] Recibió PONG de {sender}")
 
     def on_siguiente_muerto(self):
-        print(f"[{self.id}] Siguiente muerto detectado: {self.nodoAnterior.id}")
-        self.asignar_nodo_siguiente(None)
-        self.esCoordinador = True
-        self.recalcular_vecinos()
-        self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
-        self.iniciar()
-        print(f"[{self.id}] Me proclamo COORDINADOR")
+        print(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id if self.nodoSiguiente else 'NINGUNO'}")
+        self.nodoSiguiente = None
+
+        candidatos = [n for n in self.lista_nodos if n.id > self.id]
+        nuevo_siguiente = None
+
+        for cand in candidatos:
+            if self.manejador.ping_directo(cand):
+                nuevo_siguiente = cand
+                break
+
+        if nuevo_siguiente:
+            print(f"[{self.id}] Nuevo siguiente encontrado: {nuevo_siguiente.id}")
+            self.nodoSiguiente = nuevo_siguiente
+            self.esCoordinador = False
+        else:
+            print(f"[{self.id}] No hay siguiente vivo -> me proclamo COORDINADOR")
+            self.esCoordinador = True
+
+        # reiniciar manejador sin crear uno nuevo
+        if self.manejador:
+            self.manejador.parar_escucha()                  # detener socket y threads
+            self.manejador.iniciar_socket(es_productor=not self.esCoordinador)  # reiniciar correctamente
