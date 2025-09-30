@@ -8,7 +8,17 @@ if len(sys.argv) < 4:
 my_id = int(sys.argv[1])
 my_port = int(sys.argv[2])
 raw_lista = sys.argv[3]
-es_Coordinador= sys.argv[4]
+
+"""parsea el string a boolean"""
+cadena = sys.argv[4].lower()
+if cadena == "true":
+    es_Coordinador = True
+elif cadena == "false":
+    es_Coordinador = False
+else:
+    print("corregir valor del parametro")
+    sys.exit(1)
+
 
 # Parsear lista de nodos
 lista_nodos = []
