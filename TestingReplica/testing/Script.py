@@ -121,11 +121,11 @@ class NodoReplica(Nodo):
         
 
     def iniciar(self):
-        print(f"cuando se construye al nodo, es:{self.esCoordinador}")
+        print(f"cuando se inicia al nodo, es:{self.esCoordinador}")
         if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
             #False, no es productor
-            print("el nodo es coordinador")
+            print(f"dentro del print:{self.esCoordinador}")
             self.manejador.iniciar_socket(False)
         else:
             #True, es productor
