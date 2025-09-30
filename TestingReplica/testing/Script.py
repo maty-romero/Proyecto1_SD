@@ -152,8 +152,8 @@ class Nodo:
 
 # ---------- NodoReplica ----------
 class NodoReplica(Nodo):
-    def __init__(self, id_nodo, nombre, host, puerto, lista_nodos):
-        super().__init__(id_nodo,nombre,host,puerto)
+    def __init__(self, id_nodo, nombre, host, puerto, lista_nodos,esCoordinador=False):
+        super().__init__(id_nodo,nombre,host,puerto,esCoordinador)
         self.lista_nodos = lista_nodos
         self.nodoSiguiente: Nodo = None
         self.nodoAnterior: Nodo = None
@@ -208,13 +208,13 @@ class NodoReplica(Nodo):
 if __name__ == "__main__":
     nodo1 = Nodo(1, "Nodo1", "127.0.0.1", 10001)
     nodo2 = Nodo(2, "Nodo2", "127.0.0.1", 10002)
-    nodo3 = Nodo(3, "Nodo3", "127.0.0.1", 10003,True)
+    nodo3 = Nodo(3, "Nodo3", "127.0.0.1", 10003)
 
     lista_nodos = [nodo1, nodo2, nodo3]
 
     app1 = NodoReplica(1, "Nodo1", "127.0.0.1", 10001, lista_nodos)
     app2 = NodoReplica(2, "Nodo2", "127.0.0.1", 10002, lista_nodos)
-    app3 = NodoReplica(3, "Nodo3", "127.0.0.1", 10003, lista_nodos)
+    app3 = NodoReplica(3, "Nodo3", "127.0.0.1", 10003, lista_nodos,True)
 
     app1.start()
     app2.start()
@@ -229,8 +229,8 @@ if __name__ == "__main__":
         time.sleep(10)
 
         print("\n--- Estado final ---")
-        print(f"Nodo1 coordinador: {app1.esCoordinador}, siguiente: {app1.manejador.nodoSiguiente}")
-        print(f"Nodo3 coordinador: {app3.esCoordinador}, siguiente: {app3.manejador.nodoSiguiente}")
+        print(f"Nodo1 coordinador: {app1.esCoordinador}, siguiente: {app1.nodoSiguiente}")
+        print(f"Nodo3 coordinador: {app3.esCoordinador}, siguiente: {app3.nodoSiguiente}")
 
         time.sleep(10)
     except KeyboardInterrupt:
