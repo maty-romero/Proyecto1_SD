@@ -2,9 +2,9 @@
 import socket, threading, time, json
 
 class ManejadorUDP:
-    def __init__(self, owner, nodoSiguiente, puerto_local=9090, ping_interval=4, ping_timeout=8, retries=2):
-        self.owner:Nodo = owner
-        self.es_productor:bool = True #siempre envia heart al construirse
+    def __init__(self, owner,nodoSiguiente, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
+        self.owner: NodoReplica = owner
+        self.es_productor = None
         self.puerto_local = puerto_local
 
         self.evento_stop = threading.Event() #flag para parar evento
@@ -23,12 +23,12 @@ class ManejadorUDP:
         self.es_productor = es_productor
         print(f"es productor:{self.es_productor}")
         if self.evento_stop:
+            print(f"self.evento_stop: {self.evento_stop}")
             self.evento_stop.clear()
-        #self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #self.socket_local.bind(("0.0.0.0", self.puerto_local))
+        self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_local.bind(("0.0.0.0", self.puerto_local))
         threading.Thread(target= self.escuchar, daemon=True).start()
         if self.es_productor:
-            print("entro al iniciar hilo")
             threading.Thread(target=self._enviar_heartbeat, daemon=True).start()
         print(f"[ManejadorUDP] iniciado en puerto {self.puerto_local}")
 
@@ -68,25 +68,22 @@ class ManejadorUDP:
         """"""
         #prueba de heart
         while not self.evento_stop.is_set():
-            print("se envio heart")
             time.sleep(self.intervalo_ping)
-            #si no hay nodo siguiente para enviar mensaje, continue, o cerrar hilo a lo mejor
-            # if not self.nodoSiguiente:
-            #     continue
-            if self.nodoSiguiente:
+            if self.owner.nodoSiguiente:
+                print("se envio heart")
                 try: 
-                    #No tiene que usar enviar mensaje, porque usa el socket local
-                    #self.enviar_mensaje(self.nodoSiguiente.host,self.nodoSiguiente.puerto, "PING")
                     ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
-                    ping_sock.sendto(msg, (self.nodoSiguiente.host,self.nodoSiguiente.puerto))
+                    self.enviar_mensaje(self.owner.nodoSiguiente.host ,self.owner.nodoSiguiente.puerto, "PING")
                     ping_sock.settimeout(self.ping_timeout)
                     data, addr = ping_sock.recvfrom(4096)
+                    resp = json.loads(data.decode())
+                    # if resp.get("type") == "PONG":
+                    #     alive = True
+                    #     break
                 except (socket.timeout, socket.gaierror):
                         if hasattr(self.owner, "on_siguiente_muerto"):
                             self.owner.on_siguiente_muerto()
                         break
-            
        
 class Nodo:
     def __init__(self, id_nodo, nombre, host, puerto, esCoordinador=False):
@@ -106,8 +103,6 @@ class NodoReplica(Nodo):
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
         self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
-        #print(f"nodo anterior tiene id:{self.nodoAnterior.id}")
-        #print(f"nodo siguiente tiene id:{self.nodoSiguiente.id}")
     def iniciar(self):
         if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
@@ -127,13 +122,17 @@ class NodoReplica(Nodo):
 
     def recalcular_vecinos(self):
         ids = [n.id for n in self.lista_nodos]
-        if self.id not in ids:
-            self.asignar_nodo_siguiente(None)
-            return
         idx = ids.index(self.id)
+
+        # Siguiente nodo
         siguiente = self.lista_nodos[idx + 1] if idx + 1 < len(self.lista_nodos) else None
         self.asignar_nodo_siguiente(siguiente)
-        print(f"[{self.id}] siguiente = {siguiente.id if siguiente else 'NINGUNO'}")
+
+        # Nodo anterior
+        anterior = self.lista_nodos[idx - 1] if idx > 0 else None
+        self.asignar_nodo_anterior(anterior)
+
+        print(f"[{self.id}] siguiente = {siguiente.id if siguiente else 'NINGUNO'}, anterior = {anterior.id if anterior else 'NINGUNO'}")
 
     def callback_mensaje(self, mensaje):
         tipo = mensaje.get("type")
@@ -149,6 +148,7 @@ class NodoReplica(Nodo):
         print(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id}")
         self.asignar_nodo_siguiente(None)
         self.esCoordinador = True
-        self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
+        self.recalcular_vecinos()
+        self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
         self.iniciar()
         print(f"[{self.id}] Me proclamo COORDINADOR")
