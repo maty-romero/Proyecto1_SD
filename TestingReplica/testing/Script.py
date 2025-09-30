@@ -69,24 +69,20 @@ class ManejadorUDP:
         #prueba de heart
         while not self.evento_stop.is_set():
             time.sleep(self.intervalo_ping)
-            #si no hay nodo siguiente para enviar mensaje, continue, o cerrar hilo a lo mejor
-            # if not self.nodoSiguiente:
-            #     continue
-            ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            #alive = False creo que no necesitamos esto, el timeout es suficiente
-            #for _ in range(self.retries):#el reintentar tampoco lo veo necesario, ya esta el sleep
-            try: 
-                self.enviar_mensaje(self.owner.nodoSiguiente.host ,self.owner.nodoSiguiente.puerto, "PING")
-                ping_sock.settimeout(self.ping_timeout)
-                data, addr = ping_sock.recvfrom(4096)
-                resp = json.loads(data.decode())
-                # if resp.get("type") == "PONG":
-                #     alive = True
-                #     break
-            except (socket.timeout, socket.gaierror):
-                    if hasattr(self.owner, "on_siguiente_muerto"):
-                        self.owner.on_siguiente_muerto()
-                    break
+            if self.owner.nodoSiguiente:
+                try: 
+                    ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    self.enviar_mensaje(self.owner.nodoSiguiente.host ,self.owner.nodoSiguiente.puerto, "PING")
+                    ping_sock.settimeout(self.ping_timeout)
+                    data, addr = ping_sock.recvfrom(4096)
+                    resp = json.loads(data.decode())
+                    # if resp.get("type") == "PONG":
+                    #     alive = True
+                    #     break
+                except (socket.timeout, socket.gaierror):
+                        if hasattr(self.owner, "on_siguiente_muerto"):
+                            self.owner.on_siguiente_muerto()
+                        break
        
     def ping_directo(self, nodo, timeout=1.0):
         try:
