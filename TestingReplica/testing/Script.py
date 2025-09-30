@@ -2,14 +2,14 @@
 import socket, threading, time, json
 
 class ManejadorUDP:
-    def __init__(self, owner, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
+    def __init__(self, owner,nodoSiguiente, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
         self.owner = owner
         self.es_productor = None
         self.puerto_local = puerto_local
 
         self.socket_local = None
         self.evento_stop = threading.Event() #flag para parar evento
-        #self.nodoSiguiente = None
+        self.nodoSiguiente:Nodo = nodoSiguiente
         #self.nodoAnterior = None
 
         self.intervalo_ping = ping_interval
@@ -23,15 +23,15 @@ class ManejadorUDP:
     #     self.nodoAnterior = nodo
 
     #Se considera que no es productor, de lo contrario se especifica ip y puerto destino para el heart
-    def iniciar_socket(self,es_productor=False,ip_destino=None,puerto_destino=None):
+    def iniciar_socket(self,es_productor=False):
         self.es_productor = es_productor
         if self.evento_stop:
             self.evento_stop.clear()
         self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_local.bind(("0.0.0.0", self.puerto_local))
-        threading.Thread(target=self.escuchar, daemon=True).start()
-        if self.es_productor and ip_destino and puerto_destino:
-            threading.Thread(target=self._enviar_heartbeat(ip_destino,puerto_destino), daemon=True).start()
+        threading.Thread(target= self._enviar_heartbeat(), daemon=True).start()
+        if self.es_productor:
+            threading.Thread(target=self._enviar_heartbeat(), daemon=True).start()
         print(f"[ManejadorUDP] iniciado en puerto {self.puerto_local}")
 
     def parar_escucha(self):
@@ -50,27 +50,6 @@ class ManejadorUDP:
                 threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
             except Exception as e:
                 print(f"[Manejador] Error escuchando: {e}")
-
-
-        # sock = self.socket_local
-        # if not sock:
-        #     return
-        # sock.settimeout(1)
-        # while not self._stop_event.is_set():
-        #     try:
-        #         data, addr = sock.recvfrom(4096)
-        #     except socket.timeout:
-        #         continue
-        #     except OSError:
-        #         # Esto ocurre si el socket fue cerrado desde otro hilo --> Sistema operativo
-        #         print("socket fue cerrado desde otro hilo")
-        #         break
-        #     try:
-        #         mensaje = json.loads(data.decode())
-        #     except:
-        #         continue
-        #     # Procesar mensaje en hilo separado
-        #     threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
 
     #cambiamos id por 
     #el payload lo podemos utilizar para adjuntar los datos de la bd en el mensaje de envio
@@ -95,7 +74,7 @@ class ManejadorUDP:
         except:
             pass
 
-    def _enviar_heartbeat(self,ip_destino,puerto_destino):
+    def _enviar_heartbeat(self):
         """"""
         #prueba de heart
         while not self.evento_stop.is_set():
@@ -108,7 +87,7 @@ class ManejadorUDP:
             #alive = False creo que no necesitamos esto, el timeout es suficiente
             #for _ in range(self.retries):#el reintentar tampoco lo veo necesario, ya esta el sleep
             try: 
-                self.enviar_mensaje(ip_destino,puerto_destino, "PING")
+                self.enviar_mensaje(self.nodoSiguiente.host,self.nodoSiguiente.puerto, "PING")
                 ping_sock.settimeout(self.ping_timeout)
                 data, addr = ping_sock.recvfrom(4096)
                 resp = json.loads(data.decode())
@@ -159,14 +138,16 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
-        self.manejador = ManejadorUDP(self, self.puerto)
+        self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
 
-    def start(self):
+    def iniciar(self):
         if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
-            self.manejador.iniciar_socket()
+            #False, no es productor
+            self.manejador.iniciar_socket(False)
         else:
-            self.manejador.iniciar_socket(True,self.nodoSiguiente.host,self.nodoSiguiente.puerto)
+            #False, no es productor
+            self.manejador.iniciar_socket(True)
             
 
     def asignar_nodo_siguiente(self, nodo):
@@ -174,7 +155,6 @@ class NodoReplica(Nodo):
 
     def asignar_nodo_anterior(self, nodo):
         self.nodoAnterior = nodo
-
 
     def recalcular_vecinos(self):
         ids = [n.id for n in self.lista_nodos]
@@ -199,43 +179,7 @@ class NodoReplica(Nodo):
     def on_siguiente_muerto(self):
         print(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id}")
         self.asignar_nodo_siguiente(None)
-        self.manejador = self.manejador = ManejadorUDP(self, False, self.puerto)
-        self.manejador.iniciar_socket()
         self.esCoordinador = True
+        self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
+        self.iniciar()
         print(f"[{self.id}] Me proclamo COORDINADOR")
-
-
-if __name__ == "__main__":
-    nodo1 = Nodo(1, "Nodo1", "127.0.0.1", 10001)
-    nodo2 = Nodo(2, "Nodo2", "127.0.0.1", 10002)
-    nodo3 = Nodo(3, "Nodo3", "127.0.0.1", 10003)
-
-    lista_nodos = [nodo1, nodo2, nodo3]
-
-    app1 = NodoReplica(1, "Nodo1", "127.0.0.1", 10001, lista_nodos)
-    app2 = NodoReplica(2, "Nodo2", "127.0.0.1", 10002, lista_nodos)
-    app3 = NodoReplica(3, "Nodo3", "127.0.0.1", 10003, lista_nodos,True)
-
-    app1.start()
-    app2.start()
-    app3.start()
-
-    print("Script corriendo... Ctrl+C para detener")
-
-    try:
-        time.sleep(10)
-        print("\n--- Simulando caída de Nodo2 ---")
-        app2.manejador.parar_escucha()
-        time.sleep(10)
-
-        print("\n--- Estado final ---")
-        print(f"Nodo1 coordinador: {app1.esCoordinador}, siguiente: {app1.nodoSiguiente}")
-        print(f"Nodo3 coordinador: {app3.esCoordinador}, siguiente: {app3.nodoSiguiente}")
-
-        time.sleep(10)
-    except KeyboardInterrupt:
-        print("Deteniendo demo...")
-
-    app1.manejador.parar_escucha()
-    app2.manejador.parar_escucha()
-    app3.manejador.parar_escucha()
