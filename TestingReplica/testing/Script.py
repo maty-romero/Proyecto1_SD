@@ -30,7 +30,7 @@ class ManejadorUDP:
             self.evento_stop.clear()
         self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_local.bind(("0.0.0.0", self.puerto_local))
-        threading.Thread(target= self._enviar_heartbeat(), daemon=True).start()
+        threading.Thread(target= self.escuchar(), daemon=True).start()
         if self.es_productor:
             threading.Thread(target=self._enviar_heartbeat(), daemon=True).start()
         print(f"[ManejadorUDP] iniciado en puerto {self.puerto_local}")
@@ -64,7 +64,7 @@ class ManejadorUDP:
         # for n in self.owner.lista_nodos:
         #     if n.id == dest_id:
         #         target = (n.host, n.puerto)
-        #         break
+        #         break 
         if not target:
             return
         msg = {"type": message_type, "from": self.owner.id}
@@ -119,19 +119,19 @@ class NodoReplica(Nodo):
         #se envia ip y puerto de siguiente, ver como reasignar...
         self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
         
-
     def iniciar(self):
-        print(f"cuando se inicia al nodo, es:{self.esCoordinador}")
-        if self.esCoordinador:
+        print(f"dentro del iniciar, es coordinador? :{self.esCoordinador}")
+        comprobacion = self.esCoordinador
+        if comprobacion:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
             #False, no es productor
-            print(f"dentro del print:{self.esCoordinador}")
+            print(f"ENTRO AL IF")
             self.manejador.iniciar_socket(False)
         else:
             #True, es productor
+            print(f"entro al else")
             self.manejador.iniciar_socket(True)
             
-
     def asignar_nodo_siguiente(self, nodo):
         self.nodoSiguiente = nodo
 
