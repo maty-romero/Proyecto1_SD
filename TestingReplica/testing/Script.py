@@ -2,9 +2,9 @@
 import socket, threading, time, json
 
 class ManejadorUDP:
-    def __init__(self, owner, productor=True, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
+    def __init__(self, owner, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
         self.owner = owner
-        self.es_productor = productor
+        self.es_productor = None
         self.puerto_local = puerto_local
 
         self.socket_local = None
@@ -22,7 +22,9 @@ class ManejadorUDP:
     # def asignar_nodo_anterior(self, nodo):
     #     self.nodoAnterior = nodo
 
-    def iniciar_socket(self,ip_destino=None,puerto_destino=None):
+    #Se considera que no es productor, de lo contrario se especifica ip y puerto destino para el heart
+    def iniciar_socket(self,es_productor=False,ip_destino=None,puerto_destino=None):
+        self.es_productor = es_productor
         if self.evento_stop:
             self.evento_stop.clear()
         self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -157,13 +159,15 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
-        self.manejador = ManejadorUDP(self, True, self.puerto)
+        self.manejador = ManejadorUDP(self, self.puerto)
 
     def start(self):
         if self.esCoordinador:
-            self.manejador.iniciar_socket(self.nodoSiguiente.host,self.nodoSiguiente.puerto)
-        else:
+            #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
             self.manejador.iniciar_socket()
+        else:
+            self.manejador.iniciar_socket(True,self.nodoSiguiente.host,self.nodoSiguiente.puerto)
+            
 
     def asignar_nodo_siguiente(self, nodo):
         self.nodoSiguiente = nodo
