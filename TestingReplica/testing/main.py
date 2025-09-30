@@ -8,7 +8,10 @@ if len(sys.argv) < 4:
 my_id = int(sys.argv[1])
 my_port = int(sys.argv[2])
 raw_lista = sys.argv[3]
-es_Coordinador= sys.argv[4]
+raw_val = sys.argv[4] if len(sys.argv) > 4 else "False"  # por si no se pasa argumento
+es_coordinador = raw_val.strip().lower() in ("true", "1", "yes", "y")
+
+print(f"[MAIN] es_Coordinador = {es_coordinador}, tipo: {type(es_coordinador)}")
 
 # Parsear lista de nodos
 lista_nodos = []
@@ -17,7 +20,7 @@ for entry in raw_lista.split(","):
     lista_nodos.append(Nodo(int(nid), f"n{nid}", "127.0.0.1", int(nport)))
 
 # Crear solo un nodo por ejecución
-app = NodoReplica(my_id, f"n{my_id}", "127.0.0.1", my_port, lista_nodos,es_Coordinador)
+app = NodoReplica(my_id, f"n{my_id}", "127.0.0.1", my_port, lista_nodos,es_coordinador)
 app.iniciar()
 print(f"[Nodo {my_id}] corriendo en puerto {my_port}. Ctrl+C para detener.")
 
