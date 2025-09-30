@@ -2,30 +2,26 @@
 import socket, threading, time, json
 
 class ManejadorUDP:
-    def __init__(self, owner,nodoAnterior, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
+    def __init__(self, owner,nodoSiguiente, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
         self.owner: NodoReplica = owner
         self.es_productor = None
         self.puerto_local = puerto_local
 
-        self.socket_local = None
         self.evento_stop = threading.Event() #flag para parar evento
-        #self.nodoSiguiente:Nodo = nodoSiguiente
-        self.nodoAnterior:Nodo = nodoAnterior
+        self.nodoSiguiente:Nodo = nodoSiguiente
+        #self.nodoAnterior:Nodo = nodoAnterior
 
         self.intervalo_ping = ping_interval
         self.ping_timeout = ping_timeout
         self.retries = retries
-
-    # def asignar_nodo_siguiente(self, nodo):
-    #     self.nodoSiguiente = nodo
-
-    # def asignar_nodo_anterior(self, nodo):
-    #     self.nodoAnterior = nodo
+        #es el socket para la escucha
+        self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_local.bind(('0.0.0.0', 5000))
 
     #Se considera que no es productor, de lo contrario se especifica ip y puerto destino para el heart
     def iniciar_socket(self,es_productor):
         self.es_productor = es_productor
-        print(f"es productor:{es_productor}")
+        print(f"es productor:{self.es_productor}")
         if self.evento_stop:
             print(f"self.evento_stop: {self.evento_stop}")
             self.evento_stop.clear()
@@ -45,6 +41,7 @@ class ManejadorUDP:
         #----------------------------prueba de escucha modificada--------------------------------#
         #no se corta la escucha, asumimos que siempre van a quedarse escuchando los nodos, porque si no, pueden estar vivos, pero rechazar un ping
         while not self.evento_stop.is_set():
+            print("escuchando")
             try:
                 data, addr = self.socket_local.recvfrom(4096)
                 mensaje = json.loads(data.decode())
@@ -57,15 +54,6 @@ class ManejadorUDP:
     #el payload lo podemos utilizar para adjuntar los datos de la bd en el mensaje de envio
     def enviar_mensaje(self, ip_destino, puerto_destino, message_type, payload=None):
         target = None
-        #comprobacion para determinar si el id de destino esta en la lista
-        # target = next(
-        #     ((n.host, n.puerto) for n in self.owner.lista_nodos if n.id == ip_destino),
-        #     None
-        #     )
-        # for n in self.owner.lista_nodos:
-        #     if n.id == dest_id:
-        #         target = (n.host, n.puerto)
-        #         break 
         if not target:
             return
         msg = {"type": message_type, "from": self.owner.id}
@@ -80,7 +68,6 @@ class ManejadorUDP:
         """"""
         #prueba de heart
         while not self.evento_stop.is_set():
-            print("se envio heart")
             time.sleep(self.intervalo_ping)
             #si no hay nodo siguiente para enviar mensaje, continue, o cerrar hilo a lo mejor
             # if not self.nodoSiguiente:
@@ -132,12 +119,9 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
-        self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
-        
+        self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
     def iniciar(self):
-        print(f"dentro del iniciar, es coordinador? :{self.esCoordinador}")
-        comprobacion = self.esCoordinador
-        if comprobacion:
+        if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
             #False, no es productor
             print(f"ENTRO AL IF")
@@ -171,7 +155,7 @@ class NodoReplica(Nodo):
         tipo = mensaje.get("type")
         sender = mensaje.get("from")
         if tipo == "PING":
-            #le tiene que responder al siguiente
+            #le tiene que responder al anterior, osea a dos
             print(f"[{self.id}] Recibió PING de {sender}")
             self.manejador.enviar_mensaje(self.nodoAnterior.host,self.nodoAnterior.puerto,"PONG")
         elif tipo == "PONG":
