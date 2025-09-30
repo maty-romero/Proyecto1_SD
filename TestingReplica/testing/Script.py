@@ -23,8 +23,9 @@ class ManejadorUDP:
     #     self.nodoAnterior = nodo
 
     #Se considera que no es productor, de lo contrario se especifica ip y puerto destino para el heart
-    def iniciar_socket(self,es_productor=False):
+    def iniciar_socket(self,es_productor):
         self.es_productor = es_productor
+        print(f"es productor:{es_productor}")
         if self.evento_stop:
             self.evento_stop.clear()
         self.socket_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -98,29 +99,7 @@ class ManejadorUDP:
                     if hasattr(self.owner, "on_siguiente_muerto"):
                         self.owner.on_siguiente_muerto()
                     break
-        # while not self.evento_stop.is_set():
-            
-        #     time.sleep(self.intervalo_ping)
-        #     #si no hay nodo siguiente para enviar mensaje, continue, o cerrar hilo a lo mejor
-        #     if not self.nodoSiguiente:
-        #         continue
-        #     ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #     alive = False
-        #     for _ in range(self.retries):
-        #         try:
-        #             self.enviar_mensaje(self.nodoSiguiente.id, "PING")
-        #             ping_sock.settimeout(self.ping_timeout)
-        #             data, addr = ping_sock.recvfrom(4096)
-        #             resp = json.loads(data.decode())
-        #             if resp.get("type") == "PONG":
-        #                 alive = True
-        #                 break
-        #         except:
-        #             continue
-        #     if not alive:
-        #         if hasattr(self.owner, "on_siguiente_muerto"):
-        #             self.owner.on_siguiente_muerto(self.nodoSiguiente)
-
+       
 class Nodo:
     def __init__(self, id_nodo, nombre, host, puerto, esCoordinador=False):
         self.id = id_nodo
@@ -139,14 +118,17 @@ class NodoReplica(Nodo):
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
         self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
+        
 
     def iniciar(self):
+        print(f"cuando se construye al nodo, es:{self.esCoordinador}")
         if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
             #False, no es productor
+            print("el nodo es coordinador")
             self.manejador.iniciar_socket(False)
         else:
-            #False, no es productor
+            #True, es productor
             self.manejador.iniciar_socket(True)
             
 
