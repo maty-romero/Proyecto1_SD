@@ -2,15 +2,15 @@
 import socket, threading, time, json
 
 class ManejadorUDP:
-    def __init__(self, owner,nodoSiguiente, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
+    def __init__(self, owner,nodoAnterior, puerto_local=9090, ping_interval=1, ping_timeout=8, retries=2):
         self.owner = owner
         self.es_productor = None
         self.puerto_local = puerto_local
 
         self.socket_local = None
         self.evento_stop = threading.Event() #flag para parar evento
-        self.nodoSiguiente:Nodo = nodoSiguiente
-        #self.nodoAnterior = None
+        #self.nodoSiguiente:Nodo = nodoSiguiente
+        self.nodoAnterior:Nodo = nodoAnterior
 
         self.intervalo_ping = ping_interval
         self.ping_timeout = ping_timeout
@@ -87,7 +87,7 @@ class ManejadorUDP:
             #alive = False creo que no necesitamos esto, el timeout es suficiente
             #for _ in range(self.retries):#el reintentar tampoco lo veo necesario, ya esta el sleep
             try: 
-                self.enviar_mensaje(self.nodoSiguiente.host,self.nodoSiguiente.puerto, "PING")
+                self.enviar_mensaje(self.nodoAnterior.host,self.nodoAnterior.puerto, "PING")
                 ping_sock.settimeout(self.ping_timeout)
                 data, addr = ping_sock.recvfrom(4096)
                 resp = json.loads(data.decode())
@@ -138,7 +138,7 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
-        self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
+        self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
 
     def iniciar(self):
         if self.esCoordinador:
@@ -172,14 +172,14 @@ class NodoReplica(Nodo):
         if tipo == "PING":
             #le tiene que responder al siguiente
             print(f"[{self.id}] Recibió PING de {sender}")
-            self.manejador.enviar_mensaje(self.nodoSiguiente.host,self.nodoSiguiente.puerto,"PONG")
+            self.manejador.enviar_mensaje(self.nodoAnterior.host,self.nodoAnterior.puerto,"PONG")
         elif tipo == "PONG":
             print(f"[{self.id}] Recibió PONG de {sender}")
 
     def on_siguiente_muerto(self):
-        print(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id}")
+        print(f"[{self.id}] Siguiente muerto detectado: {self.nodoAnterior.id}")
         self.asignar_nodo_siguiente(None)
         self.esCoordinador = True
-        self.manejador = ManejadorUDP(self,self.nodoSiguiente, self.puerto)
+        self.manejador = ManejadorUDP(self,self.nodoAnterior, self.puerto)
         self.iniciar()
         print(f"[{self.id}] Me proclamo COORDINADOR")
