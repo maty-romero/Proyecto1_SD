@@ -2,7 +2,7 @@
 import socket, threading, time, json
 
 class ManejadorUDP:
-    def __init__(self, owner, puerto_local, ping_interval=1, ping_timeout=10, retries=2):
+    def __init__(self, owner, puerto_local, ping_interval=3, ping_timeout=9, retries=2):
         self.owner: NodoReplica = owner
         self.es_productor = None
         self.puerto_local = puerto_local
@@ -52,13 +52,44 @@ class ManejadorUDP:
     #el payload lo podemos utilizar para adjuntar los datos de la bd en el mensaje de envio
     def enviar_mensaje(self, ip_destino, puerto_destino, message_type, payload=None):
         print(f"enviando mensaje a ip {ip_destino} y puerto {puerto_destino}")
-        msg = {"type": message_type, "from": self.owner.id}
+        msg = {"type": message_type, "from": self.owner.id ,"ip":self.owner.host,"puerto":self.owner.puerto}
         if payload:
             msg.update(payload)
         try:
-            self.socket_local.sendto(json.dumps(msg).encode(), (ip_destino, puerto_destino))
+            self.socket_local.sendto(json.dumps(msg).encode(),(ip_destino, puerto_destino))
         except:
             pass
+
+    # def _enviar_heartbeat(self):
+    #     print(f"[{self.owner.id}] Iniciando heartbeat thread")
+    #     while not self.evento_stop.is_set():
+    #         print(f"[{self.owner.id}] Loop heartbeat - evento_stop: {self.evento_stop.is_set()}")
+    #         time.sleep(self.intervalo_ping)
+            
+    #         print(f"[{self.owner.id}] Verificando nodoSiguiente: {self.owner.nodoSiguiente}")
+    #         if self.owner.nodoSiguiente:
+    #             print(f"[{self.owner.id}] enviando ping a [{self.owner.nodoSiguiente.id}]{self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
+    #             ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #             ping_sock.settimeout(self.ping_timeout)
+    #             try: 
+    #                 msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
+    #                 ping_sock.sendto(msg, (self.owner.nodoSiguiente.host, self.owner.nodoSiguiente.puerto))
+    #                 data, addr = ping_sock.recvfrom(1024)
+    #                 print(f"[{self.owner.id}] ✓ PONG recibido de {addr}")
+    #             except (socket.timeout, socket.gaierror) as e:
+    #                 print(f"[{self.owner.id}] ✗ No se recibio el PONG - Error: {e}")
+    #                 if hasattr(self.owner, "on_siguiente_muerto"):
+    #                     self.owner.on_siguiente_muerto()
+    #                     break
+    #             except Exception as e:
+    #                 print(f"[{self.owner.id}] ✗ Error inesperado en heartbeat: {e}")
+    #             finally:
+    #                 ping_sock.close()
+    #         else:
+    #             print(f"[{self.owner.id}] No hay nodoSiguiente configurado")
+        
+    #     print(f"[{self.owner.id}] Heartbeat thread terminado")  
+
 
     def _enviar_heartbeat(self):
         """"""
@@ -69,12 +100,15 @@ class ManejadorUDP:
             if self.owner.nodoSiguiente:
                 print(f"enviando ping a [{self.owner.nodoSiguiente.id}]{self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
                 ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                iptemp="127.0.0.1"
+                porttemp=6000
+                ping_sock.bind(("127.0.0.1", 6000))
                 ping_sock.settimeout(self.ping_timeout)
                 try: 
-                    msg = json.dumps({"type": "PING", "from": self.owner.id ,"ip":self.owner.ip,"puerto":self.owner.puerto}).encode()
+                    msg = json.dumps({"type": "PING", "from": self.owner.id ,"ip":iptemp,"puerto":porttemp}).encode()
                     ping_sock.sendto(msg, (self.owner.nodoSiguiente.host ,self.owner.nodoSiguiente.puerto))
                     ping_sock.recvfrom(1024) # Esperar PONG
-                except (socket.timeout, socket.gaierror):
+                except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError):
                     print(f"No se recibio el PONG en {self.owner.id}")
                     if hasattr(self.owner, "on_siguiente_muerto"):
                         self.owner.on_siguiente_muerto()
@@ -82,23 +116,27 @@ class ManejadorUDP:
                 finally:
                     ping_sock.close()
        
-    def ping_directo(self, nodo, timeout=1.0):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(timeout)
-            msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
-            s.sendto(msg, (nodo.host, nodo.puerto))
 
-            print(f"{self.owner.id} - PING DIRECTO A {nodo.id}")
+
+
+
+    # def ping_directo(self, nodo, timeout=1.0):
+    #     try:
+    #         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         s.settimeout(timeout)
+    #         msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
+    #         s.sendto(msg, (nodo.host, nodo.puerto))
+
+    #         print(f"{self.owner.id} - PING DIRECTO A {nodo.id}")
             
-            data, _ = s.recvfrom(4096)
-            resp = json.loads(data.decode())
-            return resp.get("type") == "PONG"
-        except (socket.timeout, OSError, json.JSONDecodeError):
-            print(f"{self.owner.id} - PING DIRECTO | No recibio PONG de {nodo.id}")
-            return False
-        finally:
-            s.close()
+    #         data, _ = s.recvfrom(4096)
+    #         resp = json.loads(data.decode())
+    #         return resp.get("type") == "PONG"
+    #     except (socket.timeout, OSError, json.JSONDecodeError):
+    #         print(f"{self.owner.id} - PING DIRECTO | No recibio PONG de {nodo.id}")
+    #         return False
+    #     finally:
+    #         s.close()
 
 class Nodo:
     def __init__(self, id_nodo, nombre, host, puerto, esCoordinador=False):
@@ -161,13 +199,13 @@ class NodoReplica(Nodo):
             try:
                 #le tiene que responder al anterior, osea a dos
                 print(f"[{self.id}] Recibió PING de {sender}")
-                print(f"Enviando PONG a ANTERIOR: {self.nodoAnterior.id}, IP:{self.nodoAnterior.host}, Puerto: {self.nodoAnterior.puerto}")
+                print(f"Enviando PONG a ANTERIOR: {self.nodoAnterior.id}, IP:{ip}, Puerto: {puerto}")
                 self.manejador.enviar_mensaje(ip,puerto,"PONG")
             except Exception as e: 
                 print(f"Error al enviar PONG: {e}")
 
-        elif tipo == "PONG":
-            print(f"[{self.id}] Recibió PONG de {sender}")
+        # elif tipo == "PONG":
+        #     print(f"[{self.id}] Recibió PONG de {sender}")
         elif tipo == "ESTAS_VIVO": #Recibe esto solo cuando se murio el anterior nodo
             print(f"[{self.id}] Recibió ESTAS_VIVO de {sender}")
             #self.asignar_nodo_anterior()
@@ -177,25 +215,25 @@ class NodoReplica(Nodo):
         print(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id if self.nodoSiguiente else 'NINGUNO'}")
         self.nodoSiguiente = None
 
-        candidatos = [n for n in self.lista_nodos if n.id > self.id]
-        nuevo_siguiente = None
+        # candidatos = [n for n in self.lista_nodos if n.id > self.id]
+        # nuevo_siguiente = None
 
-        for cand in candidatos:
-            #msg = {"type": "ESTAS_VIVO", "from": self.cand.id}
-            if self.manejador.enviar_mensaje(cand.host, cand.puerto, "ESTAS_VIVO"):
-                nuevo_siguiente = cand
-                break
+        # # for cand in candidatos:
+        # #     #msg = {"type": "ESTAS_VIVO", "from": self.cand.id}
+        # #     if self.manejador.enviar_mensaje(cand.host, cand.puerto, "ESTAS_VIVO"):
+        # #         nuevo_siguiente = cand
+        # #         break
 
-        if nuevo_siguiente:
-            print(f"[{self.id}] Nuevo siguiente encontrado: {nuevo_siguiente.id}")
-            self.nodoSiguiente = nuevo_siguiente
-            self.esCoordinador = False
-        else:
-            print(f"[{self.id}] No hay siguiente vivo -> me proclamo COORDINADOR")
-            self.esCoordinador = True
+        # if nuevo_siguiente:
+        #     print(f"[{self.id}] Nuevo siguiente encontrado: {nuevo_siguiente.id}")
+        #     self.nodoSiguiente = nuevo_siguiente
+        #     self.esCoordinador = False
+        # else:
+        #     print(f"[{self.id}] No hay siguiente vivo -> me proclamo COORDINADOR")
+        #     self.esCoordinador = True
 
-        print(f"MANEJADOR: {self.manejador}")
-        # reiniciar manejador sin crear uno nuevo
-        if self.manejador:
-            self.manejador.parar_escucha()  # detener socket y threads
-            self.iniciar()  # reiniciar correctamente
+        # print(f"MANEJADOR: {self.manejador}")
+        # # reiniciar manejador sin crear uno nuevo
+        # if self.manejador:
+        #     self.manejador.parar_escucha()  # detener socket y threads
+        #     self.iniciar()  # reiniciar correctamente
