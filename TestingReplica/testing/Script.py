@@ -183,6 +183,32 @@ class NodoReplica(Nodo):
         self.manejador = ManejadorUDP(self, self.puerto)
          # Variables para verificar si un nodo está vivo
         
+        #hilo de prueba
+        if self.esCoordinador:
+            threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
+        
+    def broadcast_datos_DB(self):
+        while True:
+            time.sleep(5)
+            # Buscar todos los nodos con ID menor al mío
+            nodos_menores = [n for n in self.lista_nodos if n.id < self.id]
+            
+            if not nodos_menores:
+                print(f"[{self.id}] No hay nodos menores para notificar")
+                return
+            
+            # Enviar mensaje a cada nodo menor
+            for nodo in nodos_menores:
+                print(f"[{self.id}] Enviando ACTUALIZAR_DB a nodo {nodo.id}")
+                self.manejador.enviar_mensaje(
+                    nodo.host,
+                    nodo.puerto,
+                    "ACTUALIZAR_DB"
+                )
+            
+            print(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
+
+
     def iniciar(self):
         if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
@@ -233,6 +259,13 @@ class NodoReplica(Nodo):
         
         elif tipo == "ACK_NUEVO_ANTERIOR":
             print(f"[{self.id}] Reconexión exitosa con {sender}")
+
+        elif tipo == "ACTUALIZAR_DB":
+            print(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
+            #self.actualizar_db(datos)
+            pass
+
+
 
         # elif tipo == "PONG":
         #     print(f"[{self.id}] Recibió PONG de {sender}")
@@ -348,5 +381,6 @@ class NodoReplica(Nodo):
         print(f"[{self.id}] ==========================================")
         print(f"[{self.id}] ME PROCLAMO NUEVO COORDINADOR")
         print(f"[{self.id}] ==========================================")
+        threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
         # TODO: Implementar lógica de coordinador
         pass
