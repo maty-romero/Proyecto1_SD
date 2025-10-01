@@ -28,9 +28,9 @@ class NodoReplica(Nodo):
     def __init__(self, id, host, puerto, lista_nodos, nombre="Replica", esCoordinador=False):
         super().__init__(id=id, host=host, puerto=puerto, nombre=nombre, esCoordinador=esCoordinador)
         self.logger = ConsoleLogger(name=f"Replica-{self.id}", level="INFO")
-        self.Dispatcher = Dispatcher()
-        self.ServComunic = ServicioComunicacion(self.Dispatcher)
-        self.ServDB = ControladorDB()
+        self.Dispatcher = None
+        self.ServComunic = None
+        self.ServDB = None
         self.ServicioJuego = None
 
         #self.puerto = puerto
@@ -49,9 +49,9 @@ class NodoReplica(Nodo):
         )
         """
 
-        #Se comenta para evitar tantas notificaciones
-        # if self.esCoordinador:
-        #     threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
+        if self.esCoordinador:
+            self.levantar_nuevo_coordinador()
+            #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
 
 
     def broadcast_datos_DB(self):
@@ -214,7 +214,7 @@ class NodoReplica(Nodo):
         Se invoca cuando este nodo se convierte en coordinador.
         Implementación futura: inicializar servicios de coordinación, etc.
         """
-        self.logger.info(f"=============================\nNodo[{self.id}] SE PROCLAMA NUEVO COORDINADOR\n=============================")
+        self.logger.info(f"\n=============================\nNodo[{self.id}] SE PROCLAMA NUEVO COORDINADOR\n=============================")
         self.logger.warning(f"Nodo[{self.id}] Restableciendo servicios...")
 
         # Necesario el broadcast de datos a replicas ?? 
@@ -224,6 +224,9 @@ class NodoReplica(Nodo):
         #ns = Pyro5.api.locate_ns(self.host, self.puerto)
         #self.logger.info(f"Servidor de nombres en: {ns}")
 
+        self.Dispatcher = Dispatcher()
+        self.ServComunic = ServicioComunicacion(self.Dispatcher)
+        self.ServDB = ControladorDB()
         self.ServicioJuego = ServicioJuego(self.Dispatcher)
         self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
