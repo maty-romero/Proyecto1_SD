@@ -14,6 +14,7 @@ class ManejadorUDP:
         self.ping_timeout = ping_timeout
         #es el socket para la escucha
         self.socket_local = None
+        self.logger = ConsoleLogger(name="ServicioComunicacion", level="INFO")
 
     #Se considera que no es productor, de lo contrario se especifica ip y puerto destino para el heart
     def iniciar_socket(self,es_productor):
