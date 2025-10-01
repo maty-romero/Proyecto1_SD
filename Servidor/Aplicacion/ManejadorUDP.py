@@ -1,5 +1,7 @@
 import socket, threading, time, json
-from Aplicacion import NodoReplica
+
+from Servidor.Aplicacion import NodoReplica
+
 
 class ManejadorUDP:
     def __init__(self, owner, puerto_local, ping_interval=3, ping_timeout=9, retries=2):

@@ -14,6 +14,12 @@ class Listener:
             servicios[nid] = (socket.inet_ntoa(info.addresses[0]), info.port)
             print(f"[Zeroconf] Descubierto Nodo {nid} en puerto {info.port}")
 
+    def remove_service(self, zc, type_, name):
+        pass
+
+    def update_service(self, zc, type_, name):
+        pass
+
 my_id = int(sys.argv[1])
 
 # Asignar puerto dinámico
@@ -41,7 +47,8 @@ ServiceBrowser(zc, "_nodo._udp.local.", Listener())
 time.sleep(3)
 
 # Construir lista de nodos
-lista_nodos = [Nodo(nid, f"n{nid}", servicios[nid][0], servicios[nid][1]) 
+# def __init__(self, id, nombre, host, puerto, esCoordinador=False):
+lista_nodos = [Nodo(id=nid, nombre=f"n{nid}", host=servicios[nid][0], puerto=servicios[nid][1])
                for nid in NODOS_IDS if nid in servicios]
 
 # Calcular el mayor ID entre los nodos descubiertos
@@ -51,9 +58,10 @@ max_id = max([n.id for n in lista_nodos] + [my_id])
 es_coordinador = (my_id == max_id)
 
 my_ip = "127.0.0.1"
-app = NodoReplica(my_id, f"n{my_id}", my_ip, my_port, lista_nodos, es_coordinador)
+#  def __init__(self, id, host, puerto, lista_nodos, nombre="Replica", esCoordinador=False):
+app = NodoReplica(id=my_id, host=my_ip, puerto=my_port, lista_nodos=lista_nodos, nombre=f"n{my_id}", esCoordinador=es_coordinador)
 app.iniciar()
-print(f"[Nodo {my_id}] corriendo en {my_ip}:{my_port}, coordinador={es_coordinador}")
+
 try:
     while True: time.sleep(1)
 except KeyboardInterrupt:
