@@ -4,16 +4,13 @@ from Servidor.Aplicacion import NodoReplica
 
 
 class ManejadorUDP:
-    def __init__(self, owner, puerto_local, ping_interval=3, ping_timeout=9, retries=2):
+    def __init__(self, owner, puerto_local, ping_interval=5, ping_timeout=10):
         self.owner: NodoReplica = owner
         self.es_productor = None
         self.puerto_local = puerto_local
         self.evento_stop = threading.Event() #flag para parar evento
-        #self.nodoSiguiente:Nodo = nodoSiguiente
-        #self.nodoAnterior:Nodo = nodoAnterior
         self.intervalo_ping = ping_interval
         self.ping_timeout = ping_timeout
-        self.retries = retries
         #es el socket para la escucha
         self.socket_local = None
 
@@ -82,7 +79,7 @@ class ManejadorUDP:
                     ping_sock.recvfrom(1024) # Esperar PONG
                 except (socket.timeout, socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
                     print(f"No se recibio el PONG en {self.owner.id}")
-                    if hasattr(self.owner, "on_siguiente_muerto"):
+                    if hasattr(self.owner, "nuevo_Siguiente"):
                         self.owner.nuevo_Siguiente()
                         break
                 finally:

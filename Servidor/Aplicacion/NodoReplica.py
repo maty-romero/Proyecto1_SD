@@ -49,8 +49,9 @@ class NodoReplica(Nodo):
         )
         """
 
-        if self.esCoordinador:
-            threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
+        #Se comenta para evitar tantas notificaciones
+        # if self.esCoordinador:
+        #     threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
 
 
     def broadcast_datos_DB(self):
@@ -131,11 +132,6 @@ class NodoReplica(Nodo):
             self.logger.warning(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
             #self.actualizar_db(datos)
             pass
-
-    def on_siguiente_muerto(self):
-        self.logger.warning(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id if self.nodoSiguiente else 'NINGUNO'}")
-        self.nodoSiguiente = None
-
 
     def nuevo_Siguiente(self):
         """Busca un nuevo nodo siguiente cuando el actual falla"""

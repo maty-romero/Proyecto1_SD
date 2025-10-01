@@ -58,7 +58,7 @@ max_id = max([n.id for n in lista_nodos] + [my_id])
 es_coordinador = (my_id == max_id)
 
 my_ip = "127.0.0.1"
-#  def __init__(self, id, host, puerto, lista_nodos, nombre="Replica", esCoordinador=False):
+print(f"El nodo [{my_id}] es coordinador: {es_coordinador}")
 app = NodoReplica(id=my_id, host=my_ip, puerto=my_port, lista_nodos=lista_nodos, nombre=f"n{my_id}", esCoordinador=es_coordinador)
 app.iniciar()
 
