@@ -233,6 +233,10 @@ class GestorCliente:
     # Funcion CallBack para Socket
     def _procesar_mensaje_socket(self, mensaje):
         try:
+            # Manejar HEARTBEAT que no es JSON
+            if mensaje == "HEARTBEAT":
+                return  # Los heartbeats se procesan automáticamente en ManejadorSocket
+            
             exito, msg, datos = SerializeHelper.deserializar(mensaje)
             """
             if not exito:
@@ -248,7 +252,13 @@ class GestorCliente:
                 self.controlador_navegacion.controlador_sala.cambiar_estado_sala(mensaje_estado)
             elif msg == "en_sala":
                 self.controlador_navegacion.mostrar('sala')
-            elif msg == "nueva_ronda":
+            elif msg == "info_sala":
+                self.logger.info("Recibido estado de sala - navegando y rehabilitando botón")
+                self.controlador_navegacion.mostrar('sala')
+                # # Rehabilitar botón "Estoy listo" para reconexión
+                # if hasattr(self.controlador_navegacion, 'controlador_sala'):
+                #     self.controlador_navegacion.controlador_sala.rehabilitar_boton_listo()
+            elif msg == "nueva_ronda": #¿Debería tener otro nombre más general para usarse cuando la ronda es nueva y restaurada? Por el momento se utiliza para cuando se restaura la ronda también
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
                 self.controlador_navegacion.controlador_ronda.habilitar_btn_stop()
                 self.controlador_navegacion.mostrar('ronda')
@@ -258,6 +268,10 @@ class GestorCliente:
                 self.controlador_navegacion.mostrar('votaciones')
             elif msg == "inicio_votacion":
                 self.logger.warning(f"inicio_votacion => datos: {datos}")
+            elif msg == "estado_votaciones":
+                self.logger.info("Restaurando estado de votaciones tras reconexión")
+                self.controlador_navegacion.controlador_votaciones.mostrar_info_votaciones(datos)
+                self.controlador_navegacion.mostrar('votaciones')
             elif msg == "aviso_tiempo_votacion":
                 self.logger.info(f"Recibido del server {datos}")
                 self.controlador_navegacion.controlador_votaciones.actualizar_mensaje_timer(datos)
@@ -266,6 +280,16 @@ class GestorCliente:
                 self.controlador_navegacion.controlador_resultados.mostrar_resultados(datos)
                 self.controlador_navegacion.mostrar('resultados')
                 #self.stop_daemon_cliente()
+            elif msg == "SERVIDOR_DESCONECTADO":
+                motivo = datos.get("motivo", "Motivo desconocido")
+                self.logger.warning(f"🔴 SERVIDOR DESCONECTADO ({motivo}) - Mostrando vista de reconexión")
+                self._manejar_desconexion_servidor()
+            elif msg == "servidor_recuperado":
+                self.logger.info("✅ SERVIDOR RECUPERADO - Ocultando vista de reconexión")
+                self._manejar_servidor_recuperado(datos if 'datos' in locals() else None)
+            elif msg == "CONEXION_RESTAURADA":
+                self.logger.info("🔄 CONEXIÓN RESTAURADA - Cliente detectó reconexión")
+                # Nota: La notificación oficial vendrá del servidor
             else:
                 self.logger.warning(f"[Socket] Otro Mensaje: {msg}")
 
@@ -405,10 +429,85 @@ class GestorCliente:
 
     def enviar_votos_jugador(self):
         return self.controlador_navegacion.controlador_votaciones.enviar_votos()
-    
-    def mostrar_vista_desconexion(self):
-        self.logger.info(f"3. [DEBUG] Desde GestorCliente - mostrar_vista_desconexion, se ejecuará un método de controlador navegacion - en hilo: {threading.current_thread().name}")
-        self.controlador_navegacion.mostrar("mensaje")
+
+    def _manejar_desconexion_servidor(self):
+        """Maneja la desconexión del servidor mostrando vista de reconexión"""
+        try:
+            # Mostrar vista de mensaje transitorio con información de reconexión
+            if hasattr(self.controlador_navegacion, 'controlador_mensaje'):
+                self.controlador_navegacion.controlador_mensaje.mostrar_mensaje_reconexion(
+                    "Conexión perdida con el servidor",
+                    "Esperando reconexión automática...",
+                    mostrar_botones=False
+                )
+            
+            self.controlador_navegacion.mostrar("mensaje")
+            self.logger.info("Vista de reconexión mostrada al usuario")
+            
+        except Exception as e:
+            self.logger.error(f"Error mostrando vista de reconexión: {e}")
+
+    def _manejar_servidor_recuperado(self, datos=None):
+        """Maneja la recuperación del servidor ocultando vista de reconexión"""
+        try:
+            # Ocultar vista de reconexión y volver a la vista anterior
+            mensaje_recuperacion = "Conexión restablecida"
+            if datos and isinstance(datos, dict):
+                mensaje_recuperacion = datos.get("mensaje", mensaje_recuperacion)
+            
+            self.logger.info(f"Servidor recuperado: {mensaje_recuperacion}")
+            
+            # CRÍTICO: Reconectar proxy Pyro5
+            self.logger.info("Reconectando proxy Pyro5...")
+            self._reconectar_proxy_pyro5()
+            
+            # Mostrar brevemente mensaje de éxito
+            if hasattr(self.controlador_navegacion, 'controlador_mensaje'):
+                self.controlador_navegacion.controlador_mensaje.mostrar_mensaje_reconexion(
+                    "¡Conexión restablecida!",
+                    f"{mensaje_recuperacion}\nEsperando sincronización...",
+                    mostrar_botones=False,
+                    auto_ocultar=5  # Auto-ocultar después de 5 segundos
+                )
+            
+            # No forzar navegación - el servidor enviará el estado correcto automáticamente
+            self.logger.info("Esperando que el servidor envíe el estado actual de la partida...")
+            
+        except Exception as e:
+            self.logger.error(f"Error manejando recuperación de servidor: {e}")
+            # En caso de error, mostrar mensaje y esperar estado del servidor
+            if hasattr(self.controlador_navegacion, 'controlador_mensaje'):
+                self.controlador_navegacion.controlador_mensaje.mostrar_mensaje_reconexion(
+                    "Error en reconexión",
+                    "Reintentando sincronización...",
+                    mostrar_botones=False,
+                    auto_ocultar=3
+                )
+
+    def _reconectar_proxy_pyro5(self):
+        """Reconecta el proxy Pyro5 después de la recuperación del servidor"""
+        try:
+            # Limpiar proxy existente
+            self.proxy_partida = None
+            
+            # Esperar un momento para que el servidor esté completamente listo
+            import time
+            time.sleep(1)
+            # Reconectar usando el método existente
+            self.get_proxy_partida_singleton()
+            if self.proxy_partida:
+                self.logger.info("✅ Proxy Pyro5 reconectado exitosamente")
+            else:
+                self.logger.warning("❌ No se pudo reconectar proxy Pyro5")
+        except Exception as e:
+            self.logger.error(f"Error reconectando proxy Pyro5: {e}")
+            # Intentar una segunda vez
+            try:
+                time.sleep(2)
+                self.get_proxy_partida_singleton()
+                self.logger.info("✅ Proxy Pyro5 reconectado en segundo intento")
+            except Exception as e2:
+                self.logger.error(f"Fallo definitivo reconectando proxy Pyro5: {e2}")
 
 
 """

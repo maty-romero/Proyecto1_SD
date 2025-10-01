@@ -20,10 +20,146 @@ class ServicioJuego:
         self.dispacher = dispacher
         self.Partida = Partida()
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
-        self.jugadores_min = 2 # pasar por constructor?
+        self.jugadores_min = 1 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
         self.Jugadores = {}  # Pasar a OBJETO JUGADOR
         self.lock_confirmacion = Lock()
+
+
+    def restaurar_partida_desde_bd(self, codigo_partida: int = 1):
+        """Restaura el estado de la partida desde la base de datos"""
+        try:
+            # Obtener datos de la partida desde la BD
+            controlador_db: ControladorDB = self.dispacher.manejar_llamada("db", "get_controlador")
+            controlador_db.codigo_partida = codigo_partida
+            
+            datos_partida = controlador_db.obtener_datos_partida_completos()
+            if not datos_partida:
+                self.logger.warning(f"No se encontró partida con código {codigo_partida}")
+                return False
+            
+            # Restaurar la partida usando el método estático
+            self.Partida = Partida.desde_datos_bd(datos_partida)
+            
+            # Restaurar el diccionario de jugadores para mantener compatibilidad
+            self.Jugadores = {}
+            for jugador in self.Partida.jugadores:
+                self.Jugadores[jugador.nickname] = True  #Si restura el estado que tenían luego de confirmar_jugador
+            
+            self.logger.info(f"Partida {codigo_partida} restaurada exitosamente")
+            self.logger.info(f"Estado: Ronda {self.Partida.nro_ronda_actual}, Jugadores: {list(self.Jugadores.keys())}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error restaurando partida: {e}")
+            return False
+
+
+    # confirmar_jugador -> ¿jugadores suficientes? -> iniciar_partida -> inicializar_con_restauracion
+    def inicializar_con_restauracion(self, codigo_partida: int = 1): # Para cuando el nodoPrincipal pasa a ser otro y debe restaurar la partida de todos los jugadores - No sirve para cuando 1 solo jugador pierde la porque hace broadcast de nueva_ronda -> se les actualiza a todos la vista
+        """TEMPORAL para pruebas de restauración. Inicializa el servicio intentando restaurar desde BD, o crea nueva partida"""
+        if self.restaurar_partida_desde_bd(codigo_partida):
+            
+            # Notificar a clientes conectados sobre el estado actual - TODO mover a otro lado
+            if self.Partida.estado_actual == EstadoJuego.EN_SALA:
+                self.notificar_estado_sala_a_clientes()
+            elif self.Partida.estado_actual == EstadoJuego.RONDA_EN_CURSO:
+                self.notificar_ronda_actual_a_clientes()
+            elif self.Partida.estado_actual == EstadoJuego.EN_VOTACIONES:
+                self.logger.info("🎯 Ejecutando notificación para EN_VOTACIONES")
+                self.enviar_respuestas_ronda()
+            elif self.Partida.estado_actual == EstadoJuego.MOSTRANDO_RESULTADOS_FINALES:
+                self.logger.info("🎯 Ejecutando notificación para MOSTRANDO_RESULTADOS_FINALES")
+                self.notificar_resultados_finales_a_clientes()
+            else:
+                self.logger.warning(f"❌ Estado no reconocido al restaurar: {self.Partida.estado_actual} (tipo: {type(self.Partida.estado_actual)})")
+        else:
+            self.logger.info("Iniciando con nueva partida") #TEMPORAL si es llamado desde iniciar_partida
+            self.Partida = Partida()
+
+
+    def notificar_estado_sala_a_clientes(self):
+        """Envía la información de la sala a todos los clientes"""
+        self.logger.info("📤 Enviando mensaje 'info_sala' a clientes")
+        info_sala = self.Partida.get_info_sala()
+        json = SerializeHelper.serializar(exito=True, msg="info_sala", datos=info_sala)
+        self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", json)
+
+    def notificar_ronda_actual_a_clientes(self):
+        """Envía la información de la ronda actual a todos los clientes"""
+        info_ronda = self.Partida.get_info_ronda()
+        json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
+        self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", json)
+    
+    def notificar_fin_ronda_a_clientes(self):
+        """Notifica específicamente el fin de la ronda y desencadena el cambio de vista en clientes"""
+        json = SerializeHelper.serializar(exito=True, msg="fin_ronda")
+        self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", json)
+
+    def notificar_inicio_votacion_a_clientes(self):
+        """Notifica específicamente el inicio de votación"""
+        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion")
+        self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", json)
+
+    def notificar_datos_votacion_a_clientes(self, info_completa_votacion):
+        """Envía los datos específicos para la votación"""
+        self.dispacher.manejar_llamada("comunicacion", "enviar_datos_para_votacion", info_completa_votacion)
+
+    def restaurar_estado_votaciones(self):
+        """Restaura el estado de votaciones para clientes reconectados (sin transiciones)"""
+        self.logger.info("Restaurando estado de votaciones para clientes reconectados")
+        
+        # Obtener respuestas desde BD
+        respuestas_clientes = self.dispacher.manejar_llamada("comunicacion", "respuestas_memoria_clientes_ronda")
+        
+        # Preparar datos de votación
+        info_completa_votacion = self.preparar_datos_votacion(respuestas_clientes)
+        
+        # Enviar directamente mensaje de estado de votaciones (sin transiciones)
+        json = SerializeHelper.serializar(exito=True, msg="estado_votaciones", datos=info_completa_votacion)
+        self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", json)
+
+    def notificar_resultados_finales_a_clientes(self):
+        """Envía los resultados finales de la partida a todos los clientes"""
+        puntajes_totales, ganador = self.Partida.calcular_puntos_partida()
+        
+        resultados_partida = {
+            'jugadores': list(self.Jugadores.keys()),
+            'puntajes_totales': puntajes_totales,
+            'ganador': ganador
+        }
+        json = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=resultados_partida)
+        self.dispacher.manejar_llamada("comunicacion", "broadcast_a_clientes", json)
+
+    def sincronizar_ronda_con_bd(self):
+        """Actualiza todos los datos de la ronda actual en BD"""
+        if self.Partida.ronda_actual:
+            letra_ronda = self.Partida.ronda_actual.letra_ronda
+            nro_ronda = self.Partida.nro_ronda_actual
+            self.dispacher.manejar_llamada("db", "actualizar_letra", letra_ronda)
+            self.dispacher.manejar_llamada("db", "actualizar_nro_ronda", nro_ronda)
+            self.dispacher.manejar_llamada("db", "actualizar_letras_jugadas", self.Partida.letras_jugadas)
+            
+
+    def sincronizar_puntajes_con_bd(self):
+        """Actualiza los puntajes de todos los jugadores en BD"""
+        puntajes_dict = {}
+        for jugador in self.Partida.jugadores:
+            puntajes_dict[jugador.nickname] = jugador.get_puntaje()
+        
+        if puntajes_dict:
+            modificados = self.dispacher.manejar_llamada("db", "actualizar_puntajes_jugadores", puntajes_dict)
+            self.logger.info(f"Puntajes actualizados en BD: {modificados} jugadores")
+
+
+    def cambiar_estado_partida(self, nuevo_estado):
+        """Cambia el estado de la partida y lo guarda en BD"""
+        estado_anterior = self.Partida.estado_actual
+        self.Partida.set_estado_actual(nuevo_estado)
+        # Guardar en BD
+        self.dispacher.manejar_llamada("db", "actualizar_estado_partida", nuevo_estado)
+        self.logger.info(f"Estado cambiado: {estado_anterior.name} -> {nuevo_estado.name}")
+
 
     """
         ServicioJuego --> Entran las llamadas Pyro
@@ -47,66 +183,59 @@ class ServicioJuego:
         # Inicia la 1ra Ronda
         #------------Se inicializa la ronda------------------------------------------------#
         #La partida se encuentra en None la primera vez que se vuelve de la votacion, ahi no muestra categorias ni otros datos correctamente
-        if not self.Partida:
-            self.Partida = Partida()
-        self.Partida.iniciar_nueva_ronda() # Ronda 1
+        self.inicializar_con_restauracion() # Por el momento acá, restura o crea nueva partida
+        
+        if self.Partida.nro_ronda_actual == 0: #Si nro_ronda_actual 0 entonces EstadoJuego.EN_SALA, es decir que empieza una ronda nueva
+            self.Partida.iniciar_nueva_ronda() # Ronda 1
 
-        letra_ronda = self.Partida.ronda_actual.letra_ronda
-        self.dispacher.manejar_llamada("db", "actualizar_letra", letra_ronda)
-        #self.logger.info(f"Contenido en self.jugadores:{self.Jugadores}")
+            # Actualizar datos en BD
+            self.sincronizar_ronda_con_bd()
+            
+            # Cambiar estado a RONDA_EN_CURSO
+            self.cambiar_estado_partida(EstadoJuego.RONDA_EN_CURSO)
+            
+            #si ya tenemos jugadores en partida, podemos guardar el true o false de la confirmacion ahi mismo. Facilita recuperacion de bd
+            jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
+            self.Partida.cargar_jugadores_partida(jugadores)
 
-        #si ya tenemos jugadores en partida, podemos guardar el true o false de la confirmacion ahi mismo. Facilita recuperacion de bd
-        jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
-        self.Partida.cargar_jugadores_partida(jugadores)
-
-        info_ronda: dict = self.Partida.get_info_ronda()
-        json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda)
-        self.dispacher.manejar_llamada(
-            "comunicacion",
-            "broadcast_a_clientes",
-            json) 
+            self.notificar_ronda_actual_a_clientes()
+        
         #self.cargarRondaDB(info_ronda)?
 
-    def enviar_respuestas_ronda(self):
-        # Aviso a Clientes que termino la ronda
-        json = SerializeHelper.serializar(exito=True, msg="fin_ronda")
-        self.dispacher.manejar_llamada(
-            "comunicacion",
-            "broadcast_a_clientes",
-            json)
-        
-        json = SerializeHelper.serializar(exito=True, msg="inicio_votacion")
-        self.dispacher.manejar_llamada(
-            "comunicacion",
-            "broadcast_a_clientes",
-            json)
-
-        # obtenerRespuesMemoriaClientes
-        respuestas_clientes: dict = self.dispacher.manejar_llamada(
-            "comunicacion",
-            "respuestas_memoria_clientes_ronda")
-
-        self.Partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
-        
+    def preparar_datos_votacion(self, respuestas_clientes):
+        """Prepara y guarda los datos necesarios para la votación"""
         info_completa_votacion = {
-            'nro_ronda' : self.Partida.nro_ronda_actual,
-            'total_rondas':self.Partida.rondas_maximas,
+            'nro_ronda': self.Partida.nro_ronda_actual,
+            'total_rondas': self.Partida.rondas_maximas,
             'letra_ronda': self.Partida.ronda_actual.letra_ronda,
             'respuestas_clientes': respuestas_clientes
         }
 
-        #self.logger.error(f"RESPUESTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAS: {info_completa_votacion['respuestas_clientes']}")
-
         # Dentro del metodo, se formatea previo a la insercion en BD
         """VER SI ESTA BIEN IMPLEMENTADO --> Guardado en BD y Broadcast a Replicas"""
-        self.dispacher.manejar_llamada("db","reemplazar_respuestas_ronda",
+        self.dispacher.manejar_llamada("db", "reemplazar_respuestas_ronda",
             info_completa_votacion['nro_ronda'], 
             info_completa_votacion['respuestas_clientes']
         )
+        
+        return info_completa_votacion
 
-        self.dispacher.manejar_llamada("comunicacion",
-        "enviar_datos_para_votacion",
-        info_completa_votacion)
+
+    def enviar_respuestas_ronda(self):
+        """Finaliza la ronda actual e inicia el proceso de votación"""
+        self.notificar_fin_ronda_a_clientes()
+        self.notificar_inicio_votacion_a_clientes()
+
+        # Obtener y procesar respuestas
+        respuestas_clientes = self.dispacher.manejar_llamada("comunicacion", "respuestas_memoria_clientes_ronda")
+        self.Partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
+        
+        # Cambiar estado y guardar
+        self.cambiar_estado_partida(EstadoJuego.EN_VOTACIONES)
+        info_completa_votacion = self.preparar_datos_votacion(respuestas_clientes)
+        
+        # Enviar datos para votación
+        self.notificar_datos_votacion_a_clientes(info_completa_votacion)
 
         # Broadcast a replcias para actualizacion - VER
         """
@@ -115,8 +244,7 @@ class ServicioJuego:
         self.dispacher.manejar_llamada("nodo_ppal", "broadcast_a_nodos", json)
         """
 
-
-        """Se ejecuta el timer en un hilo separado para no bloquear la llamada remota del cliente que hace STOP"""
+        #Se ejecuta el timer en un hilo separado para no bloquear la llamada remota del cliente que hace STOP
         hilo_timer = threading.Thread(target=self.timer_votacion, daemon=True)
         hilo_timer.start()
 
@@ -131,27 +259,16 @@ class ServicioJuego:
         hilo_pedir_votos = threading.Thread(target=self.obtener_votos_jugadores, daemon=True)
         hilo_pedir_votos.start()
         
-
         
     def evaluar_ultima_ronda(self):
         if self.Partida.nro_ronda_actual == self.Partida.rondas_maximas:
-            self.finalizar_partida() #manda señal para ir a resultado
+            self.finalizar_partida()
         else:
             self.Partida.iniciar_nueva_ronda()
+            self.cambiar_estado_partida(EstadoJuego.EN_VOTACIONES)
+            self.sincronizar_ronda_con_bd()
+            self.notificar_ronda_actual_a_clientes()
 
-            letra_ronda = self.Partida.ronda_actual.letra_ronda
-            nro_ronda = self.Partida.nro_ronda_actual
-            self.dispacher.manejar_llamada("db", "actualizar_letra", letra_ronda)
-            self.dispacher.manejar_llamada("db", "actualizar_nro_ronda", nro_ronda)
-
-
-            info_ronda = self.Partida.get_info_ronda()
-            json = SerializeHelper.serializar(exito=True, msg="nueva_ronda", datos=info_ronda) #Cambie a la vista Ronda nueva
-            self.dispacher.manejar_llamada(
-                "comunicacion",  # nombre_servicio
-                "broadcast_a_clientes",  # nombre_metodo
-                json #args
-            )
 
     def obtener_votos_jugadores(self):
         votos = self.dispacher.manejar_llamada("comunicacion", #Recolectar los votos de la vista
@@ -159,69 +276,6 @@ class ServicioJuego:
         self.procesar_votos_y_asignar_puntaje(votos)
 
 
-    """
-    def procesar_votos_y_asignar_puntaje(self, votos):
-        respuestas_clientes = self.partida.ronda_actual.get_respuestas_ronda()
-        from collections import defaultdict
-
-        conteo_respuestas = defaultdict(lambda: defaultdict(int))
-
-        validez = defaultdict(dict)
-        for jugador, info in respuestas_clientes.items():
-            
-            if not info.get("respuestas", {}):   # se evalúa True si está vacío
-                self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
-                continue  # saltar al siguiente jugador
-           
-            for categoria, respuesta in info["respuestas"].items():
-                true_count = 0
-                false_count = 0
-                for ronda, votos_jugadores in votos.items():
-                    if jugador in votos_jugadores and categoria in votos_jugadores[jugador]:
-                        if votos_jugadores[jugador][categoria]:
-                            true_count += 1
-                        else:
-                            false_count += 1
-                
-                validez[jugador][categoria] = (true_count > false_count)
-                
-                # Solo cuenta la respuesta si es válida y no vacía
-                if respuesta and validez[jugador][categoria]:
-                    conteo_respuestas[categoria][respuesta] += 1
-
-        puntajes = {}
-        for jugador, info in respuestas_clientes.items():
-            puntajes[jugador] = {}
-
-            if not info.get("respuestas", {}):   # se evalúa True si está vacío
-                self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
-                continue  # saltar al siguiente jugador
-
-            for categoria, respuesta in info["respuestas"].items():
-                if not respuesta or not validez[jugador][categoria]:
-                    puntaje = 0
-                else:
-                    repeticiones = conteo_respuestas[categoria][respuesta]
-                    if repeticiones == 1:
-                        puntaje = 10  # Respuesta única
-                    else:
-                        puntaje = 5   # Respuesta repetida
-                puntajes[jugador][categoria] = puntaje
-                print(f"[DEBUG] {jugador} - {categoria}: '{respuesta}' | T:{true_count} F:{false_count} válida: {validez[jugador][categoria]}, repeticiones: {conteo_respuestas[categoria][respuesta]} => {puntaje} puntos")
-
-        totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
-
-        # Posible KeyError? en 1 ejecucion me salio, el resto normal
-        #self.logger.error(f"jugadores dict totales: {totales.keys()}")
-        #self.logger.error(f"jugadores en self.partida.jugadores: {self.partida.jugadores}")
-
-        for jugador in self.partida.jugadores:
-            if jugador.nickname in totales:
-                jugador.sumar_puntaje(totales[jugador.nickname])
-            print(f"El puntaje del jugador {jugador.nickname} es {totales[jugador.nickname]}")
-
-        self.evaluar_ultima_ronda()
-    """
 
     def procesar_votos_y_asignar_puntaje(self, votos):
         from collections import defaultdict
@@ -290,32 +344,24 @@ class ServicioJuego:
             jugador.sumar_puntaje(total)
             self.logger.info(f"El puntaje del jugador {jugador.nickname} es {total}")
 
+        # Guardar puntajes actualizados en BD
+        self.sincronizar_puntajes_con_bd()
+
         self.evaluar_ultima_ronda()
 
 
 
     def finalizar_partida(self):
         """Notifica el fin de la partida y envía los datos finales"""
+        self.cambiar_estado_partida(EstadoJuego.MOSTRANDO_RESULTADOS_FINALES)
+        self.notificar_resultados_finales_a_clientes()
 
-        puntajes_totales, ganador = self.Partida.calcular_puntos_partida()
-
-        resultados_partida = {
-            'jugadores' : list(self.Jugadores.keys()),
-            'puntajes_totales': puntajes_totales,
-            'ganador':ganador
-        }
-
-        json = SerializeHelper.serializar(exito=True, msg="fin_partida", datos=resultados_partida)
-        self.dispacher.manejar_llamada(
-            "comunicacion",  # nombre_servicio
-            "broadcast_a_clientes",  # nombre_metodo
-                json #args
-        )
         #------------se resetean los datos de la partida------------------------------------------------#
         self.Partida=self.Partida.crear_nueva_partida()
         for nickname in self.Jugadores:
             self.Jugadores[nickname]= False 
         self.logger.warning("La partida finalizo y se borro su instancia de servicio de juego, Inicie una nueva partida")
+
         #llegada a esta instancia se limpia la bd, ya no se necesita persistencia de datos
         # self.dispacher.manejar_llamada(
         #     "db",  # nombre_servicio
@@ -327,29 +373,33 @@ class ServicioJuego:
     # PENDIENTE - Manejar intentos de unirse o acceso en otros estados de la partida
     def solicitar_acceso(self):#(self,nickname)
         #si no existe una partida, se evalua si hay lugar
-        if self.Partida:
-            return SerializeHelper.respuesta(
-                exito=False,
-                msg="Ya hay una partida en curso, no puede unirse"
-            )
-        else:
-            hay_lugar: bool = self.dispacher.manejar_llamada(
-                "comunicacion",  # nombre_servicio
-                "hay_lugar_disponible",  # nombre_metodo
-                self.jugadores_min  # args
-            )
+        # self.logger.info(f"El estado de la PARTIDA es {self.Partida.get_estado_actual()}")
+        # if self.Partida.get_estado_actual() == EstadoJuego.RONDA_EN_CURSO:
+        #     return SerializeHelper.respuesta(
+        #         exito=False,
+        #         msg="Ya hay una partida en curso, no puede unirse"
+        #     )
+        # else:
+        #     hay_lugar: bool = self.dispacher.manejar_llamada(
+        #         "comunicacion",  # nombre_servicio
+        #         "hay_lugar_disponible",  # nombre_metodo
+        #         self.jugadores_min  # args
+        #     )
 
-            if not hay_lugar:
-                return SerializeHelper.respuesta(
-                    exito=False,
-                    msg="La sala está llena, no puede unirse."
-                )
+        #     if not hay_lugar:
+        #         return SerializeHelper.respuesta(
+        #             exito=False,
+        #             msg="La sala está llena, no puede unirse."
+        #         )
 
             # hay lugar
-            return SerializeHelper.respuesta(
-                exito=True,
-                msg="Hay lugar disponible, puede unirse."
-            )
+        return SerializeHelper.respuesta(
+            exito=True,
+            msg="Hay lugar disponible, puede unirse."
+        )
+        
+        
+
         """
         if not self.Partida:
 
@@ -526,7 +576,8 @@ class ServicioJuego:
                 "nickname": cliente_confirmado.nickname,
                 "ip": cliente_confirmado.socket.host,
                 "puerto": cliente_confirmado.socket.puerto,
-                "uri": str(cliente_confirmado.uri_cliente_conectado)
+                "uri": str(cliente_confirmado.uri_cliente_conectado),
+                "puntaje_total": 0  # Inicializar puntaje en 0
             }
 
             """ if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
@@ -548,6 +599,7 @@ class ServicioJuego:
 
             # Verificar si se puede iniciar la partida
             jugadores_suficientes = self._verificar_jugadores_suficientes()
+            self.logger.warning(f"jugadores_suficientes: {jugadores_suficientes}")
             if jugadores_suficientes:
                 # Notificacion mediante Sockets
                 hilo = threading.Thread(target=self.iniciar_partida, daemon=True)
@@ -571,6 +623,11 @@ class ServicioJuego:
         #Esta logica puede modificarse para aceptar reconexion si se implementa la linea 339 en solicitar_acceso
         if self.Partida:
             #self.Partida.eliminar_jugador_partida(nickname)
-            self.Jugadores.pop(nickname) #si se permite reconexion, esta linea se borra, pero
+            # Verificar si el jugador existe antes de eliminarlo
+            if nickname in self.Jugadores:
+                self.Jugadores.pop(nickname) #si se permite reconexion, esta linea se borra, pero
+                self.logger.info(f"Jugador {nickname} eliminado de la partida")
+            else:
+                self.logger.warning(f"Intento de eliminar jugador {nickname} que no existe en la partida")
 
 #NOTA: en vez de eliminar el jugador de la lista de partida, conviene borrarlo solo de la lista local, para evitar tener que cargar todos los datos de nuevo

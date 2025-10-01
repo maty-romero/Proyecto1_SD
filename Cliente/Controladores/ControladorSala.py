@@ -121,4 +121,13 @@ class ControladorSala(QObject):
         self.vista.setListaJugadores(jugadores_str)
         self.vista.setEstadoSala(msg)
         self.vista.setJugadoresRequeridos(str(self.gestor_cliente.get_jugadores_min()))
-
+    
+    # def rehabilitar_boton_listo(self):
+    #     """Re-habilita el botón 'Estoy Listo' después de una reconexión"""
+    #     if threading.current_thread() == threading.main_thread():
+    #         self.vista.getUnirSala().setEnabled(True)
+    #         self.vista.setEstadoSala("Reconectado - Puede confirmar nuevamente")
+    #     else:
+    #         # Si estamos en otro hilo, programar para ejecutar en hilo principal
+    #         from PyQt6.QtCore import QTimer
+    #         QTimer.singleShot(0, lambda: self.rehabilitar_boton_listo())

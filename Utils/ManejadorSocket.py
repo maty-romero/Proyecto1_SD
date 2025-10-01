@@ -4,6 +4,7 @@ import time
 import traceback
 from datetime import UTC, datetime, timedelta
 from Utils.ConsoleLogger import ConsoleLogger
+from Utils.SerializeHelper import SerializeHelper
 
 class ManejadorSocket:
     def __init__(self, host: str, puerto: int, nombre_logico: str, callback_mensaje = None, es_servidor=False,tipo_Nodo:str=None):
@@ -117,6 +118,10 @@ class ManejadorSocket:
                 data = conn.recv(1024)
                 if not data:
                     self.logger.warning(f"Conexión cerrada por el otro extremo")
+                    # Notificar desconexión del servidor al callback
+                    if self.callback_mensaje and self.tipo_nodo == "SesionCliente":
+                        mensaje_desconexion = SerializeHelper.serializar(True, "SERVIDOR_DESCONECTADO", {"motivo": "Conexión cerrada por el servidor"}).decode()
+                        self.callback_mensaje(mensaje_desconexion)
                     break
                 self.logger.info(f"[DEBUG] Datos recibidos: {data}")
                 mensaje = data.decode()
@@ -134,6 +139,10 @@ class ManejadorSocket:
                     self.logger.warning(f"[DEBUG] No hay callback configurado para procesar: '{mensaje}'")
             except Exception as e:
                 self.logger.error(f"Error en recepcion de mensaje: {e}")
+                # Notificar error de conexión al cliente
+                if self.callback_mensaje and self.tipo_nodo == "SesionCliente":
+                    mensaje_desconexion = SerializeHelper.serializar(True, "SERVIDOR_DESCONECTADO", {"motivo": f"Error de conexión: {str(e)}"}).decode()
+                    self.callback_mensaje(mensaje_desconexion)
                 import traceback
                 traceback.print_exc()
                 break
@@ -226,6 +235,11 @@ class ManejadorSocket:
                     wait_count += 1
                     self.logger.info(f"[DEBUG] Reesperando conexiones... intento {wait_count}")
                     time.sleep(0.5)
+                # Si recuperamos conexiones, notificar reconexión
+                if self.conexiones and self.callback_mensaje and self.tipo_nodo == "SesionCliente":
+                    self.logger.info("✅ Conexiones restauradas - notificando reconexión")
+                    mensaje_restauracion = SerializeHelper.serializar(True, "CONEXION_RESTAURADA", {"mensaje": "Conexión de socket restaurada"}).decode()
+                    self.callback_mensaje(mensaje_restauracion)
             time.sleep(2)
 
     def esta_vivo(self) -> bool:

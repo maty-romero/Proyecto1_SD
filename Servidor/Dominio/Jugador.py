@@ -20,3 +20,11 @@ class Jugador:
     def get_puntaje(self) -> int:
         return self.puntaje_total
     
+    @staticmethod
+    def desde_datos_bd(datos_cliente: dict):
+        """Crea un objeto Jugador desde los datos de la base de datos"""
+        jugador = Jugador(datos_cliente["nickname"])
+        # Restaurar puntaje si existe en BD
+        jugador.puntaje_total = datos_cliente.get("puntaje_total", 0)
+        return jugador
+    

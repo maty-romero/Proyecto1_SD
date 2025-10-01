@@ -44,6 +44,21 @@ class Ronda:
         }
         return info
 
+    @staticmethod
+    def desde_datos_bd(datos_ronda: dict, jugadores: list, letras_jugadas: list):
+        """Restaura una ronda desde los datos de la base de datos"""
+        ronda = Ronda.__new__(Ronda)  # Crear sin llamar __init__, porque se llamaría a get_letra_random sobreescribiendo la letra que se trajo de BD
+
+        ronda.nro_ronda = datos_ronda.get("nro_ronda", 1)
+        ronda.finalizada = datos_ronda.get("finalizada", False)
+        ronda.letras_jugadas = letras_jugadas.copy() if letras_jugadas else []
+        ronda.letra_ronda = datos_ronda.get("letra", "A")
+        ronda.categorias = datos_ronda.get("categorias", [])
+        ronda.jugadores_ronda = jugadores
+        ronda.respuestas_ronda = datos_ronda.get("respuestas", {})
+        
+        return ronda
+
     """
     def iniciar_partida(self):
         self.rondaActual = 1

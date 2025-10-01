@@ -17,6 +17,11 @@ class ClienteConectado:
         self.confirmado: bool = False
         self.conectado: bool = True
 
+        # Guardar datos para reconexión
+        self.ip_cliente = ip_cliente 
+        self.puerto_cliente = puerto_cliente
+        self.nombre_logico = nombre_logico
+
         self.timestamp: datetime = datetime.now(UTC)
         self.logger.warning(f"datos del timestamp constructor{self.timestamp}")
         self.socket = ManejadorSocket(host=ip_cliente, puerto=puerto_cliente, nombre_logico=nickname)

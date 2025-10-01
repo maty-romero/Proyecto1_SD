@@ -1,12 +1,14 @@
 # ---------------- ServicioComunicacion ----------------
 import threading
 import time
+from datetime import UTC, datetime
 
 import Pyro5
 from Servidor.Comunicacion.ClienteConectado import ClienteConectado
 from Servidor.Aplicacion.Nodo import Nodo
 from Utils.ConsoleLogger import ConsoleLogger
 from Utils.SerializeHelper import SerializeHelper
+from Utils.ManejadorSocket import ManejadorSocket
 
 class ServicioComunicacion:
     def __init__(self, dispatcher):
@@ -15,6 +17,10 @@ class ServicioComunicacion:
         self.clientes: list[ClienteConectado] = []
         self.clientes_caidos: list[ClienteConectado] = []
         self.nodos_cluster: list[Nodo] = []  # nodos replicas
+        
+        # NOTA: _restaurar_clientes_persistidos() se llama desde NodoReplica.iniciar_como_coordinador()
+        # después de que todos los servicios estén registrados
+        
         threading.Thread(target=self._loop_verificacion_clientes, daemon=True).start()
 
     # ---------------- Clientes ----------------
@@ -37,6 +43,7 @@ class ServicioComunicacion:
         cliente = ClienteConectado(nickname, nombre_logico, ip_cliente, puerto_cliente, uri_cliente)
         cliente.socket.conectar_a_nodo(ip_cliente, puerto_cliente)
         self.clientes.append(cliente)
+        
         self.logger.info(f"Cliente '{nickname}' registrado y conectado")
 
     def _verificar_clientes(self):
@@ -45,25 +52,183 @@ class ServicioComunicacion:
             if cliente.esta_vivo():
                 activos.append(cliente)
             else:
-                self.logger.info(f"1. [DEBUG] Desde ServicioComunicacion - else: de verificar_cliente - en hilo: {threading.current_thread().name}")
-                self.logger.info(f"Cliente {cliente.nickname} inactivo. Cerrando sesión.")
+                self.logger.info(f"Cliente {cliente.nickname} inactivo. Intentando reconectar...")
+                
+                # Intentar reconectar antes de eliminar definitivamente
+                if self._intentar_reconectar_cliente(cliente):
+                    self.logger.info(f"Cliente {cliente.nickname} reconectado exitosamente")
+                    activos.append(cliente)
+                    continue  # No ejecutar el código de eliminación
+                
+                self.logger.info(f"Cliente {cliente.nickname} definitivamente desconectado. Eliminando...")
                 cliente.socket.cerrar() # Se cierra el socket del cliente
+                
+                # Eliminar de persistencia
+                self._eliminar_cliente_persistido(cliente.nickname)
+                
                 self.dispatcher.manejar_llamada("juego","eliminar_jugador",cliente.nickname) #Se elimina al jugador
                 json = SerializeHelper.serializar(
                     exito=False,
                     msg=f"El jugador '{cliente.nickname}' se ha desconectado"
                 )
-                import Pyro5.api
-                # ...existing code...
-                proxy_cliente = Pyro5.api.Proxy(str(cliente.uri_cliente_conectado))
-                # proxy_cliente.mostrar_vista_desconexion()
-                # proxy_cliente = cliente.get_proxy_cliente()
-                # proxy_cliente._pyroClaimOwnership()
-                # proxy_cliente.mostrar_vista_desconexion()
-
                 self.broadcast_a_clientes(json)
         self.clientes = activos # se sobreescribe la lista
         self.logger.info(f"** Numero de Clientes Vivos = {len(self.clientes)}")
+
+    def _intentar_reconectar_cliente(self, cliente: ClienteConectado) -> bool:
+        """Intenta reconectar con un cliente que parece haber perdido conexión"""
+        try:
+            self.logger.info(f"Intentando reconectar con cliente {cliente.nickname} en {cliente.ip_cliente}:{cliente.puerto_cliente}")
+            # Cerrar la conexión del SERVIDOR hacia el cliente (puede estar corrupta)
+            # NOTA: Esto NO cierra el socket del cliente, que sigue esperando conexiones
+            cliente.socket.cerrar()
+            
+            # Crear nuevo ManejadorSocket para que el servidor se reconecte al cliente
+            cliente.socket = ManejadorSocket(
+                host=cliente.ip_cliente, 
+                puerto=cliente.puerto_cliente, 
+                nombre_logico=cliente.nickname
+            )
+            cliente.socket.set_callback(cliente._procesar_mensaje)
+            
+            # Intentar conectar al cliente (que debería estar esperando)
+            cliente.socket.conectar_a_nodo(cliente.ip_cliente, cliente.puerto_cliente)
+            
+            # Esperar un momento para que se establezca la conexión
+            import time
+            time.sleep(1)
+            
+            # Verificar si la conexión se estableció
+            if cliente.socket.conexiones and len(cliente.socket.conexiones) > 0:
+                # Restablecer estado del cliente
+                cliente.conectado = True
+                cliente.timestamp = datetime.now(UTC)
+                self.logger.info(f"✅ Reconexión exitosa con {cliente.nickname}")
+                return True
+            else:
+                self.logger.warning(f"❌ No se pudo establecer conexión con {cliente.nickname}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"❌ Error intentando reconectar con {cliente.nickname}: {e}")
+            return False
+
+
+
+    def _eliminar_cliente_persistido(self, nickname: str):
+        """Elimina cliente de la persistencia en BD"""
+        try:
+            # Eliminar de BD
+            self.dispatcher.manejar_llamada("db","eliminar_jugador",nickname)
+            
+        except Exception as e:
+            self.logger.error(f"Error eliminando cliente persistido {nickname}: {e}")
+
+    def restaurar_clientes_persistidos(self):
+        """Restaura clientes confirmados desde BD tras caída del servidor (llamado después del Bully)"""
+        try:
+            # CRÍTICO: Primero restaurar el estado del juego desde BD
+            self.logger.info("Restaurando estado del juego desde BD...")
+            try:
+                self.dispatcher.manejar_llamada("juego", "inicializar_con_restauracion")
+                self.logger.info("✅ Estado del juego restaurado desde BD")
+            except Exception as e:
+                self.logger.error(f"Error restaurando estado del juego: {e}")
+            
+            # Luego restaurar clientes que fueron confirmados (guardados por ServicioJuego)
+            clientes_restaurados = self._restaurar_clientes_desde_bd()
+            
+            if clientes_restaurados > 0:
+                self.logger.info(f"✅ Total de clientes restaurados desde BD: {clientes_restaurados}")
+            # No imprimir mensaje cuando no hay clientes - ya lo hace _restaurar_clientes_desde_bd()
+            
+        except Exception as e:
+            self.logger.error(f"Error en proceso de restauración: {e}")
+
+    def _restaurar_clientes_desde_bd(self) -> int:
+        """Restaura clientes confirmados desde la base de datos (guardados por ServicioJuego)"""
+        try:
+            clientes_bd = self.dispatcher.manejar_llamada("db","obtener_clientes_conectados")
+            
+            if not clientes_bd:
+                self.logger.info("No hay clientes en BD para restaurar")
+                return 0
+            
+            self.logger.info(f"Restaurando {len(clientes_bd)} clientes desde BD...")
+            
+            clientes_restaurados = 0
+            for cliente_bd in clientes_bd:
+                if self._intentar_restaurar_cliente_bd(cliente_bd):
+                    clientes_restaurados += 1
+                else:
+                    # Si no se puede reconectar, eliminarlo de BD
+                    self.logger.warning(f"Cliente {cliente_bd.get('nickname', 'unknown')} no responde - eliminando de BD")
+                    self.dispatcher.manejar_llamada("db","eliminar_jugador", cliente_bd.get('nickname'))
+            
+            return clientes_restaurados
+            
+        except Exception as e:
+            self.logger.error(f"Error restaurando desde BD: {e}")
+            return 0
+
+
+
+
+
+    def _intentar_restaurar_cliente_bd(self, cliente_bd: dict) -> bool:
+        """Intenta restaurar un cliente específico desde datos de BD"""
+        try:
+            nickname = cliente_bd.get('nickname', 'unknown')
+            ip_cliente = cliente_bd.get('ip', '')
+            puerto_cliente = cliente_bd.get('puerto', 0)
+            uri_cliente = cliente_bd.get('uri', '')
+            
+            self.logger.info(f"Intentando restaurar cliente {nickname} desde BD...")
+            
+            # Crear ClienteConectado desde datos de BD
+            cliente = ClienteConectado(
+                nickname,
+                f"jugador.{nickname}",  # nombre_logico reconstruido
+                ip_cliente,
+                int(puerto_cliente),
+                uri_cliente
+            )
+            
+            # Intentar conectar (el cliente debería estar esperando)
+            cliente.socket.conectar_a_nodo(ip_cliente, int(puerto_cliente))
+            
+            # Esperar conexión
+            time.sleep(2)
+            
+            if cliente.socket.conexiones:
+                self.clientes.append(cliente)
+                self.logger.info(f"✅ Cliente {nickname} restaurado desde BD exitosamente")
+                
+                # Notificar al cliente que el servidor se recuperó
+                self._notificar_servidor_recuperado(cliente)
+                
+                return True
+            else:
+                self.logger.warning(f"❌ No se pudo restaurar cliente {nickname} desde BD - No responde")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error restaurando cliente desde BD {cliente_bd.get('nickname', 'unknown')}: {e}")
+            return False
+
+    def _notificar_servidor_recuperado(self, cliente: ClienteConectado):
+        """Notifica al cliente que el servidor se ha recuperado"""
+        try:
+            from Utils.SerializeHelper import SerializeHelper
+            mensaje = SerializeHelper.serializar(
+                exito=True,
+                msg="servidor_recuperado",
+                datos={"mensaje": "Conexión con servidor restablecida"}
+            )
+            cliente.socket.enviar(mensaje)
+            self.logger.info(f"Notificación de recuperación enviada a {cliente.nickname}")
+        except Exception as e:
+            self.logger.error(f"Error notificando recuperación a {cliente.nickname}: {e}")
 
     def _loop_verificacion_clientes(self):
         while True:
@@ -192,35 +357,6 @@ class ServicioComunicacion:
 
         return votos_clientes
     
-
-
-        """
-        --> Codigo anterior
-        votos_clientes: dict = {}
-        for i, cliente in enumerate(self.clientes):
-            proxy = cliente.get_proxy_cliente()
-            proxy._pyroClaimOwnership()
-            votos = proxy.obtener_votos_cliente()
-            votos_clientes[i] = votos
-        return votos_clientes
-        """
-    
-    """
-    def enviar_a_cliente(self, id_cliente, mensaje):
-        pass
-        # if id_cliente in self.clientes:
-        # self.clientes[id_cliente].enviar(mensaje)
-
-    def replicar_bd(self, datos):
-        pass
-        # Podrías tener un grupo especial de "nodos réplica"
-        # for cliente_id, cliente in self.clientes.items():
-        # if cliente_id.startswith("replica"):
-        # cliente.enviar(datos)
-
-    def llamada_rpc(self, id_cliente, metodo, *args, **kwargs):
-        pass
-    """
     #METODO PARA PODER OBTENER LOS DATOS DE CONEXION DEL CLIENTE
     def getDatosCliente(self, usuario: str):
         for cliente in self.clientes:

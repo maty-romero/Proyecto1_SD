@@ -76,8 +76,11 @@ class NodoReplica(Nodo):
 
         datos = {
             "codigo": 1,
-            "clientes_Conectados": [{"nickname": "NNNN", "ip": "0.0.0.0", "puerto": "9090", "uri": "PYRO:<nombre_logico>@<ip>:<puerto>" }],
-            "nro_ronda": 1,
+            #"clientes_Conectados": [{"nickname": "NNNN", "ip": "0.0.0.0", "puerto": "9090", "uri": "PYRO:<nombre_logico>@<ip>:<puerto>", "puntaje_total":"0" }],
+            "clientes_Conectados": [],
+            "estado_actual": "",
+            "letras_jugadas":"",
+            "nro_ronda": 0,
             "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
             "letra": "",
             "respuestas": []
@@ -92,6 +95,10 @@ class NodoReplica(Nodo):
         daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
         uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
         self.logger.info("ServicioJuego registrado correctamente.")
+        
+        # Ahora que el objeto Pyro5 está registrado, restaurar clientes persistidos
+        self.logger.info("Restaurando clientes persistidos desde BD...")
+        self.ServComunic.restaurar_clientes_persistidos()
         daemon.requestLoop()
 
         #deja de aceptar conexiones una vez que se volvio coordinador

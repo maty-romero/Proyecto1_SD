@@ -15,12 +15,12 @@ class EstadoJuego(Enum):
 """---------------------------------------------------------------------------------------------------------------------"""
 
 class Partida:
-    def init(self):
+    def __init__(self):
         self.crear_nueva_partida()
 
     def crear_nueva_partida (self):
         self.categorias = ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"]
-        self.rondas_maximas = 2
+        self.rondas_maximas = 1
         self.nro_ronda_actual = 0
         self.letras_jugadas: list[str] = []
         self.ronda_actual: Ronda = None
@@ -104,6 +104,47 @@ class Partida:
     
     def terminar_partida(self) -> bool:
         self.estado_actual == EstadoJuego.FIN_JUEGO
+
+    @staticmethod
+    def desde_datos_bd(datos_partida: dict):
+        """Restaura una partida desde los datos de la base de datos"""
+        partida = Partida()
+        
+        # Restaurar datos básicos
+        partida.categorias = datos_partida.get("categorias", partida.categorias)
+        partida.nro_ronda_actual = datos_partida.get("nro_ronda", 0)
+        partida.letras_jugadas = datos_partida.get("letras_jugadas", [])
+        
+        # Restaurar jugadores
+        clientes_conectados = datos_partida.get("clientes_Conectados", [])
+        partida.jugadores = [Jugador.desde_datos_bd(cliente) for cliente in clientes_conectados]
+        
+        # Restaurar ronda actual si existe
+        if partida.nro_ronda_actual > 0:
+            letra_actual = datos_partida.get("letra", "")
+            respuestas = datos_partida.get("respuestas", {})
+            
+            partida.ronda_actual = Ronda.desde_datos_bd({
+                "nro_ronda": partida.nro_ronda_actual,
+                "categorias": partida.categorias,
+                "letra": letra_actual,
+                "respuestas": respuestas
+            }, partida.jugadores, partida.letras_jugadas)
+        
+        # Restaurar estado desde BD o determinar por lógica
+        estado_bd = datos_partida.get("estado_actual")
+        if estado_bd:
+            # Convertir string a Enum: "EN_SALA" -> EstadoJuego.EN_SALA
+            try:
+                partida.estado_actual = EstadoJuego[estado_bd]
+            except KeyError:
+                # Si el estado en BD no es válido, usar lógica por defecto
+                partida.estado_actual = EstadoJuego.RONDA_EN_CURSO if partida.nro_ronda_actual > 0 else EstadoJuego.EN_SALA
+        else:
+            # Si no hay estado en BD, determinar por lógica
+            partida.estado_actual = EstadoJuego.RONDA_EN_CURSO if partida.nro_ronda_actual > 0 else EstadoJuego.EN_SALA
+            
+        return partida
 
 
 

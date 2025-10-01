@@ -222,3 +222,73 @@ class ControladorDB:
             projection = {"_id": 0, "codigo": 1}
         )
         return ultimo["codigo"]
+
+    # MÉTODOS PARA RESTAURAR DATOS DESDE LA BD
+    def obtener_datos_partida_completos(self):
+        """Obtiene todos los datos de la partida actual para restauración"""
+        return self.partida.find_one(
+            {"codigo": self.codigo_partida},
+            {"_id": 0}  # Excluir el _id de MongoDB
+        )
+
+    def obtener_todas_las_rondas(self):
+        """Obtiene todas las rondas de la partida actual ordenadas por número de ronda"""
+        return list(self.partida.find(
+            {"codigo": self.codigo_partida, "nro_ronda": {"$gt": 0}},
+            {"_id": 0}
+        ).sort("nro_ronda", 1))
+
+    def obtener_jugadores_conectados(self):
+        """Obtiene la lista de jugadores conectados"""
+        partida_data = self.partida.find_one(
+            {"codigo": self.codigo_partida},
+            {"_id": 0, "clientes_Conectados": 1}
+        )
+        return partida_data.get("clientes_Conectados", []) if partida_data else []
+
+    def get_controlador(self):
+        """Devuelve la instancia del controlador (para acceso desde dispatcher)"""
+        return self
+
+    def actualizar_estado_partida(self, estado_enum):
+        """Actualiza el estado de la partida convirtiendo el Enum a string"""
+        estado_str = estado_enum.name  # Convierte EstadoJuego.EN_SALA a "EN_SALA"
+        return self.partida.update_one(
+            {'codigo': self.codigo_partida},
+            {'$set': {'estado_actual': estado_str}}
+        ).modified_count
+
+    def actualizar_letras_jugadas(self, letras_jugadas):
+        """Actualiza las letras jugadas en la partida"""
+        return self.partida.update_one(
+            {'codigo': self.codigo_partida},
+            {'$set': {'letras_jugadas': letras_jugadas}}
+        ).modified_count
+
+    def actualizar_puntajes_jugadores(self, puntajes_dict):
+        """Actualiza los puntajes de los jugadores en la partida"""
+        modificados = 0
+        for nickname, puntaje in puntajes_dict.items():
+            resultado = self.partida.update_one(
+                {
+                    "codigo": self.codigo_partida,
+                    "clientes_Conectados.nickname": nickname
+                },
+                {
+                    "$set": {"clientes_Conectados.$.puntaje_total": puntaje}
+                }
+            )
+            modificados += resultado.modified_count
+        return modificados
+
+
+    def obtener_clientes_conectados(self):
+        """Obtiene todos los clientes conectados desde BD"""
+        try:
+            partida = self.partida.find_one({"codigo": self.codigo_partida})
+            if partida and "clientes_Conectados" in partida:
+                return partida["clientes_Conectados"]
+            return []
+        except Exception as e:
+            print(f"Error obteniendo clientes conectados: {e}")
+            return []
