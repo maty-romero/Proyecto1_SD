@@ -1,10 +1,12 @@
 import socket, threading, time, json
 
 from Servidor.Aplicacion import NodoReplica
+from Utils.ConsoleLogger import ConsoleLogger
 
 
 class ManejadorUDP:
     def __init__(self, owner, puerto_local, ping_interval=3, ping_timeout=9, retries=2):
+        self.logger = ConsoleLogger(name=f"[ManejadorUDP]", level="INFO")
         self.owner: NodoReplica = owner
         self.es_productor = None
         self.puerto_local = puerto_local
@@ -30,7 +32,7 @@ class ManejadorUDP:
         #print(f"[ManejadorUDP] iniciado en puerto {self.puerto_local}")
 
     def parar_escucha(self):
-        print("Parando escucha...")
+        self.logger.warning("Parando escucha...")
         self.evento_stop.set()
         if self.socket_local:
             self.socket_local.close()
@@ -39,7 +41,7 @@ class ManejadorUDP:
         #----------------------------prueba de escucha modificada--------------------------------#
         #no se corta la escucha, asumimos que siempre van a quedarse escuchando los nodos, porque si no, pueden estar vivos, pero rechazar un ping
         while not self.evento_stop.is_set():
-            print("escuchando")
+            self.logger.info("Escuchando")
             try:
                 data, addr = self.socket_local.recvfrom(1024)
                 mensaje = json.loads(data.decode())
@@ -47,12 +49,12 @@ class ManejadorUDP:
                 #threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
                 self.owner.callback_mensaje(mensaje)
             except (socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
-                print(f"[Manejador] Error escuchando, continua la ejecucion...")
+                self.logger.error("Error escuchando, continua la ejecucion...")
 
     #cambiamos id por 
     #el payload lo podemos utilizar para adjuntar los datos de la bd en el mensaje de envio
     def enviar_mensaje(self, ip_destino, puerto_destino, message_type, payload=None):
-        print(f"enviando mensaje a ip {ip_destino} y puerto {puerto_destino}")
+        self.logger.warning(f"enviando mensaje a ip {ip_destino} y puerto {puerto_destino}")
         msg = {"type": message_type, "from": self.owner.id ,"ip":self.owner.host,"puerto":self.owner.puerto}
         if payload:
             msg.update(payload)
@@ -65,12 +67,14 @@ class ManejadorUDP:
     """Version previa, funciona"""
     def _enviar_heartbeat(self):
         """"""
-        print("intenta HEART")
+        self.logger.info(f"[{self.owner.id}] intenta HEARTBEAT")
+
         #prueba de heart
         while not self.evento_stop.is_set():
             time.sleep(self.intervalo_ping)
             if self.owner.nodoSiguiente:
-                print(f"enviando ping a [{self.owner.nodoSiguiente.id}]{self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
+
+                self.logger.info(f"enviando ping a [{self.owner.nodoSiguiente.id}]{self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
                 ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 iptemp="127.0.0.1"
                 ping_sock.bind((iptemp, 0))  # Puerto 0 = asignar automáticamente puerto
@@ -81,7 +85,7 @@ class ManejadorUDP:
                     ping_sock.sendto(msg, (self.owner.nodoSiguiente.host, self.owner.nodoSiguiente.puerto))
                     ping_sock.recvfrom(1024) # Esperar PONG
                 except (socket.timeout, socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
-                    print(f"No se recibio el PONG en {self.owner.id}")
+                    self.logger.warning(f"No se recibio el PONG en {self.owner.id}")
                     if hasattr(self.owner, "on_siguiente_muerto"):
                         self.owner.nuevo_Siguiente()
                         break
@@ -105,12 +109,12 @@ class ManejadorUDP:
             
             ping_sock.sendto(msg, (nodo.host, nodo.puerto))
             ping_sock.recvfrom(1024)  # Esperar PONG
-            
-            print(f"[{self.owner.id}] ✓ {nodo.id} está vivo")
+
+            self.logger.info(f"[{self.owner.id}] ✓ {nodo.id} está vivo")
             return True
             
         except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
-            print(f"[{self.owner.id}] ✗ {nodo.id} no respondió")
+            self.logger.error(f"[{self.owner.id}] ✓ {nodo.id} está vivo")
             return False
             
         finally:
