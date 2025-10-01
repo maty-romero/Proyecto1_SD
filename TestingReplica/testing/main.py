@@ -21,6 +21,7 @@ for entry in raw_lista.split(","):
 
 # Crear solo un nodo por ejecución
 app = NodoReplica(my_id, f"n{my_id}", "127.0.0.1", my_port, lista_nodos,es_coordinador)
+
 app.iniciar()
 print(f"[Nodo {my_id}] corriendo en puerto {my_port}. Ctrl+C para detener.")
 
