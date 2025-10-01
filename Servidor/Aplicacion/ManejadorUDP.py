@@ -41,8 +41,8 @@ class ManejadorUDP:
                 data, addr = self.socket_local.recvfrom(1024)
                 mensaje = json.loads(data.decode())
                 # Procesar mensaje en hilo separado
-                #threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
-                self.owner.callback_mensaje(mensaje)
+                threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
+                #self.owner.callback_mensaje(mensaje)
             except (socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
                 print(f"[Manejador] Error escuchando, continua la ejecucion...")
 

@@ -4,6 +4,14 @@ from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Aplicacion.NodoReplica import NodoReplica
 
 NODOS_IDS = [1, 2, 3, 4, 5]
+# Mapeo de ID a puerto fijo
+PUERTOS_FIJOS = {
+    1: 7001,
+    2: 7002,
+    3: 7003,
+    4: 7004,
+    5: 7005
+}
 servicios = {}
 
 class Listener:
@@ -22,11 +30,8 @@ class Listener:
 
 my_id = int(sys.argv[1])
 
-# Asignar puerto dinámico
-sock_temp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock_temp.bind(("127.0.0.1", 0))
-my_port = sock_temp.getsockname()[1]
-sock_temp.close()
+# Asignar puerto fijo según el ID
+my_port = PUERTOS_FIJOS[my_id]
 
 print(f"[Main] Puerto asignado: {my_port}")
 
@@ -40,14 +45,14 @@ mi_servicio = ServiceInfo(
     properties={"id": str(my_id)}
 )
 zc.register_service(mi_servicio)
-print(f"[Zeroconf] Registrado Nodo {my_id} en puerto {my_port}")
+#print(f"[Zeroconf] Registrado Nodo {my_id} en puerto {my_port}")
 
 # Buscar otros servicios
 ServiceBrowser(zc, "_nodo._udp.local.", Listener())
 
 # ESPERAR 8 SEGUNDOS para recibir lista actualizada
-print(f"[Main] Esperando 8 segundos para descubrir otros nodos...")
-time.sleep(8)
+print(f"[Main] Esperando 3 segundos para descubrir otros nodos...")
+time.sleep(3)
 
 # Construir lista de nodos
 lista_nodos = [Nodo(id=nid, nombre=f"n{nid}", host=servicios[nid][0], puerto=servicios[nid][1])
