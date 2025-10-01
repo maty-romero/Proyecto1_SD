@@ -45,8 +45,8 @@ class ManejadorUDP:
                 # Procesar mensaje en hilo separado
                 #threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
                 self.owner.callback_mensaje(mensaje)
-            except Exception as e:
-                print(f"[Manejador] Error escuchando: {e}")
+            except (socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
+                print(f"[Manejador] Error escuchando")
 
     #cambiamos id por 
     #el payload lo podemos utilizar para adjuntar los datos de la bd en el mensaje de envio
@@ -61,36 +61,54 @@ class ManejadorUDP:
             pass
 
     # def _enviar_heartbeat(self):
+    #     """Envía heartbeats periódicos al nodo siguiente"""
     #     print(f"[{self.owner.id}] Iniciando heartbeat thread")
+        
     #     while not self.evento_stop.is_set():
-    #         print(f"[{self.owner.id}] Loop heartbeat - evento_stop: {self.evento_stop.is_set()}")
     #         time.sleep(self.intervalo_ping)
             
-    #         print(f"[{self.owner.id}] Verificando nodoSiguiente: {self.owner.nodoSiguiente}")
     #         if self.owner.nodoSiguiente:
-    #             print(f"[{self.owner.id}] enviando ping a [{self.owner.nodoSiguiente.id}]{self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
+    #             print(f"[{self.owner.id}] Enviando ping a [{self.owner.nodoSiguiente.id}] {self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
+
     #             ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #             ping_sock.settimeout(self.ping_timeout)
+    #             ping_sock.bind(("0.0.0.0", 0))  # Puerto 0 = asignar automáticamente puerto
+    #             puerto_asignado = ping_sock.getsockname()[1]
     #             try: 
-    #                 msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
+    #                 msg = json.dumps({
+    #                     "type": "PING", 
+    #                     "from": self.owner.id,
+    #                     "ip": "127.0.0.1",  # o self.owner.host si lo tienes
+    #                     "puerto": puerto_asignado
+    #                 }).encode()
+                    
     #                 ping_sock.sendto(msg, (self.owner.nodoSiguiente.host, self.owner.nodoSiguiente.puerto))
-    #                 data, addr = ping_sock.recvfrom(1024)
-    #                 print(f"[{self.owner.id}] ✓ PONG recibido de {addr}")
-    #             except (socket.timeout, socket.gaierror) as e:
-    #                 print(f"[{self.owner.id}] ✗ No se recibio el PONG - Error: {e}")
-    #                 if hasattr(self.owner, "on_siguiente_muerto"):
-    #                     self.owner.on_siguiente_muerto()
-    #                     break
+    #                 data, addr = ping_sock.recvfrom(1024)  # Esperar PONG
+    #                 print(f"[{self.owner.id}] ✓ PONG recibido")
+                    
+    #             except socket.timeout:
+    #                 print(f"[{self.owner.id}] ✗ Timeout - No se recibió PONG")
+    #                 self.owner.nuevo_Siguiente()
+    #                 break
+                    
+    #             except (socket.gaierror, ConnectionRefusedError, ConnectionResetError, OSError) as e:
+    #                 print(f"[{self.owner.id}] ✗ Error de conexión: {e}")
+    #                 self.owner.nuevo_Siguiente()
+    #                 break
+                    
     #             except Exception as e:
-    #                 print(f"[{self.owner.id}] ✗ Error inesperado en heartbeat: {e}")
+    #                 print(f"[{self.owner.id}] ✗ Error inesperado: {e}")
+    #                 self.owner.nuevo_Siguiente()
+    #                 break
+                    
     #             finally:
     #                 ping_sock.close()
     #         else:
     #             print(f"[{self.owner.id}] No hay nodoSiguiente configurado")
         
-    #     print(f"[{self.owner.id}] Heartbeat thread terminado")  
+    #     print(f"[{self.owner.id}] Heartbeat thread terminado")
 
 
+    """Version previa, funciona"""
     def _enviar_heartbeat(self):
         """"""
         print("intenta HEART")
@@ -101,42 +119,48 @@ class ManejadorUDP:
                 print(f"enviando ping a [{self.owner.nodoSiguiente.id}]{self.owner.nodoSiguiente.host}:{self.owner.nodoSiguiente.puerto}")
                 ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 iptemp="127.0.0.1"
-                porttemp=6000
-                ping_sock.bind(("127.0.0.1", 6000))
+                ping_sock.bind((iptemp, 0))  # Puerto 0 = asignar automáticamente puerto
+                puerto_asignado = ping_sock.getsockname()[1]
                 ping_sock.settimeout(self.ping_timeout)
                 try: 
-                    msg = json.dumps({"type": "PING", "from": self.owner.id ,"ip":iptemp,"puerto":porttemp}).encode()
-                    ping_sock.sendto(msg, (self.owner.nodoSiguiente.host ,self.owner.nodoSiguiente.puerto))
+                    msg = json.dumps({"type": "PING", "from": self.owner.id ,"ip":iptemp,"puerto":puerto_asignado}).encode()
+                    ping_sock.sendto(msg, (self.owner.nodoSiguiente.host, self.owner.nodoSiguiente.puerto))
                     ping_sock.recvfrom(1024) # Esperar PONG
-                except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError):
+                except (socket.timeout, socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
                     print(f"No se recibio el PONG en {self.owner.id}")
                     if hasattr(self.owner, "on_siguiente_muerto"):
-                        self.owner.on_siguiente_muerto()
+                        self.owner.nuevo_Siguiente()
                         break
                 finally:
                     ping_sock.close()
-       
 
-
-
-
-    # def ping_directo(self, nodo, timeout=1.0):
-    #     try:
-    #         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #         s.settimeout(timeout)
-    #         msg = json.dumps({"type": "PING", "from": self.owner.id}).encode()
-    #         s.sendto(msg, (nodo.host, nodo.puerto))
-
-    #         print(f"{self.owner.id} - PING DIRECTO A {nodo.id}")
+    def ping_directo(self, nodo, timeout=2.0):
+        """Verifica si un nodo está vivo enviando un PING directo"""
+        try:
+            ping_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ping_sock.bind(("127.0.0.1", 0))  # Puerto automático
+            puerto_asignado = ping_sock.getsockname()[1]
+            ping_sock.settimeout(timeout)
             
-    #         data, _ = s.recvfrom(4096)
-    #         resp = json.loads(data.decode())
-    #         return resp.get("type") == "PONG"
-    #     except (socket.timeout, OSError, json.JSONDecodeError):
-    #         print(f"{self.owner.id} - PING DIRECTO | No recibio PONG de {nodo.id}")
-    #         return False
-    #     finally:
-    #         s.close()
+            msg = json.dumps({
+                "type": "PING", 
+                "from": self.owner.id,
+                "ip": "127.0.0.1",
+                "puerto": puerto_asignado
+            }).encode()
+            
+            ping_sock.sendto(msg, (nodo.host, nodo.puerto))
+            ping_sock.recvfrom(1024)  # Esperar PONG
+            
+            print(f"[{self.owner.id}] ✓ {nodo.id} está vivo")
+            return True
+            
+        except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
+            print(f"[{self.owner.id}] ✗ {nodo.id} no respondió")
+            return False
+            
+        finally:
+            ping_sock.close()
 
 class Nodo:
     def __init__(self, id_nodo, nombre, host, puerto, esCoordinador=False):
@@ -157,6 +181,7 @@ class NodoReplica(Nodo):
         self.recalcular_vecinos()
         #se envia ip y puerto de siguiente, ver como reasignar...
         self.manejador = ManejadorUDP(self, self.puerto)
+         # Variables para verificar si un nodo está vivo
         
     def iniciar(self):
         if self.esCoordinador:
@@ -203,19 +228,21 @@ class NodoReplica(Nodo):
                 self.manejador.enviar_mensaje(ip,puerto,"PONG")
             except Exception as e: 
                 print(f"Error al enviar PONG: {e}")
+        elif tipo == "NUEVO_ANTERIOR":
+            self.nuevo_anterior(sender,ip,puerto)
+        
+        elif tipo == "ACK_NUEVO_ANTERIOR":
+            print(f"[{self.id}] Reconexión exitosa con {sender}")
 
         # elif tipo == "PONG":
         #     print(f"[{self.id}] Recibió PONG de {sender}")
-        elif tipo == "ESTAS_VIVO": #Recibe esto solo cuando se murio el anterior nodo
-            print(f"[{self.id}] Recibió ESTAS_VIVO de {sender}")
-            #self.asignar_nodo_anterior()
-            #self.manejador.enviar_mensaje()
+    
 
     def on_siguiente_muerto(self):
         print(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id if self.nodoSiguiente else 'NINGUNO'}")
         self.nodoSiguiente = None
 
-        # candidatos = [n for n in self.lista_nodos if n.id > self.id]
+        #candidatos = sorted([n for n in self.lista_nodos if n.id > self.id], key=lambda n: n.id)
         # nuevo_siguiente = None
 
         # # for cand in candidatos:
@@ -237,3 +264,89 @@ class NodoReplica(Nodo):
         # if self.manejador:
         #     self.manejador.parar_escucha()  # detener socket y threads
         #     self.iniciar()  # reiniciar correctamente
+        
+    def nuevo_Siguiente(self):
+        """Busca un nuevo nodo siguiente cuando el actual falla"""
+        nodo_caido = self.nodoSiguiente
+        print(f"[{self.id}] Nodo siguiente caído: {nodo_caido.id if nodo_caido else 'NINGUNO'}")
+        
+        # Buscar candidatos con ID mayor
+        candidatos = [n for n in self.lista_nodos if n.id > self.id and n.id != (nodo_caido.id if nodo_caido else -1)]
+        
+        nuevo_sig = None
+        for cand in candidatos:
+            print(f"[{self.id}] Probando candidato {cand.id}...")
+            if self.manejador.ping_directo(cand):
+                nuevo_sig = cand
+                break
+        
+        if nuevo_sig:
+            # Asignar nuevo siguiente
+            self.asignar_nodo_siguiente(nuevo_sig)
+            self.esCoordinador = False
+            print(f"[{self.id}] Nuevo siguiente: {nuevo_sig.id}")
+            
+            # Notificar al nuevo siguiente
+            self.manejador.enviar_mensaje(
+                nuevo_sig.host, nuevo_sig.puerto, "NUEVO_ANTERIOR",
+                {"nodo_anterior_id": self.id, "host": self.host, "puerto": self.puerto}
+            )
+            
+            # Reiniciar manejador
+            self.manejador.parar_escucha()
+            time.sleep(0.5)
+            self.iniciar()
+        else:
+            # Soy coordinador
+            print(f"[{self.id}] No hay más nodos vivos -> COORDINADOR")
+            self.asignar_nodo_siguiente(None)
+            self.esCoordinador = True
+            self.manejador.parar_escucha()
+            time.sleep(0.5)
+            self.iniciar()
+            self.levantar_nuevo_coordinador()   
+
+    def nuevo_anterior(self, nodo_anterior_id, host, puerto):
+        """
+        Asigna un nuevo nodo anterior cuando el nodo que me precedía detectó
+        la falla de su siguiente (que era mi anterior).
+        
+        Args:
+            nodo_anterior_id: ID del nuevo nodo anterior
+            host: IP del nuevo nodo anterior
+            puerto: Puerto del nuevo nodo anterior
+        """
+        print(f"[{self.id}] Asignando nuevo nodo anterior: {nodo_anterior_id}")
+        
+        # Buscar el nodo en la lista existente
+        nuevo_ant = None
+        for n in self.lista_nodos:
+            if n.id == nodo_anterior_id:
+                nuevo_ant = n
+                break
+        
+        # Si no está en la lista, crear referencia temporal
+        if not nuevo_ant:
+            nuevo_ant = Nodo(nodo_anterior_id, f"Nodo-{nodo_anterior_id}", host, puerto)
+            print(f"[{self.id}] Nodo anterior no estaba en lista, creando referencia temporal")
+        
+        self.asignar_nodo_anterior(nuevo_ant)
+        print(f"[{self.id}] ✓ Nuevo anterior asignado: {nuevo_ant.id}")
+        
+        # Enviar confirmación
+        self.manejador.enviar_mensaje(
+            nuevo_ant.host,
+            nuevo_ant.puerto,
+            "ACK_NUEVO_ANTERIOR"
+        )
+
+    def levantar_nuevo_coordinador(self):
+        """
+        Se invoca cuando este nodo se convierte en coordinador.
+        Implementación futura: inicializar servicios de coordinación, etc.
+        """
+        print(f"[{self.id}] ==========================================")
+        print(f"[{self.id}] ME PROCLAMO NUEVO COORDINADOR")
+        print(f"[{self.id}] ==========================================")
+        # TODO: Implementar lógica de coordinador
+        pass

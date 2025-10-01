@@ -19,6 +19,7 @@ for entry in raw_lista.split(","):
     nid, nport = entry.split(":")
     lista_nodos.append(Nodo(int(nid), f"n{nid}", "127.0.0.1", int(nport)))
 
+print(f"[Main]Nodos totales del sistema:{len(lista_nodos)}")
 # Crear solo un nodo por ejecución
 app = NodoReplica(my_id, f"n{my_id}", "127.0.0.1", my_port, lista_nodos,es_coordinador)
 
