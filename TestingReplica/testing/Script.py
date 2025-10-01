@@ -11,7 +11,6 @@ class ManejadorUDP:
         #self.nodoAnterior:Nodo = nodoAnterior
         self.intervalo_ping = ping_interval
         self.ping_timeout = ping_timeout
-        self.retries = retries
         #es el socket para la escucha
         self.socket_local = None
     

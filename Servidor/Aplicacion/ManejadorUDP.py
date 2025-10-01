@@ -5,17 +5,13 @@ from Utils.ConsoleLogger import ConsoleLogger
 
 
 class ManejadorUDP:
-    def __init__(self, owner, puerto_local, ping_interval=3, ping_timeout=9, retries=2):
-        self.logger = ConsoleLogger(name=f"[ManejadorUDP]", level="INFO")
+    def __init__(self, owner, puerto_local, ping_interval=5, ping_timeout=10):
         self.owner: NodoReplica = owner
         self.es_productor = None
         self.puerto_local = puerto_local
         self.evento_stop = threading.Event() #flag para parar evento
-        #self.nodoSiguiente:Nodo = nodoSiguiente
-        #self.nodoAnterior:Nodo = nodoAnterior
         self.intervalo_ping = ping_interval
         self.ping_timeout = ping_timeout
-        self.retries = retries
         #es el socket para la escucha
         self.socket_local = None
 
@@ -46,8 +42,8 @@ class ManejadorUDP:
                 data, addr = self.socket_local.recvfrom(1024)
                 mensaje = json.loads(data.decode())
                 # Procesar mensaje en hilo separado
-                #threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
-                self.owner.callback_mensaje(mensaje)
+                threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
+                #self.owner.callback_mensaje(mensaje)
             except (socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
                 self.logger.error("Error escuchando, continua la ejecucion...")
 
@@ -85,8 +81,8 @@ class ManejadorUDP:
                     ping_sock.sendto(msg, (self.owner.nodoSiguiente.host, self.owner.nodoSiguiente.puerto))
                     ping_sock.recvfrom(1024) # Esperar PONG
                 except (socket.timeout, socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
-                    self.logger.warning(f"No se recibio el PONG en {self.owner.id}")
-                    if hasattr(self.owner, "on_siguiente_muerto"):
+                    print(f"No se recibio el PONG en {self.owner.id}")
+                    if hasattr(self.owner, "nuevo_Siguiente"):
                         self.owner.nuevo_Siguiente()
                         break
                 finally:

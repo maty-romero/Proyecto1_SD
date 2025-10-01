@@ -133,11 +133,6 @@ class NodoReplica(Nodo):
             #self.actualizar_db(datos)
             pass
 
-    def on_siguiente_muerto(self):
-        self.logger.warning(f"[{self.id}] Siguiente muerto detectado: {self.nodoSiguiente.id if self.nodoSiguiente else 'NINGUNO'}")
-        self.nodoSiguiente = None
-
-
     def nuevo_Siguiente(self):
         """Busca un nuevo nodo siguiente cuando el actual falla"""
         nodo_caido = self.nodoSiguiente
@@ -220,86 +215,127 @@ class NodoReplica(Nodo):
         Implementación futura: inicializar servicios de coordinación, etc.
         """
         self.logger.info(f"\n=============================\nNodo[{self.id}] SE PROCLAMA NUEVO COORDINADOR\n=============================")
-        self.logger.warning(f"Nodo[{self.id}] Restableciendo servicios...")
 
-        # Necesario el broadcast de datos a replicas ?? 
+        # Lanzar la inicialización de Pyro5 en un hilo separado
+        threading.Thread(target=self._iniciar_servicios_pyro, daemon=True).start()
+
+
+    def _iniciar_servicios_pyro(self):
+        """Método que corre en un hilo separado para no bloquear"""
+        try:
+            ns = Pyro5.api.locate_ns()
+            
+            self.Dispatcher = Dispatcher()
+            self.ServComunic = ServicioComunicacion(self.Dispatcher)
+            self.ServDB = ControladorDB()
+            self.ServicioJuego = ServicioJuego(self.Dispatcher)
+            self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
+            self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
+            self.Dispatcher.registrar_servicio("db", self.ServDB)
+            self.Dispatcher.registrar_servicio("nodo_ppal", self)
+
+            existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
+            
+            if not existe_partida_previa:
+                datos = {
+                    "codigo": 1,
+                    "clientes_Conectados": [],
+                    "estado_actual": "",
+                    "letras_jugadas":"",
+                    "nro_ronda": 0,
+                    "categorias": ["Nombres", "Animales", "Colores", "Paises o ciudades", "Objetos"],
+                    "letra": "",
+                    "respuestas": []
+                }
+                self.ServDB.crear_partida(datos)
+
+            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
+            self.logger.info("ServicioJuego registrado correctamente.")
+            
+            # requestLoop() se queda aquí, pero en su propio hilo
+            daemon.requestLoop()
+            
+        except Exception as e:
+            self.logger.error(f"Error inicializando servicios Pyro5: {e}")
+        #NO SE HACE FALTA BROADCAST A REPLICAS, EL HILO DE BROADCAST ES SOLO DE PRUEBA
         #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start() 
 
-        ns = Pyro5.api.locate_ns() # hacer en un hilo aparte para mas eficiencia? 
-        #ns = Pyro5.api.locate_ns(self.host, self.puerto)
-        #self.logger.info(f"Servidor de nombres en: {ns}")
+        # ns = Pyro5.api.locate_ns() # hacer en un hilo aparte para mas eficiencia? 
+        # #ns = Pyro5.api.locate_ns(self.host, self.puerto)
+        # #self.logger.info(f"Servidor de nombres en: {ns}")
 
-        self.Dispatcher = Dispatcher()
-        self.ServComunic = ServicioComunicacion(self.Dispatcher)
-        self.ServDB = ControladorDB()
-        self.ServicioJuego = ServicioJuego(self.Dispatcher)
-        self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
-        self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
-        self.Dispatcher.registrar_servicio("db", self.ServDB)
-        self.Dispatcher.registrar_servicio("nodo_ppal", self)
+        # self.Dispatcher = Dispatcher()
+        # self.ServComunic = ServicioComunicacion(self.Dispatcher)
+        # self.ServDB = ControladorDB()
+        # self.ServicioJuego = ServicioJuego(self.Dispatcher)
+        # self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
+        # self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
+        # self.Dispatcher.registrar_servicio("db", self.ServDB)
+        # self.Dispatcher.registrar_servicio("nodo_ppal", self)
 
-        existe_partida_previa: bool = self.Dispatcher.manejar_llamada("db", "existe_partida_previa") 
+        # existe_partida_previa: bool = self.Dispatcher.manejar_llamada("db", "existe_partida_previa") 
         
-        """
-            1ra vez que hay un coordinador:
-                - [No existe collection partida en BD]
-                x- Iniciar servicios (DB, Juego, Comunicación)
-                x- Registrar en NameServer Objeto Remoto
-                - Crear partida inicial en BD
+        # """
+        #     1ra vez que hay un coordinador:
+        #         - [No existe collection partida en BD]
+        #         x- Iniciar servicios (DB, Juego, Comunicación)
+        #         x- Registrar en NameServer Objeto Remoto
+        #         - Crear partida inicial en BD
 
-            Si ya hubo un coordinador antes (cambio de coordinador):
-                x- Iniciar servicios (DB, Juego, Comunicación) con datos restaurados
-                x- Registrar en NameServer Objeto Remoto nuevamente (limpiar tal vez registro previo?? ) 
-                - Restaurar ultimo estado de partida desde BD (construccion de objetos)
-                - Reconexion con clientes persistidos (se supone socket cliente abierto previamente)
-        """
+        #     Si ya hubo un coordinador antes (cambio de coordinador):
+        #         x- Iniciar servicios (DB, Juego, Comunicación) con datos restaurados
+        #         x- Registrar en NameServer Objeto Remoto nuevamente (limpiar tal vez registro previo?? ) 
+        #         - Restaurar ultimo estado de partida desde BD (construccion de objetos)
+        #         - Reconexion con clientes persistidos (se supone socket cliente abierto previamente)
+        # """
 
 
-        if not existe_partida_previa:
-            datos = {
-            "codigo": 1,
-            "clientes_Conectados": [],
-            "estado_actual": "",
-            "letras_jugadas":"",
-            "nro_ronda": 0,
-            "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
-            "letra": "",
-            "respuestas": []
-            }
+        # if not existe_partida_previa:
+        #     datos = {
+        #     "codigo": 1,
+        #     "clientes_Conectados": [],
+        #     "estado_actual": "",
+        #     "letras_jugadas":"",
+        #     "nro_ronda": 0,
+        #     "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
+        #     "letra": "",
+        #     "respuestas": []
+        #     }
 
-            self.ServDB.crear_partida(datos)    
+        #     self.ServDB.crear_partida(datos)    
 
-            #daemon = Pyro5.server.Daemon()
-            #daemon = Pyro5.server.Daemon(self.host,self.puerto)
-            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
-            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info("ServicioJuego registrado correctamente.")
+        #     #daemon = Pyro5.server.Daemon()
+        #     #daemon = Pyro5.server.Daemon(self.host,self.puerto)
+        #     daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+        #     uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
+        #     self.logger.info("ServicioJuego registrado correctamente.")
 
-            # Broadcast a replicas?? 
+        #     # Broadcast a replicas?? 
 
-            daemon.requestLoop()
+        #     daemon.requestLoop()
 
-        else:
-            self.logger.warning("Partida previa detectada en BD. Restaurando estado...")
-            """  
-            # Reconstruccion de objetos de la partida desde BD
-            #info_partida_completa: dict = self.Dispatcher.manejar_llamada("db", "obtener_datos_partida_completos")
-            #clientes_conectados = info_partida_completa.get("clientes_Conectados", [])
+        # else:
+        #     self.logger.warning("Partida previa detectada en BD. Restaurando estado...")
+        #     """  
+        #     # Reconstruccion de objetos de la partida desde BD
+        #     #info_partida_completa: dict = self.Dispatcher.manejar_llamada("db", "obtener_datos_partida_completos")
+        #     #clientes_conectados = info_partida_completa.get("clientes_Conectados", [])
             
 
 
-            #daemon = Pyro5.server.Daemon()
-            #daemon = Pyro5.server.Daemon(self.host,self.puerto)
-            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
-            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info("ServicioJuego registrado correctamente.")
+        #     #daemon = Pyro5.server.Daemon()
+        #     #daemon = Pyro5.server.Daemon(self.host,self.puerto)
+        #     daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+        #     uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
+        #     self.logger.info("ServicioJuego registrado correctamente.")
             
-            # Ahora que el objeto Pyro5 está registrado, restaurar clientes persistidos
-            self.logger.info("Restaurando clientes persistidos desde BD...")
-            self.ServComunic.restaurar_clientes_persistidos() # en un hilo con un wait o join? 
+        #     # Ahora que el objeto Pyro5 está registrado, restaurar clientes persistidos
+        #     self.logger.info("Restaurando clientes persistidos desde BD...")
+        #     self.ServComunic.restaurar_clientes_persistidos() # en un hilo con un wait o join? 
 
-            daemon.requestLoop()
-            """
+        #     daemon.requestLoop()
+        #     """
        
 
         
