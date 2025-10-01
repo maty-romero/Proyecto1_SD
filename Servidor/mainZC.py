@@ -1,7 +1,8 @@
 import sys, time, socket
 from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
-from Servidor.Aplicacion.Nodo import Nodo
+
 from Servidor.Aplicacion.NodoReplica import NodoReplica
+from Servidor.Aplicacion.Nodo import Nodo
 
 NODOS_IDS = [1, 2, 3, 4, 5]
 servicios = {}

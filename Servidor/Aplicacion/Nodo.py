@@ -1,7 +1,7 @@
 from Servidor.Aplicacion.EstadoNodo import EstadoNodo
 
 class Nodo: # La logica esta sin implementar, hay que revisar
-    def __init__(self, id, nombre, host, puerto, esCoordinador):
+    def __init__(self, id, nombre, host, puerto, esCoordinador=False):
         self.id = id
         self.host = host # uso de ip en pruebas
         self.puerto = puerto # uso de ip en pruebas

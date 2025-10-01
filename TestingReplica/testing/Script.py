@@ -46,7 +46,7 @@ class ManejadorUDP:
                 #threading.Thread(target=self.owner.callback_mensaje, args=(mensaje,), daemon=True).start()
                 self.owner.callback_mensaje(mensaje)
             except (socket.gaierror, ConnectionRefusedError,ConnectionResetError, OSError):
-                print(f"[Manejador] Error escuchando")
+                print(f"[Manejador] Error escuchando, continua la ejecucion...")
 
     #cambiamos id por 
     #el payload lo podemos utilizar para adjuntar los datos de la bd en el mensaje de envio

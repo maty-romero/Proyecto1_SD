@@ -292,3 +292,19 @@ class ControladorDB:
         except Exception as e:
             print(f"Error obteniendo clientes conectados: {e}")
             return []
+    
+    def existe_partida_previa(self) -> bool:
+        """
+        Verifica si la colección 'Partida' ya existe en la base de datos.
+        Devuelve True si existe (ya hubo partidas previas), False en caso contrario.
+        """
+        if not self.db:
+            self.registroDatos.append("[ControladorDB] No hay conexión activa a la base de datos")
+            return False
+        
+        existe = "Partida" in self.db.list_collection_names()
+        if existe:
+            self.registroDatos.append("[ControladorDB] Ya existe colección 'Partida'")
+        else:
+            self.registroDatos.append("[ControladorDB] No existe colección 'Partida'")
+        return existe
