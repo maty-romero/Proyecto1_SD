@@ -39,6 +39,7 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         self.manejador = ManejadorUDP(owner=self, puerto_local=self.puerto)
+        self.ServDB = ControladorDB(self)
         
         """
         self.socket_manager = Manekad(
@@ -50,6 +51,8 @@ class NodoReplica(Nodo):
         """
 
         if self.esCoordinador:
+            #limpiar datos de partida anterior
+            self.ServDB.eliminar_partida()
             self.levantar_nuevo_coordinador()
             #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
 
@@ -65,7 +68,17 @@ class NodoReplica(Nodo):
         if not nodos_menores:
             self.logger.info(f"[{self.id}] No hay nodos menores para notificar")
             return    
+         # Obtener datos de MongoDB
         datos = self.ServDB.obtener_datos_partida_completos()
+        
+        # Convertir ObjectId a string si es necesario
+        if isinstance(datos, list):
+            for doc in datos:
+                if '_id' in doc:
+                    doc['_id'] = str(doc['_id'])
+        
+        # Formatear el payload
+        payload = {"DB": datos}
         # Enviar mensaje a cada nodo menor
         for nodo in nodos_menores:
             self.logger.info(f"[{self.id}] Enviando ACTUALIZAR_DB a nodo {nodo.id}")
@@ -73,7 +86,7 @@ class NodoReplica(Nodo):
                 nodo.host,
                 nodo.puerto,
                 "ACTUALIZAR_DB",
-                datos
+                payload
             )
         self.logger.info(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
 
@@ -131,8 +144,12 @@ class NodoReplica(Nodo):
 
         elif tipo == "ACTUALIZAR_DB":
             self.logger.warning(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
-            #self.actualizar_db(datos)
-            pass
+
+            datos_partida = mensaje.get("DB")
+
+            self.logger.info(f"Datos de partida recibidos: {datos_partida}")
+            #self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
+            self.ServDB.actualizar_partida(datos_partida)    
 
     def nuevo_Siguiente(self):
         """Busca un nuevo nodo siguiente cuando el actual falla"""
@@ -226,7 +243,6 @@ class NodoReplica(Nodo):
             ns = Pyro5.api.locate_ns()
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
-            self.ServDB = ControladorDB(self)
             self.ServicioJuego = ServicioJuego(self.Dispatcher)
             self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
             self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
