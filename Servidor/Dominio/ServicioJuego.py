@@ -19,6 +19,9 @@ class ServicioJuego:
     def __init__(self, dispacher: Dispatcher):
         self.dispacher = dispacher
         self.Partida = Partida()
+        self.sincronizar_partida_con_bd()
+        self.sincronizar_ronda_con_bd()
+        self.dispacher("db")
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
@@ -173,7 +176,10 @@ class ServicioJuego:
             self.dispacher.manejar_llamada("db", "actualizar_letra", letra_ronda)
             self.dispacher.manejar_llamada("db", "actualizar_nro_ronda", nro_ronda)
             self.dispacher.manejar_llamada("db", "actualizar_letras_jugadas", self.Partida.letras_jugadas)
-            
+
+    def sincronizar_partida_con_bd(self): # ??????
+        if self.Partida:
+            self.dispacher.manejar_llamada("db", "actualizar_estado_partida", self.Partida.estado_actual)
 
     def sincronizar_puntajes_con_bd(self):
         """Actualiza los puntajes de todos los jugadores en BD"""
@@ -215,9 +221,9 @@ class ServicioJuego:
 
     def iniciar_partida(self):
         """"Se inicializa la ronda"""
-        self.Partida.iniciar_nueva_ronda()
-        self.sincronizar_ronda_con_bd()
         self.cambiar_estado_partida(EstadoJuego.RONDA_EN_CURSO)
+        #self.Partida.iniciar_nueva_ronda()
+        #self.sincronizar_ronda_con_bd()
         #Si ya tenemos jugadores en partida, podemos guardar el true o false de la confirmacion ahi mismo. Facilita recuperacion de bd
         jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
         self.Partida.cargar_jugadores_partida(jugadores)
@@ -250,7 +256,8 @@ class ServicioJuego:
             if self.timer_votacion_activo:
                 return
             self.timer_votacion_activo = True
-
+        
+        self.cambiar_estado_partida(EstadoJuego.EN_VOTACIONES)
         self.notificar_fin_ronda_a_clientes()
         self.notificar_inicio_votacion_a_clientes()
 
@@ -259,7 +266,6 @@ class ServicioJuego:
         self.Partida.ronda_actual.set_respuestas_ronda(respuestas_clientes)
         
         # Cambiar estado y guardar
-        self.cambiar_estado_partida(EstadoJuego.EN_VOTACIONES)
         info_completa_votacion = self.preparar_datos_votacion(respuestas_clientes)
         
         # Enviar datos para votación
@@ -329,7 +335,7 @@ class ServicioJuego:
             self.finalizar_partida()
         else:
             self.Partida.iniciar_nueva_ronda()
-            self.cambiar_estado_partida(EstadoJuego.EN_VOTACIONES)
+            self.cambiar_estado_partida(EstadoJuego.RONDA_EN_CURSO)
             self.sincronizar_ronda_con_bd()
             self.notificar_ronda_actual_a_clientes()
 

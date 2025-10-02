@@ -151,9 +151,7 @@ class NodoReplica(Nodo):
 
         elif tipo == "ACTUALIZAR_DB":
             self.logger.error(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
-
             datos_partida = mensaje.get("DB")
-
             self.logger.info(f"Datos de partida recibidos: {datos_partida}")
             #self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
             self.ServDB.actualizar_partida(datos_partida)    

@@ -156,6 +156,7 @@ class ServicioComunicacion:
     #     except Exception as e:
     #         self.logger.error(f"Error en proceso de restauración: {e}")
 
+
     def restaurar_clientes_desde_bd(self) -> int:
         """Restaura clientes confirmados desde la base de datos (guardados por ServicioJuego)"""
         try:

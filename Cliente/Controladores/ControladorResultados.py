@@ -12,7 +12,8 @@ class ControladorResultados:
         self.vista = vista
         self.navegacion = None
         self.gestor_cliente: GestorCliente = gestor_cliente
-        self.vista.get_boton_salir().clicked.connect(self.gestor_cliente.enviar_cerrar_sala)
+        
+        # self.vista.get_boton_salir().clicked.connect(self.gestor_cliente.enviar_cerrar_sala)
         
     def setNavegacion(self, controlador_navegacion):
         self.navegacion = controlador_navegacion
