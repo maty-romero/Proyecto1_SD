@@ -164,6 +164,7 @@ class VistaRonda(QWidget):
     def agregar_validadores(self, letra):
         for input in self.inputs:
             input.setValidator(PrimeraLetraValidator(f"{letra}", input))
+            input.setPlaceholderText(f"{letra}...")
     
     def conectar_eventos_enter(self):
         """Conecta el evento Enter de todos los inputs al botón STOP"""

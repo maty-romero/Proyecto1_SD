@@ -90,6 +90,8 @@ class ControladorNavegacion(QObject):
         elif eleccion == "mensaje":
             self.main_window.show()
             self.main_window.stack.setCurrentIndex(self.vistaMensaje_Index)
+        elif eleccion == "cerrar_sala":
+            self.main_window.close()
         else:
             raise ValueError(f"Vista '{eleccion}' no encontrada")
     

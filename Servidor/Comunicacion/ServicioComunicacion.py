@@ -79,11 +79,12 @@ class ServicioComunicacion:
         """Intenta reconectar con un cliente que parece haber perdido conexión"""
         try:
             self.logger.info(f"Intentando reconectar con cliente {cliente.nickname} en {cliente.ip_cliente}:{cliente.puerto_cliente}")
-            # Cerrar la conexión del SERVIDOR hacia el cliente (puede estar corrupta)
-            # NOTA: Esto NO cierra el socket del cliente, que sigue esperando conexiones
-            cliente.socket.cerrar()
-            
-            # Crear nuevo ManejadorSocket para que el servidor se reconecte al cliente
+            # Cerrar la conexión existente de forma segura
+            try:
+                if hasattr(cliente.socket, 'cerrar'):
+                    cliente.socket.cerrar()
+            except Exception as close_error:
+                self.logger.warning(f"Error cerrando socket anterior: {close_error}")
             cliente.socket = ManejadorSocket(
                 host=cliente.ip_cliente, 
                 puerto=cliente.puerto_cliente, 
@@ -95,15 +96,13 @@ class ServicioComunicacion:
             cliente.socket.conectar_a_nodo(cliente.ip_cliente, cliente.puerto_cliente)
             
             # Esperar un momento para que se establezca la conexión
-            import time
             time.sleep(1)
             
-            # Verificar si la conexión se estableció
             if cliente.socket.conexiones and len(cliente.socket.conexiones) > 0:
-                # Restablecer estado del cliente
                 cliente.conectado = True
                 cliente.timestamp = datetime.now(UTC)
                 self.logger.info(f"✅ Reconexión exitosa con {cliente.nickname}")
+                self._enviar_notificacion_recuperacion(cliente)
                 return True
             else:
                 self.logger.warning(f"❌ No se pudo establecer conexión con {cliente.nickname}")
@@ -112,7 +111,19 @@ class ServicioComunicacion:
         except Exception as e:
             self.logger.error(f"❌ Error intentando reconectar con {cliente.nickname}: {e}")
             return False
-
+            
+    def _enviar_notificacion_recuperacion(self, cliente: ClienteConectado):
+        """Envía notificación de recuperación de servidor al cliente"""
+        try:
+            mensaje_recuperacion = SerializeHelper.serializar(
+                True, 
+                "servidor_recuperado", 
+                {"mensaje": "Servidor recuperado y funcionando correctamente"}
+            )
+            cliente.socket.enviar(mensaje_recuperacion)
+            self.logger.info(f"Notificación de recuperación enviada a {cliente.nickname}")
+        except Exception as e:
+            self.logger.error(f"Error enviando notificación de recuperación a {cliente.nickname}: {e}")
 
 
     def _eliminar_cliente_persistido(self, nickname: str):
@@ -124,47 +135,83 @@ class ServicioComunicacion:
         except Exception as e:
             self.logger.error(f"Error eliminando cliente persistido {nickname}: {e}")
 
-    def restaurar_clientes_persistidos(self):
-        """Restaura clientes confirmados desde BD tras caída del servidor (llamado después del Bully)"""
-        try:
-            # CRÍTICO: Primero restaurar el estado del juego desde BD
-            self.logger.info("Restaurando estado del juego desde BD...")
-            try:
-                self.dispatcher.manejar_llamada("juego", "inicializar_con_restauracion")
-                self.logger.info("✅ Estado del juego restaurado desde BD")
-            except Exception as e:
-                self.logger.error(f"Error restaurando estado del juego: {e}")
+    # def restaurar_clientes_persistidos(self):
+    #     """Restaura clientes confirmados desde BD tras caída del servidor (llamado después del Bully)"""
+    #     try:
+    #         # CRÍTICO: Primero restaurar el estado del juego desde BD
+    #         self.logger.info("Restaurando estado del juego desde BD...")
+    #         try:
+    #             self.dispatcher.manejar_llamada("juego", "inicializar_con_restauracion")
+    #             self.logger.info("✅ Estado del juego restaurado desde BD")
+    #         except Exception as e:
+    #             self.logger.error(f"Error restaurando estado del juego: {e}")
             
-            # Luego restaurar clientes que fueron confirmados (guardados por ServicioJuego)
-            clientes_restaurados = self._restaurar_clientes_desde_bd()
+    #         # Luego restaurar clientes que fueron confirmados (guardados por ServicioJuego)
+    #         clientes_restaurados = self._restaurar_clientes_desde_bd()
             
-            if clientes_restaurados > 0:
-                self.logger.info(f"✅ Total de clientes restaurados desde BD: {clientes_restaurados}")
-            # No imprimir mensaje cuando no hay clientes - ya lo hace _restaurar_clientes_desde_bd()
+    #         if clientes_restaurados > 0:
+    #             self.logger.info(f"✅ Total de clientes restaurados desde BD: {clientes_restaurados}")
+    #         # No imprimir mensaje cuando no hay clientes - ya lo hace _restaurar_clientes_desde_bd()
             
-        except Exception as e:
-            self.logger.error(f"Error en proceso de restauración: {e}")
+    #     except Exception as e:
+    #         self.logger.error(f"Error en proceso de restauración: {e}")
 
-    def _restaurar_clientes_desde_bd(self) -> int:
+    def restaurar_clientes_desde_bd(self) -> int:
         """Restaura clientes confirmados desde la base de datos (guardados por ServicioJuego)"""
         try:
             clientes_bd = self.dispatcher.manejar_llamada("db","obtener_clientes_conectados")
-            
             if not clientes_bd:
                 self.logger.info("No hay clientes en BD para restaurar")
                 return 0
-            
             self.logger.info(f"Restaurando {len(clientes_bd)} clientes desde BD...")
             
+            # Usar threading para restaurar clientes en paralelo
+            import threading
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            
             clientes_restaurados = 0
-            for cliente_bd in clientes_bd:
-                if self._intentar_restaurar_cliente_bd(cliente_bd):
-                    clientes_restaurados += 1
+            lock_clientes = threading.Lock()  # Para acceso thread-safe a self.clientes y contador
+            
+            def restaurar_cliente_hilo(cliente_bd):
+                """Restaura un cliente en hilo separado"""
+                nonlocal clientes_restaurados
+
+                if self._intentar_restaurar_cliente_bd_paralelo(cliente_bd, lock_clientes):
+                    with lock_clientes:
+                        clientes_restaurados += 1
+                    return True
                 else:
                     # Si no se puede reconectar, eliminarlo de BD
-                    self.logger.warning(f"Cliente {cliente_bd.get('nickname', 'unknown')} no responde - eliminando de BD")
-                    self.dispatcher.manejar_llamada("db","eliminar_jugador", cliente_bd.get('nickname'))
+                    nickname = cliente_bd.get('nickname', 'unknown')
+                    self.logger.warning(f"Cliente {nickname} no responde - eliminando de BD")
+                    try:
+                        self.dispatcher.manejar_llamada("db","eliminar_jugador", nickname)
+                    except Exception as e:
+                        self.logger.error(f"Error eliminando cliente {nickname} de BD: {e}")
+                    return False
             
+            with ThreadPoolExecutor(max_workers=min(len(clientes_bd), 5)) as executor:
+                # Enviar todos los trabajos
+                future_to_cliente = {
+                    executor.submit(restaurar_cliente_hilo, cliente_bd): cliente_bd 
+                    for cliente_bd in clientes_bd
+                }
+                
+                # Esperar a que todos terminen
+                for future in as_completed(future_to_cliente, timeout=30):
+                    cliente_bd = future_to_cliente[future]
+                    try:
+                        resultado = future.result()
+                        nickname = cliente_bd.get('nickname', 'unknown')
+                        if resultado:
+                            self.logger.info(f"✅ Restauración de {nickname} completada exitosamente")
+                        else:
+                            self.logger.warning(f"❌ Falló restauración de {nickname}")
+                    except Exception as e:
+                        nickname = cliente_bd.get('nickname', 'unknown')
+                        self.logger.error(f"❌ Error en hilo de restauración de {nickname}: {e}")
+            
+            self.logger.info(f"✅ Restauración paralela completada: {clientes_restaurados}/{len(clientes_bd)} clientes")
             return clientes_restaurados
             
         except Exception as e:
@@ -172,11 +219,12 @@ class ServicioComunicacion:
             return 0
 
 
-
-
-
     def _intentar_restaurar_cliente_bd(self, cliente_bd: dict) -> bool:
-        """Intenta restaurar un cliente específico desde datos de BD"""
+        """Intenta restaurar un cliente específico desde datos de BD (versión secuencial)"""
+        return self._intentar_restaurar_cliente_bd_paralelo(cliente_bd, None)
+
+    def _intentar_restaurar_cliente_bd_paralelo(self, cliente_bd: dict, lock_clientes) -> bool:
+        """Intenta restaurar un cliente específico desde datos de BD (versión thread-safe)"""
         try:
             nickname = cliente_bd.get('nickname', 'unknown')
             ip_cliente = cliente_bd.get('ip', '')
@@ -184,8 +232,7 @@ class ServicioComunicacion:
             uri_cliente = cliente_bd.get('uri', '')
             
             self.logger.info(f"Intentando restaurar cliente {nickname} desde BD...")
-            
-            # Crear ClienteConectado desde datos de BD
+
             cliente = ClienteConectado(
                 nickname,
                 f"jugador.{nickname}",  # nombre_logico reconstruido
@@ -194,14 +241,19 @@ class ServicioComunicacion:
                 uri_cliente
             )
             
-            # Intentar conectar (el cliente debería estar esperando)
             cliente.socket.conectar_a_nodo(ip_cliente, int(puerto_cliente))
             
             # Esperar conexión
             time.sleep(2)
             
             if cliente.socket.conexiones:
-                self.clientes.append(cliente)
+                # Thread-safe: agregar cliente a la lista usando lock si está disponible
+                if lock_clientes:
+                    with lock_clientes:
+                        self.clientes.append(cliente)
+                else:
+                    self.clientes.append(cliente)
+                    
                 self.logger.info(f"✅ Cliente {nickname} restaurado desde BD exitosamente")
                 
                 # Notificar al cliente que el servidor se recuperó
@@ -215,6 +267,7 @@ class ServicioComunicacion:
         except Exception as e:
             self.logger.error(f"Error restaurando cliente desde BD {cliente_bd.get('nickname', 'unknown')}: {e}")
             return False
+
 
     def _notificar_servidor_recuperado(self, cliente: ClienteConectado):
         """Notifica al cliente que el servidor se ha recuperado"""

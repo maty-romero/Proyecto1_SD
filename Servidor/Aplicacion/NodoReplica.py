@@ -51,6 +51,8 @@ class NodoReplica(Nodo):
         """
 
         if self.esCoordinador:
+            #limpiar datos de partida anterior
+            self.ServDB.eliminar_partida()
             self.levantar_nuevo_coordinador()
             #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
 
@@ -66,7 +68,17 @@ class NodoReplica(Nodo):
         if not nodos_menores:
             self.logger.info(f"[{self.id}] No hay nodos menores para notificar")
             return    
+         # Obtener datos de MongoDB
         datos = self.ServDB.obtener_datos_partida_completos()
+        
+        # Convertir ObjectId a string si es necesario
+        if isinstance(datos, list):
+            for doc in datos:
+                if '_id' in doc:
+                    doc['_id'] = str(doc['_id'])
+        
+        # Formatear el payload
+        payload = {"DB": datos}
         # Enviar mensaje a cada nodo menor
         for nodo in nodos_menores:
             self.logger.info(f"[{self.id}] Enviando ACTUALIZAR_DB a nodo {nodo.id}")
@@ -74,7 +86,7 @@ class NodoReplica(Nodo):
                 nodo.host,
                 nodo.puerto,
                 "ACTUALIZAR_DB",
-                datos
+                payload
             )
         self.logger.info(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
 
@@ -132,15 +144,8 @@ class NodoReplica(Nodo):
 
         elif tipo == "ACTUALIZAR_DB":
             self.logger.warning(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
-            """
-            ARREGLAR self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            AttributeError: 'NoneType' object has no attribute 'manejar_llamada'
-            --> Metodo para levantar Nodo como Replica?? o modificar el levantar_como_coordinador par considerar esto? Ver
-            """
 
-            # Extraer datos de la partida quitando metadata
-            datos_partida = {k: v for k, v in mensaje.items() if k not in ["type", "from", "ip", "puerto"]}
+            datos_partida = mensaje.get("DB")
 
             self.logger.info(f"Datos de partida recibidos: {datos_partida}")
             #self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
@@ -244,23 +249,39 @@ class NodoReplica(Nodo):
             self.Dispatcher.registrar_servicio("db", self.ServDB)
             self.Dispatcher.registrar_servicio("nodo_ppal", self)
 
+
+            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
+            self.logger.info(" ------------------- ServicioJuego registrado correctamente. ------------------- ")
+
             existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
             
             if not existe_partida_previa:
                 self.ServDB.iniciar_db()
                 self.logger.warning("Se creo una partida nueva")
             else:
-                self.ServicioJuego.inicializar_con_restauracion
-                self.logger.warning("Se restauro una partida previa")
+                self.logger.info("Partida encontrada - Restaurando clientes persistidos desde BD...")
+                self.ServComunic.restaurar_clientes_desde_bd()
 
-            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
-            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info("ServicioJuego registrado correctamente.")
-            # requestLoop() se queda aquí, pero en su propio hilo
+                def inicializar_juego_restaurado():
+                    time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
+                    self.ServicioJuego.inicializar_con_restauracion()
+                    self.logger.warning("Se restauro una partida previa")
+                
+                hilo_inicializacion = threading.Thread(
+                    target=inicializar_juego_restaurado,
+                    daemon=True,
+                    name="InicializacionJuegoRestaurado"
+                )
+                hilo_inicializacion.start()
+
             daemon.requestLoop()
 
         except Exception as e:
             self.logger.error(f"Error inicializando servicios Pyro5: {e}")
+        
+
+
         #NO SE HACE FALTA BROADCAST A REPLICAS, EL HILO DE BROADCAST ES SOLO DE PRUEBA
         #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start() 
 
