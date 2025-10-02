@@ -15,6 +15,7 @@ import Pyro5
 from Servidor.Aplicacion.ManejadorUDP import ManejadorUDP
 from Utils.ComunicationHelper import ComunicationHelper
 from Servidor.Aplicacion.Nodo import Nodo
+from Servidor.Dominio.Partida import EstadoJuego
 from Utils.ManejadorSocket import ManejadorSocket
 from Servidor.Comunicacion.ServicioComunicacion import ServicioComunicacion
 from Servidor.Comunicacion.Dispacher import Dispatcher
@@ -52,7 +53,7 @@ class NodoReplica(Nodo):
 
         if self.esCoordinador:
             #limpiar datos de partida anterior
-            #self.ServDB.eliminar_partida()
+            self.ServDB.iniciar_nueva_partida()
             self.levantar_nuevo_coordinador()
             #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
 
@@ -262,25 +263,24 @@ class NodoReplica(Nodo):
 
             existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
             
-            if not existe_partida_previa:
-                self.ServDB.iniciar_db()
-                self.logger.warning("Se creo una partida nueva")
+            if  existe_partida_previa:
+                if self.ServDB.obtener_estado_actual()!="EN_SALA": 
+                    self.logger.info(f"Partida encontrada en estado{self.ServDB.obtener_estado_actual()} - Restaurando clientes persistidos desde BD...")
+                    self.ServComunic.restaurar_clientes_desde_bd()
+
+                    def inicializar_juego_restaurado():
+                        time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
+                        self.ServicioJuego.inicializar_con_restauracion()
+                        self.logger.warning("Se restauro una partida previa")
+                    
+                    hilo_inicializacion = threading.Thread(
+                        target=inicializar_juego_restaurado,
+                        daemon=True,
+                        name="InicializacionJuegoRestaurado"
+                    )
+                    hilo_inicializacion.start()
             else:
-                self.logger.info("Partida encontrada - Restaurando clientes persistidos desde BD...")
-                self.ServComunic.restaurar_clientes_desde_bd()
-
-                def inicializar_juego_restaurado():
-                    time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
-                    self.ServicioJuego.inicializar_con_restauracion()
-                    self.logger.warning("Se restauro una partida previa")
-                
-                hilo_inicializacion = threading.Thread(
-                    target=inicializar_juego_restaurado,
-                    daemon=True,
-                    name="InicializacionJuegoRestaurado"
-                )
-                hilo_inicializacion.start()
-
+                self.logger.info("No se hallo partida previa para restaurar")
             daemon.requestLoop()
 
         except Exception as e:

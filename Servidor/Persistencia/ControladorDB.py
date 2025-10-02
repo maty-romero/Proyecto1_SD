@@ -78,27 +78,26 @@ class ControladorDB:
         self.partida = self.db["Partida"]           # lo mismo para la colección
 
     #Inicia una partida nueva, este reemplaza el uso de eliminar partida
-    def iniciar_db(self):
+    def iniciar_nueva_partida(self):
         try:
             # Creamos un índice por código de partida (opcional, recomendado)
             # Si no hay partidas, insertamos una inicial
-            if self.partida.count_documents({}) == 0:
-                self.partida.insert_one(
-                    {
+            self.partida.replace_one(
+                {"codigo": 1},  # filtro: buscamos por código
+                {
                     "codigo": 1,
                     "clientes_Conectados": [],
                     "estado_actual": "",
-                    "letras_jugadas":"",
+                    "letras_jugadas": "",
                     "nro_ronda": 0,
                     "categorias": ["Nombres", "Animales", "Colores", "Paises o ciudades", "Objetos"],
                     "letra": "",
                     "respuestas": [],
-                    "timer_votacion": None  # Campo para timer de votación
-                    }   
-                )
-                self.registroDatos.append("[ControladorDB] Base creada con partida inicial ABCD")
-            else:
-                self.registroDatos.append("[ControladorDB] Base ya tenía datos, no se insertó nada")
+                    "timer_votacion": None
+                },
+                upsert=True  # si no existe, lo crea
+            )
+            self.registroDatos.append("[ControladorDB] Base creada con partida inicial ABCD")
         except errors.ServerSelectionTimeoutError as e:
             self.registroDatos.append(f"[ControladorDB] Error de conexión a MongoDB: {e}")
             self.conexiondb = None
@@ -450,3 +449,18 @@ class ControladorDB:
         except Exception as e:
             self.registroDatos.append(f"[ControladorDB] Error limpiando timer votación: {e}")
             return 0
+    
+    def obtener_estado_actual(self):
+        """Obtiene el estado actual de la partida"""
+        try:
+            partida = self.partida.find_one({"codigo": self.codigo_partida})
+            
+            if partida:
+                return partida.get("estado_actual", "")
+            else:
+                self.logger.warning("[ControladorDB] No se encontró la partida")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"[ControladorDB] Error al obtener estado_actual: {e}")
+            return None

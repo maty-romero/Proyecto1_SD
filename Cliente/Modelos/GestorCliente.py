@@ -85,11 +85,12 @@ class GestorCliente:
         if self.proxy_partida is None:
             try:
                 #with Pyro5.api.locate_ns() as ns:
-                with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
-                    uri = ns.lookup(self.nombre_logico_server)
-                    self.proxy_partida = Pyro5.api.Proxy(uri)
-                    self.logger.info(f"PYRONAME:{self.nombre_logico_server}")
-                    self.logger.info(uri)
+                #with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+                ns = Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS)
+                uri = ns.lookup(self.nombre_logico_server)
+                self.proxy_partida = Pyro5.api.Proxy(uri)
+                self.logger.info(f"PYRONAME:{self.nombre_logico_server}")
+                self.logger.info(uri)
             except Pyro5.errors.NamingError:
                 self.logger.error(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}'.")
                 self.logger.error("Asegúrese de que el Servidor de Nombres y el servidor.py estén en ejecución.")
