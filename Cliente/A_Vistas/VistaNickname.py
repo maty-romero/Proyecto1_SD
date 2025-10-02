@@ -89,6 +89,6 @@ class VistaNickname(QWidget):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Icon.Information)
         msg.setWindowTitle("¡Éxito!")
-        msg.setText(f"El nickname {nombre} se ha unido a la sala correctamente.")
+        msg.setText(f"El jugador {nombre} se ha unido a la sala correctamente.")
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
