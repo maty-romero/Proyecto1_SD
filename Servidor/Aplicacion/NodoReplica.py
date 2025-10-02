@@ -56,26 +56,26 @@ class NodoReplica(Nodo):
 
     def broadcast_datos_DB(self):
         self.logger.info("Haciendo broadcast a replicas...")
-        while True:
-            time.sleep(5)
-            # Buscar todos los nodos con ID menor al mío
-            nodos_menores = [n for n in self.lista_nodos if n.id < self.id]
+
+        time.sleep(5)
+        # Buscar todos los nodos con ID menor al mío
+        nodos_menores = [n for n in self.lista_nodos if n.id < self.id]
             
-            if not nodos_menores:
-                self.logger.info(f"[{self.id}] No hay nodos menores para notificar")
-                return
+        if not nodos_menores:
+            self.logger.info(f"[{self.id}] No hay nodos menores para notificar")
+            return
             
-            # Enviar mensaje a cada nodo menor
-            for nodo in nodos_menores:
-                self.logger.info(f"[{self.id}] Enviando ACTUALIZAR_DB a nodo {nodo.id}")
-                self.manejador.enviar_mensaje(
-                    nodo.host,
-                    nodo.puerto,
-                    "ACTUALIZAR_DB"
-                )
-            
-            self.logger.info(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
-    
+        # Enviar mensaje a cada nodo menor
+        for nodo in nodos_menores:
+            self.logger.info(f"[{self.id}] Enviando ACTUALIZAR_DB a nodo {nodo.id}")
+            self.manejador.enviar_mensaje(
+                nodo.host,
+                nodo.puerto,
+                "ACTUALIZAR_DB"
+            )
+        self.logger.info(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
+
+
     def iniciar(self):
         if self.esCoordinador:
             #Si el nodo es el coordinador, no envia heart ni hay nodoSiguiente
@@ -252,10 +252,10 @@ class NodoReplica(Nodo):
             daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
             uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
             self.logger.info("ServicioJuego registrado correctamente.")
-            
+
             # requestLoop() se queda aquí, pero en su propio hilo
             daemon.requestLoop()
-            
+
         except Exception as e:
             self.logger.error(f"Error inicializando servicios Pyro5: {e}")
         #NO SE HACE FALTA BROADCAST A REPLICAS, EL HILO DE BROADCAST ES SOLO DE PRUEBA
