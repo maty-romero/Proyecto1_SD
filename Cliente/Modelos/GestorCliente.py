@@ -45,10 +45,12 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "10.85.175.119" 
-#NOMBRE_PC_NS = "10.15.12.102"   # DESKTOP-HUREDOL
+
+#COLOCAR LA IP DEL NS
+IP_NS = "10.85.175.119" 
+
 #ip_local = socket.gethostbyname(socket.gethostname())
-NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
+IP_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
@@ -61,7 +63,7 @@ class GestorCliente:
         self.Jugador_cliente: JugadorCliente = None
         self.controlador_navegacion = None
         
-        self.hostNS = NOMBRE_PC_NS
+        self.hostNS = IP_NS
         self.puertoNS = PUERTO_NS
         
         print(f"NameServer name : {self.hostNS}")
