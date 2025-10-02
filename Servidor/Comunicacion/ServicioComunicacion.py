@@ -407,7 +407,6 @@ class ServicioComunicacion:
             except Exception as e:
                 self.logger.error(f"[ERROR] Fallo inesperado con {cliente.nickname}: {type(e).__name__} - {e}")
                 votos_clientes[i] = {}
-
         return votos_clientes
     
     #METODO PARA PODER OBTENER LOS DATOS DE CONEXION DEL CLIENTE
