@@ -248,11 +248,14 @@ class NodoReplica(Nodo):
                     "respuestas": []
                 }
                 self.ServDB.crear_partida(datos)
+                self.logger.warning("Se creo una partida nueva")
+            else:
+                self.ServicioJuego.inicializar_con_restauracion
+                self.logger.warning("Se restauro una partida previa")
 
             daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
             uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
             self.logger.info("ServicioJuego registrado correctamente.")
-
             # requestLoop() se queda aquí, pero en su propio hilo
             daemon.requestLoop()
 

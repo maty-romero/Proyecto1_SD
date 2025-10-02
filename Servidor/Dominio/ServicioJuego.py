@@ -26,8 +26,8 @@ class ServicioJuego:
         self.lock_confirmacion = Lock()
 
 
-    def restaurar_partida_desde_bd(self, codigo_partida: int = 1):
-        """Restaura el estado de la partida desde la base de datos"""
+    def recuperar_servicio_juego(self, codigo_partida: int = 1):
+        """Restaura el estado del servicio de juego desde la base de datos"""
         try:
             # Obtener datos de la partida desde la BD
             controlador_db: ControladorDB = self.dispacher.manejar_llamada("db", "get_controlador")
@@ -39,7 +39,7 @@ class ServicioJuego:
                 return False
             
             # Restaurar la partida usando el método estático
-            self.Partida = Partida.desde_datos_bd(datos_partida)
+            self.Partida = Partida.reconstruir_datos_partida(datos_partida)
             
             # Restaurar el diccionario de jugadores para mantener compatibilidad
             self.Jugadores = {}
@@ -58,7 +58,7 @@ class ServicioJuego:
     # confirmar_jugador -> ¿jugadores suficientes? -> iniciar_partida -> inicializar_con_restauracion
     def inicializar_con_restauracion(self, codigo_partida: int = 1): # Para cuando el nodoPrincipal pasa a ser otro y debe restaurar la partida de todos los jugadores - No sirve para cuando 1 solo jugador pierde la porque hace broadcast de nueva_ronda -> se les actualiza a todos la vista
         """TEMPORAL para pruebas de restauración. Inicializa el servicio intentando restaurar desde BD, o crea nueva partida"""
-        if self.restaurar_partida_desde_bd(codigo_partida):
+        if self.recuperar_servicio_juego(codigo_partida):
             
             # Notificar a clientes conectados sobre el estado actual - TODO mover a otro lado
             if self.Partida.estado_actual == EstadoJuego.EN_SALA:

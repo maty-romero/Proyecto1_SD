@@ -21,7 +21,7 @@ class Jugador:
         return self.puntaje_total
     
     @staticmethod
-    def desde_datos_bd(datos_cliente: dict):
+    def reconstruir_datos_jugador(datos_cliente: dict):
         """Crea un objeto Jugador desde los datos de la base de datos"""
         jugador = Jugador(datos_cliente["nickname"])
         # Restaurar puntaje si existe en BD

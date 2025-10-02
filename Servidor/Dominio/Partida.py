@@ -106,7 +106,7 @@ class Partida:
         self.estado_actual == EstadoJuego.FIN_JUEGO
 
     @staticmethod
-    def desde_datos_bd(datos_partida: dict):
+    def reconstruir_datos_partida(datos_partida: dict):
         """Restaura una partida desde los datos de la base de datos"""
         partida = Partida()
         
@@ -117,14 +117,14 @@ class Partida:
         
         # Restaurar jugadores
         clientes_conectados = datos_partida.get("clientes_Conectados", [])
-        partida.jugadores = [Jugador.desde_datos_bd(cliente) for cliente in clientes_conectados]
+        partida.jugadores = [Jugador.reconstruir_datos_jugador(cliente) for cliente in clientes_conectados]
         
         # Restaurar ronda actual si existe
         if partida.nro_ronda_actual > 0:
             letra_actual = datos_partida.get("letra", "")
             respuestas = datos_partida.get("respuestas", {})
             
-            partida.ronda_actual = Ronda.desde_datos_bd({
+            partida.ronda_actual = Ronda.reconstruir_datos_ronda({
                 "nro_ronda": partida.nro_ronda_actual,
                 "categorias": partida.categorias,
                 "letra": letra_actual,

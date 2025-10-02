@@ -45,7 +45,7 @@ class Ronda:
         return info
 
     @staticmethod
-    def desde_datos_bd(datos_ronda: dict, jugadores: list, letras_jugadas: list):
+    def reconstruir_datos_ronda(datos_ronda: dict, jugadores: list, letras_jugadas: list):
         """Restaura una ronda desde los datos de la base de datos"""
         ronda = Ronda.__new__(Ronda)  # Crear sin llamar __init__, porque se llamaría a get_letra_random sobreescribiendo la letra que se trajo de BD
 
