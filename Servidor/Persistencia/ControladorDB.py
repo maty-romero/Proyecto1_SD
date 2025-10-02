@@ -65,7 +65,6 @@ def trigger_broadcast(func):
         return result
     return wrapper
 
-
 class ControladorDB:
 
     def __init__(self,nodoReplica, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):

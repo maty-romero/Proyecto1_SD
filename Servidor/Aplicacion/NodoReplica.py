@@ -39,6 +39,7 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         self.manejador = ManejadorUDP(owner=self, puerto_local=self.puerto)
+        self.ServDB = ControladorDB(self)
         
         """
         self.socket_manager = Manekad(
@@ -131,6 +132,7 @@ class NodoReplica(Nodo):
 
         elif tipo == "ACTUALIZAR_DB":
             self.logger.warning(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
+            
             """
             ARREGLAR self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -237,7 +239,6 @@ class NodoReplica(Nodo):
             ns = Pyro5.api.locate_ns()
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
-            self.ServDB = ControladorDB(self)
             self.ServicioJuego = ServicioJuego(self.Dispatcher)
             self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
             self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
