@@ -56,25 +56,26 @@ class NodoReplica(Nodo):
 
     def broadcast_datos_DB(self):
         self.logger.info("Haciendo broadcast a replicas...")
+        threading.Thread(target=self.hilo_broadcast, daemon=True).start()
+        
 
-        time.sleep(5)
-        # Buscar todos los nodos con ID menor al mío
-        nodos_menores = [n for n in self.lista_nodos if n.id < self.id]
-            
+    def hilo_broadcast(self):
+        # Buscar todos los nodos con ID menor a este
+        nodos_menores = [n for n in self.lista_nodos if n.id < self.id]  
         if not nodos_menores:
             self.logger.info(f"[{self.id}] No hay nodos menores para notificar")
-            return
-            
+            return    
+        datos = self.ServDB.obtener_datos_partida_completos()
         # Enviar mensaje a cada nodo menor
         for nodo in nodos_menores:
             self.logger.info(f"[{self.id}] Enviando ACTUALIZAR_DB a nodo {nodo.id}")
             self.manejador.enviar_mensaje(
                 nodo.host,
                 nodo.puerto,
-                "ACTUALIZAR_DB"
+                "ACTUALIZAR_DB",
+                datos
             )
         self.logger.info(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
-
 
     def iniciar(self):
         if self.esCoordinador:
@@ -215,7 +216,6 @@ class NodoReplica(Nodo):
         Implementación futura: inicializar servicios de coordinación, etc.
         """
         self.logger.info(f"\n=============================\nNodo[{self.id}] SE PROCLAMA NUEVO COORDINADOR\n=============================")
-
         # Lanzar la inicialización de Pyro5 en un hilo separado
         threading.Thread(target=self._iniciar_servicios_pyro, daemon=True).start()
 
@@ -224,10 +224,9 @@ class NodoReplica(Nodo):
         """Método que corre en un hilo separado para no bloquear"""
         try:
             ns = Pyro5.api.locate_ns()
-            
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
-            self.ServDB = ControladorDB()
+            self.ServDB = ControladorDB(self)
             self.ServicioJuego = ServicioJuego(self.Dispatcher)
             self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
             self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
@@ -237,17 +236,7 @@ class NodoReplica(Nodo):
             existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
             
             if not existe_partida_previa:
-                datos = {
-                    "codigo": 1,
-                    "clientes_Conectados": [],
-                    "estado_actual": "",
-                    "letras_jugadas":"",
-                    "nro_ronda": 0,
-                    "categorias": ["Nombres", "Animales", "Colores", "Paises o ciudades", "Objetos"],
-                    "letra": "",
-                    "respuestas": []
-                }
-                self.ServDB.crear_partida(datos)
+                self.ServDB.iniciar_db()
                 self.logger.warning("Se creo una partida nueva")
             else:
                 self.ServicioJuego.inicializar_con_restauracion

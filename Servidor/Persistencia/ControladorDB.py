@@ -36,37 +36,62 @@ PARTIDA:
 
 
 from pymongo import MongoClient, errors
-
+#from Servidor.Aplicacion.NodoReplica import NodoReplica
 """Los Datos ya tienen que llegar formateados a la clase. No se pueden actualizar datos particulares,
     la clase esta diseñada para que llegue todo el conjunto de datos
 """
+
+from functools import wraps
+
+def trigger_broadcast(func):
+    """Decorador que desencadena broadcast después de actualizaciones exitosas"""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+        
+        # Verificar si hubo modificación exitosa
+        operacion_exitosa = False
+        
+        if isinstance(result, int) and result > 0:
+            # Para métodos que retornan modified_count o deleted_count
+            operacion_exitosa = True
+        elif result is not None and not isinstance(result, int):
+            # Para métodos que retornan objetos (insert_one retorna InsertOneResult)
+            operacion_exitosa = True
+        
+        if operacion_exitosa:
+            self.nodoReplica.broadcast_datos_DB()
+        
+        return result
+    return wrapper
+
+
 class ControladorDB:
 
-    def __init__(self, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):
+    def __init__(self,nodoReplica, uri="mongodb://localhost:27017/", db_name="TuttiFruttiDB",codigoPartida=1):
+        self.nodoReplica=nodoReplica #dejamos esta variable solo para poder invocar al broadcast
         self.uri= uri
         self.db_name = db_name      
         self.registroDatos = [] #lista para imprimir con informacion relevante
         self.codigo_partida = codigoPartida
-        self.iniciar_db()
+        self.conexiondb = MongoClient(self.uri)
+        self.db = self.conexiondb[self.db_name]        # se crea sola si no existe
+        self.partida = self.db["Partida"]           # lo mismo para la colección
 
     #puede renombrarse o dividir responsabilidades
     def iniciar_db(self):
         try:
-            self.conexiondb = MongoClient(self.uri)
-            self.db = self.conexiondb[self.db_name]        # se crea sola si no existe
-            self.partida = self.db["Partida"]           # lo mismo para la colección
-
             # Creamos un índice por código de partida (opcional, recomendado)
-            #self.partida.create_index("code", unique=True)
-
             # Si no hay partidas, insertamos una inicial
             if self.partida.count_documents({}) == 0:
                 self.partida.insert_one(
                     {
-                    "codigo": 1,          # código de la partida
+                    "codigo": 1,
                     "clientes_Conectados": [],
+                    "estado_actual": "",
+                    "letras_jugadas":"",
                     "nro_ronda": 0,
-                    "categorias": ["Nombres", "Animales", "Colores" ,"Paises o ciudades", "Objetos"],
+                    "categorias": ["Nombres", "Animales", "Colores", "Paises o ciudades", "Objetos"],
                     "letra": "",
                     "respuestas": []
                     }   
@@ -79,28 +104,29 @@ class ControladorDB:
             self.conexiondb = None
             self.db = None
 
-    def crear_partida(self, datos_partida):
-        """Crea o reemplaza la partida con el código de self.codigo_partida"""
-        datos_partida["codigo"] = self.codigo_partida
-        resultado = self.partida.replace_one(
-            {"codigo": self.codigo_partida},
-            datos_partida,
-            upsert=True
-        )
-        return resultado.upserted_id
+    # def crear_partida(self, datos_partida):
+    #     """Crea o reemplaza la partida con el código de self.codigo_partida"""
+    #     datos_partida["codigo"] = self.codigo_partida
+    #     resultado = self.partida.replace_one(
+    #         {"codigo": self.codigo_partida},
+    #         datos_partida,
+    #         upsert=True
+    #     )
+    #     return resultado.upserted_id
 
-#Prueba para crear partidas desde el ultimo codigo de partida
-    def crear_partida_prueba(self, datos_partida): 
-        #Busco ultimo codigo de partida, para crear una nueva a partir de esa
-        ultimo_codigo = self.getUltimoCodPartida()
-        self.codigo_partida = ultimo_codigo + 1 #Incremento a un nuevo codigo de partida para la nueva partida
-        datos_partida['codigo'] = self.codigo_partida
-        return self.partida.insert_one(datos_partida)
+# #Prueba para crear partidas desde el ultimo codigo de partida
+#     def crear_partida_prueba(self, datos_partida): 
+#         #Busco ultimo codigo de partida, para crear una nueva a partir de esa
+#         ultimo_codigo = self.getUltimoCodPartida()
+#         self.codigo_partida = ultimo_codigo + 1 #Incremento a un nuevo codigo de partida para la nueva partida
+#         datos_partida['codigo'] = self.codigo_partida
+#         return self.partida.insert_one(datos_partida)
 
     def obtener_partida(self):
         """Obtiene el documento de la partida actual"""
         return self.partida.find_one({"codigo": self.codigo_partida})
-
+    
+    @trigger_broadcast
     def actualizar_partida(self, datos):
         """Actualiza parcialmente la partida actual"""
         return self.partida.update_one(
@@ -108,6 +134,7 @@ class ControladorDB:
             {"$set": datos}
         ).modified_count
 
+    @trigger_broadcast
     def eliminar_partida(self):
         """Elimina la partida actual"""
         return self.partida.delete_one({"codigo": self.codigo_partida}).deleted_count
@@ -117,7 +144,7 @@ class ControladorDB:
             self.conexiondb.close()
 
     #METODOS PARA AGREGAR
-    
+    @trigger_broadcast
     def agregar_jugador(self, datos_cliente):
         """ Agrega un cliente y sus datos a la clave "clientes_conectados" """
         return self.partida.update_one({
@@ -128,6 +155,7 @@ class ControladorDB:
             }
         }).modified_count
 
+    @trigger_broadcast
     def eliminar_jugador(self, nickname):
         """ Elimina un cliente y sus datos del arreglo "clientes_conectados" mediante la clave "nickname" """
         return self.partida.update_one({
@@ -138,6 +166,7 @@ class ControladorDB:
             }
         }).modified_count
 
+    @trigger_broadcast
     def actualizar_letra(self, nueva_letra):
         """ Actualiza la letra de la partida """
         return self.partida.update_one(
@@ -145,6 +174,7 @@ class ControladorDB:
             {'$set': {'letra': nueva_letra}}
     ).modified_count
 
+    @trigger_broadcast
     def actualizar_nro_ronda(self, nroRonda):
         """ Actualiza la ronda de la partida """
         return self.partida.update_one(
@@ -152,6 +182,7 @@ class ControladorDB:
             {'$set': {'nro_ronda': nroRonda}}
     ).modified_count
 
+    @trigger_broadcast
     def actualizar_categorias(self, categorias):
         """ Actualiza las categorías de la partida """
         return self.partida.update_one(
@@ -169,6 +200,7 @@ class ControladorDB:
         clientes = doc['clientes_Conectados']
         return clientes
 
+    @trigger_broadcast
     def insertarNuevaRonda(self, nuevaRonda):
         """ Inserta una nueva ronda en la partida """
         nuevaRonda['codigo'] = self.codigo_partida
@@ -188,6 +220,7 @@ class ControladorDB:
         # Normaliza claves: reemplaza espacios, puntos y $ por '_'
         return key.replace(".", "_").replace("$", "_").replace(" ", "_")
     # Nuevo actualizarRespuestasRonda
+    @trigger_broadcast
     def reemplazar_respuestas_ronda(self, nroRonda, respuestas_clientes: dict):
         """
         Construye un dict con todas las respuestas por nickname (normalizando
@@ -250,6 +283,7 @@ class ControladorDB:
         """Devuelve la instancia del controlador (para acceso desde dispatcher)"""
         return self
 
+    @trigger_broadcast
     def actualizar_estado_partida(self, estado_enum):
         """Actualiza el estado de la partida convirtiendo el Enum a string"""
         estado_str = estado_enum.name  # Convierte EstadoJuego.EN_SALA a "EN_SALA"
@@ -258,6 +292,7 @@ class ControladorDB:
             {'$set': {'estado_actual': estado_str}}
         ).modified_count
 
+    @trigger_broadcast
     def actualizar_letras_jugadas(self, letras_jugadas):
         """Actualiza las letras jugadas en la partida"""
         return self.partida.update_one(
@@ -265,6 +300,7 @@ class ControladorDB:
             {'$set': {'letras_jugadas': letras_jugadas}}
         ).modified_count
 
+    @trigger_broadcast
     def actualizar_puntajes_jugadores(self, puntajes_dict):
         """Actualiza los puntajes de los jugadores en la partida"""
         modificados = 0
@@ -280,7 +316,6 @@ class ControladorDB:
             )
             modificados += resultado.modified_count
         return modificados
-
 
     def obtener_clientes_conectados(self):
         """Obtiene todos los clientes conectados desde BD"""
