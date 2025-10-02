@@ -248,6 +248,11 @@ class NodoReplica(Nodo):
         """Método que corre en un hilo separado para no bloquear"""
         try:
             ns = Pyro5.api.locate_ns()
+            #si ya existia el servicio, lo borra
+            try:
+                ns.remove("mi.servicio")
+            except Pyro5.errors.NamingError:
+                pass
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
             self.ServicioJuego = ServicioJuego(self.Dispatcher)
@@ -258,6 +263,8 @@ class NodoReplica(Nodo):
 
 
             daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+
+            #El registrar objeto utiliza overwrite, por lo cual si ya existe el servicio, lo reemplaza
             uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
             self.logger.info(" ------------------- ServicioJuego registrado correctamente. ------------------- ")
 
