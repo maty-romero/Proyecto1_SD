@@ -253,12 +253,11 @@ class NodoReplica(Nodo):
                 pass
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
-            self.ServicioJuego = ServicioJuego(self.Dispatcher)
             self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
             self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
             self.Dispatcher.registrar_servicio("db", self.ServDB)
             self.Dispatcher.registrar_servicio("nodo_ppal", self)
-
+            self.ServicioJuego = ServicioJuego(self.Dispatcher)
 
             daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
 
@@ -290,8 +289,9 @@ class NodoReplica(Nodo):
             daemon.requestLoop()
 
         except Exception as e:
+            import traceback
             self.logger.error(f"Error inicializando servicios Pyro5: {e}")
-        
+            traceback.print_exc()
 
 
         #NO SE HACE FALTA BROADCAST A REPLICAS, EL HILO DE BROADCAST ES SOLO DE PRUEBA

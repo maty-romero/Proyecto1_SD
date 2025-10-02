@@ -24,9 +24,9 @@ class Partida:
         self.nro_ronda_actual = 0
         self.letras_jugadas: list[str] = []
         self.ronda_actual: Ronda = None
-        self.iniciar_nueva_ronda()
         self.jugadores: list[Jugador] = []
         self.estado_actual = EstadoJuego.EN_SALA
+        self.iniciar_nueva_ronda()
         
     def get_estado_actual(self):
         return self.estado_actual

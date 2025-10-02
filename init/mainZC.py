@@ -44,6 +44,11 @@ mi_servicio = ServiceInfo(
     port=my_port,
     properties={"id": str(my_id)}
 )
+
+try:
+    zc.unregister_service(mi_servicio)
+except Exception:
+    pass
 zc.register_service(mi_servicio)
 #print(f"[Zeroconf] Registrado Nodo {my_id} en puerto {my_port}")
 

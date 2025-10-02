@@ -21,7 +21,7 @@ class ServicioJuego:
         self.Partida = Partida()
         self.sincronizar_partida_con_bd()
         self.sincronizar_ronda_con_bd()
-        self.dispacher("db")
+        self.dispacher=dispacher
         self.logger = ConsoleLogger(name="ServicioJuego", level="INFO") # cambiar si se necesita 'DEBUG'
         self.jugadores_min = 2 # pasar por constructor?
         self.logger.info("Servicio Juego inicializado")
