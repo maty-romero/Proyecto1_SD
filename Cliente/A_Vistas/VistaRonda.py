@@ -144,7 +144,9 @@ class VistaRonda(QWidget):
     def agregar_validadores(self, letra):
         for input in self.inputs:
             input.setValidator(PrimeraLetraValidator(f"{letra}", input))
-            
+            input.setPlaceholderText(f"{letra}...")
+
+
     def aviso_completar_categorias(self, nombre):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Icon.Warning)
