@@ -288,6 +288,7 @@ class NodoReplica(Nodo):
                     hilo_inicializacion.start()
             else:
                 self.logger.info("No se hallo partida previa para restaurar")
+                self.ServDB.iniciar_nueva_partida()
             daemon.requestLoop()
 
         except Exception as e:
