@@ -45,7 +45,7 @@ networks:
     ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
 
 """
-NOMBRE_PC_NS = "192.168.100.62"   # DESKTOP-HUREDOL
+NOMBRE_PC_NS = "10.15.12.102"   # DESKTOP-HUREDOL
 #ip_local = socket.gethostbyname(socket.gethostname())
 #NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL

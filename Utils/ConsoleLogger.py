@@ -1,5 +1,13 @@
 import sys
 import datetime
+import os
+import sys
+import ctypes
+
+kernel32 = ctypes.windll.kernel32
+handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+kernel32.SetConsoleMode(handle, 7)   # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+
 
 class ConsoleLogger:
     LEVELS = {

@@ -39,6 +39,7 @@ class NodoReplica(Nodo):
         self.nodoAnterior: Nodo = None
         self.recalcular_vecinos()
         self.manejador = ManejadorUDP(owner=self, puerto_local=self.puerto)
+        self.ServDB = ControladorDB(self)
         
         """
         self.socket_manager = Manekad(
@@ -136,14 +137,14 @@ class NodoReplica(Nodo):
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             AttributeError: 'NoneType' object has no attribute 'manejar_llamada'
             --> Metodo para levantar Nodo como Replica?? o modificar el levantar_como_coordinador par considerar esto? Ver
-            
+            """
 
             # Extraer datos de la partida quitando metadata
             datos_partida = {k: v for k, v in mensaje.items() if k not in ["type", "from", "ip", "puerto"]}
 
             self.logger.info(f"Datos de partida recibidos: {datos_partida}")
-            self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
-            """     
+            #self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
+            self.ServDB.actualizar_partida(datos_partida)    
 
     def nuevo_Siguiente(self):
         """Busca un nuevo nodo siguiente cuando el actual falla"""
@@ -237,7 +238,6 @@ class NodoReplica(Nodo):
             ns = Pyro5.api.locate_ns()
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
-            self.ServDB = ControladorDB(self)
             self.ServicioJuego = ServicioJuego(self.Dispatcher)
             self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
             self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
