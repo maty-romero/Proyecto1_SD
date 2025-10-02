@@ -1,7 +1,7 @@
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QSizePolicy, QFrame
+    QPushButton, QSizePolicy, QFrame, QScrollArea
 )
 from PyQt6.QtCore import Qt
 
@@ -12,10 +12,53 @@ class VistaResultados(QWidget):
         # Fondo de la ventana
         self.setStyleSheet("background-color: #f5f7fa;")
 
-        main_layout = QVBoxLayout()
+        # Layout principal para el scroll
+        main_container = QVBoxLayout()
+        main_container.setContentsMargins(0, 0, 0, 0)
+        main_container.setSpacing(0)
+        self.setLayout(main_container)
+
+        # Crear un widget contenedor para el contenido
+        content_widget = QWidget()
+        content_widget.setStyleSheet("background-color: #f5f7fa;")
+        
+        # Crear el scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(content_widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: #f5f7fa;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #ecf0f1;
+                width: 10px;
+                margin: 0px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical {
+                background: #bdc3c7;
+                border-radius: 5px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #95a5a6;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+        
+        main_container.addWidget(scroll_area)
+
+        # Layout del contenido scrolleable
+        main_layout = QVBoxLayout(content_widget)
         main_layout.setContentsMargins(40, 40, 40, 40)
         main_layout.setSpacing(30)
-        self.setLayout(main_layout)
 
         # --- Título Principal ---
         titulo = QLabel("🎮 Resultados Finales")
@@ -53,6 +96,7 @@ class VistaResultados(QWidget):
         """)
         self.labelPuntajesTotales.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.labelPuntajesTotales.setWordWrap(True)
+        self.labelPuntajesTotales.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         card_layout.addWidget(self.labelPuntajesTotales)
 
         main_layout.addWidget(card_frame)
@@ -122,7 +166,7 @@ class VistaResultados(QWidget):
         
         # Crear texto con medallas para los primeros 3 lugares
         lineas = []
-        medallas = ["👑", "🥈", "🥉"]
+        medallas = ["🥇", "🥈", "🥉"]
         
         for i, (nick, puntaje) in enumerate(puntajes_ordenados):
             if i < len(medallas):
