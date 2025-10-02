@@ -26,29 +26,29 @@ class ControladorMensajeTransitorio:
     def accion_no(self):
         self.navegacion.mostrar("vista_no")
 
-    def mostrar_mensaje_reconexion(self, titulo: str, mensaje: str, mostrar_botones: bool = True, auto_ocultar: int = 0):
+    def mostrar_mensaje_reconexion(self, titulo: str, mensaje: str, mostrar_botones: bool = True):
         """Muestra mensaje de reconexión con opciones personalizadas"""
         self.vista.setMensaje(f"{titulo}\n\n{mensaje}")
         
-        if mostrar_botones:
-            self.vista.boton_si.show()
-            self.vista.boton_no.show()
-            self.vista.boton_si.setText("Reintentar")
-            self.vista.boton_no.setText("Salir")
-        else:
-            self.vista.boton_si.hide()
-            self.vista.boton_no.hide()
+        # if mostrar_botones:
+        #     self.vista.boton_si.show()
+        #     self.vista.boton_no.show()
+        #     self.vista.boton_si.setText("Reintentar")
+        #     self.vista.boton_no.setText("Salir")
+        # else:
+        #     self.vista.boton_si.hide()
+        #     self.vista.boton_no.hide()
         
-        # Auto-ocultar si se especifica
-        if auto_ocultar > 0:
-            import threading
-            import time
-            def auto_hide():
-                time.sleep(auto_ocultar)
+        # # Auto-ocultar si se especifica
+        # if auto_ocultar > 0:
+        #     import threading
+        #     import time
+        #     def auto_hide():
+        #         time.sleep(auto_ocultar)
 
-                if hasattr(self, 'navegacion'):
-                    # Ocultar la vista de mensaje transitorio
-                    self.vista.hide()
+        #         if hasattr(self, 'navegacion'):
+        #             # Ocultar la vista de mensaje transitorio
+        #             self.vista.hide()
             
-            threading.Thread(target=auto_hide, daemon=True).start()
+        #     threading.Thread(target=auto_hide, daemon=True).start()
 

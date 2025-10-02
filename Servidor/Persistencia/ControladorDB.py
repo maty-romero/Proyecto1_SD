@@ -93,7 +93,8 @@ class ControladorDB:
                     "nro_ronda": 0,
                     "categorias": ["Nombres", "Animales", "Colores", "Paises o ciudades", "Objetos"],
                     "letra": "",
-                    "respuestas": []
+                    "respuestas": [],
+                    "timer_votacion": None  # Campo para timer de votación
                     }   
                 )
                 self.registroDatos.append("[ControladorDB] Base creada con partida inicial ABCD")
@@ -279,6 +280,25 @@ class ControladorDB:
         )
         return partida_data.get("clientes_Conectados", []) if partida_data else []
 
+    # def obtener_respuestas_ronda_actual(self):
+    #     """Obtiene las respuestas de la ronda actual desde BD para restauración"""
+    #     try:
+    #         partida_data = self.partida.find_one(
+    #             {"codigo": self.codigo_partida},
+    #             {"_id": 0, "nro_ronda": 1, "respuestas": 1}
+    #         )
+            
+    #         if partida_data and partida_data.get("respuestas"):
+    #             self.registroDatos.append(f"[ControladorDB] Respuestas de ronda {partida_data.get('nro_ronda')} obtenidas desde BD")
+    #             return partida_data["respuestas"]
+    #         else:
+    #             self.registroDatos.append("[ControladorDB] No hay respuestas guardadas en BD")
+    #             return {}
+                
+    #     except Exception as e:
+    #         self.registroDatos.append(f"[ControladorDB] Error obteniendo respuestas desde BD: {e}")
+    #         return {}
+
     def get_controlador(self):
         """Devuelve la instancia del controlador (para acceso desde dispatcher)"""
         return self
@@ -328,18 +348,99 @@ class ControladorDB:
             print(f"Error obteniendo clientes conectados: {e}")
             return []
 
+    # def existe_partida_previa(self) -> bool:
+    #     """
+    #     Verifica si la colección 'Partida' ya existe en la base de datos.
+    #     Devuelve True si existe (ya hubo partidas previas), False en caso contrario.
+    #     """
+    #     if self.db is None:
+    #         self.registroDatos.append("[ControladorDB] No hay conexión activa a la base de datos")
+    #         return False
+
+    #     existe = "Partida" in self.db.list_collection_names()
+    #     if existe:
+    #         self.registroDatos.append("[ControladorDB] Ya existe colección 'Partida'")
+    #     else:
+    #         self.registroDatos.append("[ControladorDB] No existe colección 'Partida'")
+    #     return existe
+
     def existe_partida_previa(self) -> bool:
         """
-        Verifica si la colección 'Partida' ya existe en la base de datos.
-        Devuelve True si existe (ya hubo partidas previas), False en caso contrario.
+        Verifica si hay datos previos en la partida consultando el estado_actual.
+        Devuelve True si el estado NO está vacío (hay datos previos), False si está vacío o no existe.
         """
         if self.db is None:
             self.registroDatos.append("[ControladorDB] No hay conexión activa a la base de datos")
             return False
 
-        existe = "Partida" in self.db.list_collection_names()
-        if existe:
-            self.registroDatos.append("[ControladorDB] Ya existe colección 'Partida'")
-        else:
-            self.registroDatos.append("[ControladorDB] No existe colección 'Partida'")
-        return existe
+        try:
+            partida_data = self.partida.find_one(
+                {"codigo": self.codigo_partida},
+                {"_id": 0, "estado_actual": 1}
+            )
+            
+            if partida_data is None:
+                self.registroDatos.append(f"[ControladorDB] No existe partida con código {self.codigo_partida}")
+                return False
+            
+            estado_actual = partida_data.get("estado_actual", "")
+            
+            if estado_actual == "" or estado_actual is None:
+                self.registroDatos.append(f"[ControladorDB] Partida {self.codigo_partida} no tiene datos previos (estado vacío)")
+                return False
+            else:
+                self.registroDatos.append(f"[ControladorDB] Partida {self.codigo_partida} tiene datos previos (estado: {estado_actual})")
+                return True
+                
+        except Exception as e:
+            self.registroDatos.append(f"[ControladorDB] Error consultando estado de partida: {e}")
+            return False
+
+    # ---------------- Métodos para Timer de Votación ----------------
+    def actualizar_timer_votacion(self, tiempo_restante: int):
+        """Actualiza el tiempo restante del timer de votación en BD"""
+        try:
+            result = self.partida.update_one(
+                {"codigo": self.codigo_partida},
+                {"$set": {"timer_votacion": tiempo_restante}}
+            )
+            if result.modified_count > 0:
+                self.registroDatos.append(f"[ControladorDB] Timer votación actualizado: {tiempo_restante}s")
+            return result.modified_count
+        except Exception as e:
+            self.registroDatos.append(f"[ControladorDB] Error actualizando timer votación: {e}")
+            return 0
+
+    def obtener_timer_votacion(self) -> int:
+        """Obtiene el tiempo restante del timer de votación desde BD"""
+        try:
+            partida_data = self.partida.find_one(
+                {"codigo": self.codigo_partida},
+                {"_id": 0, "timer_votacion": 1}
+            )
+            
+            if partida_data and "timer_votacion" in partida_data:
+                tiempo = partida_data["timer_votacion"]
+                self.registroDatos.append(f"[ControladorDB] Timer votación obtenido: {tiempo}s")
+                return tiempo
+            else:
+                self.registroDatos.append("[ControladorDB] No hay timer de votación activo")
+                return 0
+                
+        except Exception as e:
+            self.registroDatos.append(f"[ControladorDB] Error obteniendo timer votación: {e}")
+            return 0
+
+    def limpiar_timer_votacion(self):
+        """Elimina el timer de votación de BD (cuando termina o se cancela)"""
+        try:
+            result = self.partida.update_one(
+                {"codigo": self.codigo_partida},
+                {"$unset": {"timer_votacion": ""}}
+            )
+            if result.modified_count > 0:
+                self.registroDatos.append("[ControladorDB] Timer votación limpiado de BD")
+            return result.modified_count
+        except Exception as e:
+            self.registroDatos.append(f"[ControladorDB] Error limpiando timer votación: {e}")
+            return 0

@@ -233,23 +233,39 @@ class NodoReplica(Nodo):
             self.Dispatcher.registrar_servicio("db", self.ServDB)
             self.Dispatcher.registrar_servicio("nodo_ppal", self)
 
+
+            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
+            self.logger.info(" ------------------- ServicioJuego registrado correctamente. ------------------- ")
+
             existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
             
             if not existe_partida_previa:
                 self.ServDB.iniciar_db()
                 self.logger.warning("Se creo una partida nueva")
             else:
-                self.ServicioJuego.inicializar_con_restauracion
-                self.logger.warning("Se restauro una partida previa")
+                self.logger.info("Partida encontrada - Restaurando clientes persistidos desde BD...")
+                self.ServComunic.restaurar_clientes_desde_bd()
 
-            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
-            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info("ServicioJuego registrado correctamente.")
-            # requestLoop() se queda aquí, pero en su propio hilo
+                def inicializar_juego_restaurado():
+                    time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
+                    self.ServicioJuego.inicializar_con_restauracion()
+                    self.logger.warning("Se restauro una partida previa")
+                
+                hilo_inicializacion = threading.Thread(
+                    target=inicializar_juego_restaurado,
+                    daemon=True,
+                    name="InicializacionJuegoRestaurado"
+                )
+                hilo_inicializacion.start()
+
             daemon.requestLoop()
 
         except Exception as e:
             self.logger.error(f"Error inicializando servicios Pyro5: {e}")
+        
+
+
         #NO SE HACE FALTA BROADCAST A REPLICAS, EL HILO DE BROADCAST ES SOLO DE PRUEBA
         #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start() 
 

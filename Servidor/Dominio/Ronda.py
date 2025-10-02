@@ -58,10 +58,3 @@ class Ronda:
         ronda.respuestas_ronda = datos_ronda.get("respuestas", {})
         
         return ronda
-
-    """
-    def iniciar_partida(self):
-        self.rondaActual = 1
-        letra = self.get_letra_random()
-
-    """
