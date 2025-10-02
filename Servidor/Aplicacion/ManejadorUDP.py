@@ -64,7 +64,7 @@ class ManejadorUDP:
     """Version previa, funciona"""
     def _enviar_heartbeat(self):
         """"""
-        self.logger.info(f"[{self.owner.id}] intenta HEARTBEAT")
+        self.logger.info(f"[{self.owner.id}] comenzando HEARTBEAT")
 
         #prueba de heart
         while not self.evento_stop.is_set():

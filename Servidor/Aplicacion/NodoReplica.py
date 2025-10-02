@@ -131,8 +131,19 @@ class NodoReplica(Nodo):
 
         elif tipo == "ACTUALIZAR_DB":
             self.logger.warning(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
-            #self.actualizar_db(datos)
-            pass
+            """
+            ARREGLAR self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            AttributeError: 'NoneType' object has no attribute 'manejar_llamada'
+            --> Metodo para levantar Nodo como Replica?? o modificar el levantar_como_coordinador par considerar esto? Ver
+            
+
+            # Extraer datos de la partida quitando metadata
+            datos_partida = {k: v for k, v in mensaje.items() if k not in ["type", "from", "ip", "puerto"]}
+
+            self.logger.info(f"Datos de partida recibidos: {datos_partida}")
+            self.Dispatcher.manejar_llamada("db", "actualizar_partida", datos_partida)
+            """     
 
     def nuevo_Siguiente(self):
         """Busca un nuevo nodo siguiente cuando el actual falla"""
