@@ -77,7 +77,7 @@ class ControladorDB:
         self.db = self.conexiondb[self.db_name]        # se crea sola si no existe
         self.partida = self.db["Partida"]           # lo mismo para la colección
 
-    #puede renombrarse o dividir responsabilidades
+    #Inicia una partida nueva, este reemplaza el uso de eliminar partida
     def iniciar_db(self):
         try:
             # Creamos un índice por código de partida (opcional, recomendado)
@@ -133,11 +133,18 @@ class ControladorDB:
             {"$set": datos}
         ).modified_count
 
-    @trigger_broadcast
-    def eliminar_partida(self):
-        """Elimina la partida actual"""
-        return self.partida.delete_one({"codigo": self.codigo_partida}).deleted_count
-
+    """El uso de esta es reemplazado por Iniciar()"""
+    # @trigger_broadcast
+    # def eliminar_partida(self):
+    #     """Elimina la partida actual y la colección"""
+    #     # Primero eliminar el/los documento(s)
+    #     deleted_count = self.partida.delete_one({"codigo": self.codigo_partida}).deleted_count
+        
+    #     # Luego eliminar la colección completa
+    #     self.partida.drop()
+        
+    #     self.registroDatos.append(f"[ControladorDB] Partida eliminada ({deleted_count} documentos). Colección eliminada.")
+    #     return deleted_count
     def desconectar(self):
         if self.conexiondb:
             self.conexiondb.close()

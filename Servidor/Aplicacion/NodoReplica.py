@@ -52,13 +52,13 @@ class NodoReplica(Nodo):
 
         if self.esCoordinador:
             #limpiar datos de partida anterior
-            self.ServDB.eliminar_partida()
+            #self.ServDB.eliminar_partida()
             self.levantar_nuevo_coordinador()
             #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
 
 
     def broadcast_datos_DB(self):
-        self.logger.info("Haciendo broadcast a replicas...")
+        self.logger.error("Haciendo broadcast a replicas...")
         threading.Thread(target=self.hilo_broadcast, daemon=True).start()
         
 
@@ -77,6 +77,12 @@ class NodoReplica(Nodo):
                 if '_id' in doc:
                     doc['_id'] = str(doc['_id'])
         
+        self.logger.info(f"[{self.id}]Se notifico a los nodos replica con los datos: {datos} nodos")
+
+        if not datos:
+            self.logger.warning(f"[{self.id}] No hay datos para enviar")
+            return
+        
         # Formatear el payload
         payload = {"DB": datos}
         # Enviar mensaje a cada nodo menor
@@ -88,7 +94,7 @@ class NodoReplica(Nodo):
                 "ACTUALIZAR_DB",
                 payload
             )
-        self.logger.info(f"[{self.id}] Notificación completada a {len(nodos_menores)} nodos")
+        
 
     def iniciar(self):
         if self.esCoordinador:
@@ -143,7 +149,7 @@ class NodoReplica(Nodo):
             self.logger.info(f"[{self.id}] Reconexión exitosa con {sender}")
 
         elif tipo == "ACTUALIZAR_DB":
-            self.logger.warning(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
+            self.logger.error(f"[{self.id}] Solicitud de actualización de DB desde nodo [{sender}]")
 
             datos_partida = mensaje.get("DB")
 
