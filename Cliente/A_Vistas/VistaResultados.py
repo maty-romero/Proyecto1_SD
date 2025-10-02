@@ -39,7 +39,7 @@ class VistaResultados(QWidget):
         main_layout.addWidget(self.labelGanador)
 
         # --- Botón Volver al Inicio ---
-        self.botonVolverInicio = QPushButton("Volver al Inicio")
+        self.botonVolverInicio = QPushButton("Cerrar Sala")
         self.botonVolverInicio.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
         self.botonVolverInicio.setStyleSheet("background-color: #0055ff; color: white; padding: 10px;")
         main_layout.addWidget(self.botonVolverInicio, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -53,3 +53,6 @@ class VistaResultados(QWidget):
 
     def set_ganador(self, ganador: str):
         self.labelGanador.setText(f"Ganador de la partida: {ganador}")
+
+    def get_boton_salir(self):
+        return self.botonVolverInicio

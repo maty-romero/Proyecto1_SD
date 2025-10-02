@@ -48,7 +48,7 @@ networks:
 NOMBRE_PC_NS = "10.85.175.119" 
 #NOMBRE_PC_NS = "10.15.12.102"   # DESKTOP-HUREDOL
 #ip_local = socket.gethostbyname(socket.gethostname())
-#NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
+NOMBRE_PC_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
@@ -151,11 +151,8 @@ class GestorCliente:
             sys.exit() # no puede jugar
 
         # ingreso nickname
-        # breakpoint()
         nickname_valido = formated_nickname
         
-        #nickname_valido = self.ingresar_nickname_valido(formated_nickname)
-
         self.logger.info(f"NickName '{nickname_valido}' disponible!")
         # inicializacion deamon Cliente y sesion de socket
         if self.Jugador_cliente is None:
@@ -195,7 +192,6 @@ class GestorCliente:
         # registro del cliente
         info_cliente = self.Jugador_cliente.to_dict()  # dict con info relevante
         info_cliente['uri'] = uri
-        self.logger.warning(f"INFO_CLIENTEEEEE: {info_cliente}")
 
         resultado_dict = self.get_proxy_partida_singleton().unirse_a_sala(info_cliente)
         self.logger.warning(f"Jugador '{self.Jugador_cliente.get_nickname()}' se ha unido a la sala!")
@@ -256,10 +252,7 @@ class GestorCliente:
             elif msg == "info_sala":
                 self.logger.info("Recibido estado de sala - navegando y rehabilitando botón")
                 self.controlador_navegacion.mostrar('sala')
-                # # Rehabilitar botón "Estoy listo" para reconexión
-                # if hasattr(self.controlador_navegacion, 'controlador_sala'):
-                #     self.controlador_navegacion.controlador_sala.rehabilitar_boton_listo()
-            elif msg == "nueva_ronda": #¿Debería tener otro nombre más general para usarse cuando la ronda es nueva y restaurada? Por el momento se utiliza para cuando se restaura la ronda también
+            elif msg == "nueva_ronda":
                 self.logger.info(f"MENSAJE RECIBIDO POR SOCKET: exito:{exito}, msg:'{msg}', datos:{datos}")
                 self.controlador_navegacion.controlador_ronda.habilitar_btn_stop()
                 self.controlador_navegacion.mostrar('ronda')
@@ -272,15 +265,19 @@ class GestorCliente:
             elif msg == "estado_votaciones":
                 self.logger.info("Restaurando estado de votaciones tras reconexión")
                 self.controlador_navegacion.controlador_votaciones.mostrar_info_votaciones(datos)
-                self.controlador_navegacion.mostrar('votaciones')
             elif msg == "aviso_tiempo_votacion":
                 self.logger.info(f"Recibido del server {datos}")
                 self.controlador_navegacion.controlador_votaciones.actualizar_mensaje_timer(datos)
+            elif msg == "tiempo_votacion_agotado":
+                mensaje = datos.get('mensaje', 'Tiempo agotado') if isinstance(datos, dict) else datos
+                self.logger.info(f"Tiempo de votación agotado: {mensaje}")
+                self.controlador_navegacion.controlador_votaciones.mostrar_tiempo_agotado(datos)
             elif msg == "fin_partida":
                 self.logger.info("La partida ha finalizado.")
                 self.controlador_navegacion.controlador_resultados.mostrar_resultados(datos)
                 self.controlador_navegacion.mostrar('resultados')
-                #self.stop_daemon_cliente()
+            elif msg == "cerrar_sala":
+                self.controlador_navegacion.mostrar('cerrar_sala')
             elif msg == "SERVIDOR_DESCONECTADO":
                 motivo = datos.get("motivo", "Motivo desconocido")
                 self.logger.warning(f"🔴 SERVIDOR DESCONECTADO ({motivo}) - Mostrando vista de reconexión")
@@ -407,6 +404,14 @@ class GestorCliente:
     def get_proxy_partida(self):
         return self.get_proxy_partida_singleton()
     
+    def enviar_cerrar_sala(self):
+        try:
+            with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+                uri = ns.lookup(self.nombre_logico_server)
+                proxy = Pyro5.api.Proxy(uri)
+                proxy.recibir_cerrar_sala()
+        except Exception as e:
+            self.logger.error(f"Error enviando señal de cierre: {e}")
     
     """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
@@ -468,9 +473,7 @@ class GestorCliente:
                     "¡Conexión restablecida!",
                     f"{mensaje_recuperacion}\nEsperando sincronización...",
                     mostrar_botones=False,
-                    auto_ocultar=5  # Auto-ocultar después de 5 segundos
                 )
-            
             # No forzar navegación - el servidor enviará el estado correcto automáticamente
             self.logger.info("Esperando que el servidor envíe el estado actual de la partida...")
             
@@ -482,7 +485,6 @@ class GestorCliente:
                     "Error en reconexión",
                     "Reintentando sincronización...",
                     mostrar_botones=False,
-                    auto_ocultar=3
                 )
 
     def _reconectar_proxy_pyro5(self):
