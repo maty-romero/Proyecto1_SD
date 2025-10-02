@@ -14,17 +14,17 @@ class ControladorMensajeTransitorio:
         self.gestor_cliente: GestorCliente = gestor_cliente
         self.logger = ConsoleLogger(name="ControladorMensajeTransitorio", level="INFO")
         
-        self.vista.boton_si.clicked.connect(self.accion_si)
-        self.vista.boton_no.clicked.connect(self.accion_no)
+        # self.vista.boton_si.clicked.connect(self.accion_si)
+        # self.vista.boton_no.clicked.connect(self.accion_no)
 
     def setNavegacion(self, controlador_navegacion):
         self.navegacion = controlador_navegacion
 
-    def accion_si(self):
-        self.navegacion.mostrar("vista_si")
+    # def accion_si(self):
+    #     self.navegacion.mostrar("vista_si")
 
-    def accion_no(self):
-        self.navegacion.mostrar("vista_no")
+    # def accion_no(self):
+    #     self.navegacion.mostrar("vista_no")
 
     def mostrar_mensaje_reconexion(self, titulo: str, mensaje: str, mostrar_botones: bool = True):
         """Muestra mensaje de reconexión con opciones personalizadas"""

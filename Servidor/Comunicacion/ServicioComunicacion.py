@@ -156,6 +156,7 @@ class ServicioComunicacion:
     #     except Exception as e:
     #         self.logger.error(f"Error en proceso de restauración: {e}")
 
+
     def restaurar_clientes_desde_bd(self) -> int:
         """Restaura clientes confirmados desde la base de datos (guardados por ServicioJuego)"""
         try:
@@ -407,7 +408,6 @@ class ServicioComunicacion:
             except Exception as e:
                 self.logger.error(f"[ERROR] Fallo inesperado con {cliente.nickname}: {type(e).__name__} - {e}")
                 votos_clientes[i] = {}
-
         return votos_clientes
     
     #METODO PARA PODER OBTENER LOS DATOS DE CONEXION DEL CLIENTE
