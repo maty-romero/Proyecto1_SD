@@ -2,6 +2,7 @@ import sys, time, socket
 from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 from Servidor.Aplicacion.Nodo import Nodo
 from Servidor.Aplicacion.NodoReplica import NodoReplica
+from Utils.ComunicationHelper import ComunicationHelper 
 
 NODOS_IDS = [1, 2, 3, 4, 5]
 # Mapeo de ID a puerto fijo
@@ -28,29 +29,26 @@ class Listener:
     def update_service(self, zc, type_, name):
         pass
 
-my_id = int(sys.argv[1])
+id_nodo = int(sys.argv[1])
+puerto_nodo = PUERTOS_FIJOS[id_nodo]
+ip_nodo = ComunicationHelper.obtener_ip_local()
+print(f"[Main] Datos de nodo local: {id_nodo}|{ip_nodo}:{puerto_nodo}")
 
-# Asignar puerto fijo según el ID
-my_port = PUERTOS_FIJOS[my_id]
-
-print(f"[Main] Puerto asignado: {my_port}")
-
-# Registrar mi propio servicio en DNS
+# Registrar servicio propio en DNS
 zc = Zeroconf()
 mi_servicio = ServiceInfo(
     "_nodo._udp.local.",
-    f"nodo-{my_id}._nodo._udp.local.",
+    f"nodo-{id_nodo}._nodo._udp.local.",
     addresses=[socket.inet_aton("127.0.0.1")],
-    port=my_port,
-    properties={"id": str(my_id)}
+    port=puerto_nodo,
+    properties={"id": str(id_nodo)}
 )
-
+#si el servicio ya estaba registrado lo borra
 try:
     zc.unregister_service(mi_servicio)
 except Exception:
     pass
 zc.register_service(mi_servicio)
-#print(f"[Zeroconf] Registrado Nodo {my_id} en puerto {my_port}")
 
 # Buscar otros servicios
 ServiceBrowser(zc, "_nodo._udp.local.", Listener())
@@ -63,22 +61,21 @@ time.sleep(3)
 lista_nodos = [Nodo(id=nid, nombre=f"n{nid}", host=servicios[nid][0], puerto=servicios[nid][1])
                for nid in NODOS_IDS if nid in servicios]
 
-print(f"[Main] Lista de nodos:")
+print(f"[Main] Nodos Registrados:")
 for n in lista_nodos:
     print(f"  - Nodo {n.id}: {n.nombre} en {n.host}:{n.puerto}")
 
 # Calcular el mayor ID entre los nodos descubiertos
-max_id = max([n.id for n in lista_nodos] + [my_id])
+max_id = max([n.id for n in lista_nodos] + [id_nodo])
 
 # El nodo con id máximo será el coordinador
-es_coordinador = (my_id == max_id)
+es_coordinador = (id_nodo == max_id)
 
-my_ip = "127.0.0.1"
-print(f"[Main] El nodo [{my_id}] es coordinador: {es_coordinador}")
+print(f"[Main] El nodo [{id_nodo}] es coordinador: {es_coordinador}")
 print(f"[Main] Iniciando aplicación...")
 
 # AHORA SÍ SE INICIA EL CÓDIGO
-app = NodoReplica(id=my_id, host=my_ip, puerto=my_port, lista_nodos=lista_nodos, nombre=f"n{my_id}", esCoordinador=es_coordinador)
+app = NodoReplica(id=id_nodo, host=ip_nodo, puerto=puerto_nodo, lista_nodos=lista_nodos, nombre=f"n{id_nodo}", esCoordinador=es_coordinador)
 app.iniciar()
 
 try:
