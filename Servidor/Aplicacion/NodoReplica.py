@@ -245,12 +245,14 @@ class NodoReplica(Nodo):
     def _iniciar_servicios_pyro(self):
         """Método que corre en un hilo separado para no bloquear"""
         try:
+
             ns = Pyro5.api.locate_ns()
             #si ya existia el servicio, lo borra
             try:
-                ns.remove("mi.servicio")
+                ns.remove("gestor.partida")
             except Pyro5.errors.NamingError:
                 pass
+
             self.Dispatcher = Dispatcher()
             self.ServComunic = ServicioComunicacion(self.Dispatcher)
             self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
@@ -259,16 +261,21 @@ class NodoReplica(Nodo):
             self.Dispatcher.registrar_servicio("nodo_ppal", self)
             self.ServicioJuego = ServicioJuego(self.Dispatcher)
 
-            daemon = Pyro5.server.Daemon(socket.gethostbyname(socket.gethostname()))
+            daemon = Pyro5.server.Daemon(ComunicationHelper.obtener_ip_local())
 
             #El registrar objeto utiliza overwrite, por lo cual si ya existe el servicio, lo reemplaza
             uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info(" ------------------- ServicioJuego registrado correctamente. ------------------- ")
+            self.logger.info(" ---------- ServicioJuego registrado correctamente. ---------- ")
 
             existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
-            
+            self.logger.error(f"Existe partida previa? {existe_partida_previa}")
+
+
             if  existe_partida_previa:
-                if self.ServDB.obtener_estado_actual()!="EN_SALA": 
+                self.logger.warning("Partida previa detectada en BD...")
+                self.logger.warning(f"ESTADO de la partida: {self.ServDB.obtener_estado_actual()}")
+
+                if self.ServDB.obtener_estado_actual() != "EN_SALA": 
                     self.logger.info(f"Partida encontrada en estado{self.ServDB.obtener_estado_actual()} - Restaurando clientes persistidos desde BD...")
                     self.ServComunic.restaurar_clientes_desde_bd()
 

@@ -160,11 +160,13 @@ class ServicioComunicacion:
     def restaurar_clientes_desde_bd(self) -> int:
         """Restaura clientes confirmados desde la base de datos (guardados por ServicioJuego)"""
         try:
+            self.logger.warning("Iniciando restauración de clientes desde BD...")
+            
             clientes_bd = self.dispatcher.manejar_llamada("db","obtener_clientes_conectados")
             if not clientes_bd:
                 self.logger.info("No hay clientes en BD para restaurar")
                 return 0
-            self.logger.info(f"Restaurando {len(clientes_bd)} clientes desde BD...")
+            self.logger.warning(f"Restaurando {len(clientes_bd)} clientes desde BD...")
             
             # Usar threading para restaurar clientes en paralelo
             import threading

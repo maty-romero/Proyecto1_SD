@@ -47,10 +47,10 @@ networks:
 """
 
 #COLOCAR LA IP DEL NS
-IP_NS = "10.85.175.119" 
+IP_NS = ComunicationHelper.obtener_ip_local()
 
 #ip_local = socket.gethostbyname(socket.gethostname())
-IP_NS = socket.gethostbyname(socket.gethostname())
+#IP_NS = socket.gethostbyname(socket.gethostname())
    # DESKTOP-HUREDOL
 PUERTO_NS = 9090
 
