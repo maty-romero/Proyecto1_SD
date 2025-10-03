@@ -41,21 +41,15 @@ class NodoReplica(Nodo):
         self.recalcular_vecinos()
         self.manejador = ManejadorUDP(owner=self, puerto_local=self.puerto)
         self.ServDB = ControladorDB(self)
-        
-        """
-        self.socket_manager = Manekad(
-            host=self.host,
-            puerto=self.puerto,
-            nombre_logico=self.get_nombre_completo(),
-            es_servidor=False
-        )
-        """
-
         if self.esCoordinador:
             #limpiar datos de partida anterior
             self.ServDB.iniciar_nueva_partida()
             self.levantar_nuevo_coordinador()
             #threading.Thread(target= self.broadcast_datos_DB, daemon=True).start()
+        self.ns = Pyro5.api.locate_ns()
+        # Crea daemon una vez
+        self.daemon = Pyro5.server.Daemon(ComunicationHelper.obtener_ip_local())
+        
 
 
     def broadcast_datos_DB(self):
@@ -246,7 +240,7 @@ class NodoReplica(Nodo):
         threading.Thread(target=self.hilo_coordinador, daemon=True).start()
 
     def iniciar_objetos(self):
-         #inicializacion de objetos del nodo
+        #inicializacion de objetos del nodo
         self.Dispatcher = Dispatcher()
         self.ServComunic = ServicioComunicacion(self.Dispatcher)
         self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
@@ -256,11 +250,52 @@ class NodoReplica(Nodo):
         self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
 
     def manejar_estado_partida(self):
-        pass
-    
+        existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
+        if not existe_partida_previa:
+            self.logger.info("No se hallo partida previa para restaurar")
+            self.ServDB.iniciar_nueva_partida()
+            return
+        
+        estado = self.ServDB.obtener_estado_actual()
+        self.logger.warning(f"Partida previa detectada en BD, en estado:{estado}") 
+        #si existe partida guardada verifica que este en curso
+        if estado != "EN_SALA":
+            self.restaurar_partida_guardada()
+        
     def restaurar_partida_guardada(self):
-        pass
+        self.ServComunic.restaurar_clientes_desde_bd()
+        def inicializar_juego_restaurado():
+            time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
+            self.ServicioJuego.inicializar_con_restauracion()
+            self.logger.warning("Se restauro una partida previa")
+        
+        hilo_inicializacion = threading.Thread(
+            target=inicializar_juego_restaurado,
+            daemon=True,
+            name="InicializacionJuegoRestaurado"
+        )
+        hilo_inicializacion.start()
 
+    def registrar_en_NS(self):
+        #Termino la inicializacion de la partida, y pasa a ser registrada
+        # Localiza NS una sola vez
+        if not hasattr(self, "ns"):
+            self.ns = Pyro5.api.locate_ns()
+        #si ya existia el servicio, lo borra
+        try:
+            self.ns.remove("gestor.partida")
+        except Pyro5.errors.NamingError:
+            pass
+    
+        # Crea daemon si aún no existe
+        if not hasattr(self, "daemon"):
+            self.daemon = Pyro5.server.Daemon(ComunicationHelper.obtener_ip_local())     
+            # Levanta el loop en un thread para no bloquear
+            #threading.Thread(target=self.daemon.requestLoop, daemon=True).start()
+            
+        uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", self.daemon)
+        self.logger.info(" ---------- ServicioJuego registrado correctamente. ---------- ")
+        threading.Thread(target=self.daemon.requestLoop, daemon=True).start()
 
     #hilo para levantar el coordinador
     def hilo_coordinador(self):
@@ -268,42 +303,7 @@ class NodoReplica(Nodo):
         try:
             self.iniciar_objetos()
             self.manejar_estado_partida()
-            # Comprobacion de partidas guardadas
-            existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
-            self.logger.warning(f"ESTADO de la partida: {self.ServDB.obtener_estado_actual()}")
-            if  existe_partida_previa:
-                estado = self.ServDB.obtener_estado_actual()
-                self.logger.warning(f"Partida previa detectada en BD, en estado:{estado}")
-                if estado != "EN_SALA": 
-                    self.ServComunic.restaurar_clientes_desde_bd()
-                    def inicializar_juego_restaurado():
-                        time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
-                        self.ServicioJuego.inicializar_con_restauracion()
-                        self.logger.warning("Se restauro una partida previa")
-                    
-                    hilo_inicializacion = threading.Thread(
-                        target=inicializar_juego_restaurado,
-                        daemon=True,
-                        name="InicializacionJuegoRestaurado"
-                    )
-                    hilo_inicializacion.start()
-            else:
-                self.logger.info("No se hallo partida previa para restaurar")
-                self.ServDB.iniciar_nueva_partida()
-            
-            #Termino la inicializacion de la partida, y pasa a ser registrada
-            ns = Pyro5.api.locate_ns()
-            #si ya existia el servicio, lo borra
-            try:
-                ns.remove("gestor.partida")
-            except Pyro5.errors.NamingError:
-                pass
-
-            daemon = Pyro5.server.Daemon(ComunicationHelper.obtener_ip_local())
-            #El registrar objeto utiliza overwrite, por lo cual si ya existe el servicio, lo reemplaza
-            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info(" ---------- ServicioJuego registrado correctamente. ---------- ")
-            daemon.requestLoop()
+            self.registrar_en_NS()
             
         except Exception as e:
             import traceback
