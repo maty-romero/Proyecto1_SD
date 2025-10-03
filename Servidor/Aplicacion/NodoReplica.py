@@ -239,46 +239,39 @@ class NodoReplica(Nodo):
         """
         self.logger.info(f"\n=============================\nNodo[{self.id}] SE PROCLAMA NUEVO COORDINADOR\n=============================")
         # Lanzar la inicialización de Pyro5 en un hilo separado
-        threading.Thread(target=self._iniciar_servicios_pyro, daemon=True).start()
+        threading.Thread(target=self.hilo_coordinador, daemon=True).start()
+
+    def iniciar_objetos(self):
+         #inicializacion de objetos del nodo
+        self.Dispatcher = Dispatcher()
+        self.ServComunic = ServicioComunicacion(self.Dispatcher)
+        self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
+        self.Dispatcher.registrar_servicio("db", self.ServDB)
+        self.Dispatcher.registrar_servicio("nodo_ppal", self)
+        self.ServicioJuego = ServicioJuego(self.Dispatcher)
+        self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
+
+    def manejar_estado_partida(self):
+        pass
+    
+    def restaurar_partida_guardada(self):
+        pass
 
 
-    def _iniciar_servicios_pyro(self):
+    #hilo para levantar el coordinador
+    def hilo_coordinador(self):
         """Método que corre en un hilo separado para no bloquear"""
         try:
-
-            ns = Pyro5.api.locate_ns()
-            #si ya existia el servicio, lo borra
-            try:
-                ns.remove("gestor.partida")
-            except Pyro5.errors.NamingError:
-                pass
-
-            self.Dispatcher = Dispatcher()
-            self.ServComunic = ServicioComunicacion(self.Dispatcher)
-            self.Dispatcher.registrar_servicio("juego", self.ServicioJuego)
-            self.Dispatcher.registrar_servicio("comunicacion", self.ServComunic)
-            self.Dispatcher.registrar_servicio("db", self.ServDB)
-            self.Dispatcher.registrar_servicio("nodo_ppal", self)
-            self.ServicioJuego = ServicioJuego(self.Dispatcher)
-
-            daemon = Pyro5.server.Daemon(ComunicationHelper.obtener_ip_local())
-
-            #El registrar objeto utiliza overwrite, por lo cual si ya existe el servicio, lo reemplaza
-            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
-            self.logger.info(" ---------- ServicioJuego registrado correctamente. ---------- ")
-
+            self.iniciar_objetos()
+            self.manejar_estado_partida()
+            # Comprobacion de partidas guardadas
             existe_partida_previa = self.Dispatcher.manejar_llamada("db", "existe_partida_previa")
-            self.logger.error(f"Existe partida previa? {existe_partida_previa}")
-
-
+            self.logger.warning(f"ESTADO de la partida: {self.ServDB.obtener_estado_actual()}")
             if  existe_partida_previa:
-                self.logger.warning("Partida previa detectada en BD...")
-                self.logger.warning(f"ESTADO de la partida: {self.ServDB.obtener_estado_actual()}")
-
-                if self.ServDB.obtener_estado_actual() != "EN_SALA": 
-                    self.logger.info(f"Partida encontrada en estado{self.ServDB.obtener_estado_actual()} - Restaurando clientes persistidos desde BD...")
+                estado = self.ServDB.obtener_estado_actual()
+                self.logger.warning(f"Partida previa detectada en BD, en estado:{estado}")
+                if estado != "EN_SALA": 
                     self.ServComunic.restaurar_clientes_desde_bd()
-
                     def inicializar_juego_restaurado():
                         time.sleep(0.5)  # Pequeña pausa para asegurar que daemon esté listo
                         self.ServicioJuego.inicializar_con_restauracion()
@@ -293,8 +286,21 @@ class NodoReplica(Nodo):
             else:
                 self.logger.info("No se hallo partida previa para restaurar")
                 self.ServDB.iniciar_nueva_partida()
-            daemon.requestLoop()
+            
+            #Termino la inicializacion de la partida, y pasa a ser registrada
+            ns = Pyro5.api.locate_ns()
+            #si ya existia el servicio, lo borra
+            try:
+                ns.remove("gestor.partida")
+            except Pyro5.errors.NamingError:
+                pass
 
+            daemon = Pyro5.server.Daemon(ComunicationHelper.obtener_ip_local())
+            #El registrar objeto utiliza overwrite, por lo cual si ya existe el servicio, lo reemplaza
+            uri = ComunicationHelper.registrar_objeto_en_ns(self.ServicioJuego, "gestor.partida", daemon)
+            self.logger.info(" ---------- ServicioJuego registrado correctamente. ---------- ")
+            daemon.requestLoop()
+            
         except Exception as e:
             import traceback
             self.logger.error(f"Error inicializando servicios Pyro5: {e}")
