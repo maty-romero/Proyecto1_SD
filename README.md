@@ -21,6 +21,7 @@ Requisitos:
 Estando en el directorio del proyecto ejecute los siguientes comandos: 
 
 $ pip install -r Servidor/requirements.txt
+
 $ pip install -r Sliente/requirements.txt
 
 ## Ejecucion
