@@ -45,9 +45,9 @@ class ServidorNombres(Nodo):
         """Inicia el servidor de nombres en un hilo daemon y espera hasta que esté disponible."""
         
         def ns_loop():
-            print(f"[Servidor de Nombres] Iniciando en {host_ip}...")
+            print(f"Iniciando en {host_ip}...")
             Pyro5.nameserver.start_ns_loop(host=host_ip)
-            print("[Servidor de Nombres] Detenido.")
+            print("Detenido.")
 
         # Iniciar el hilo daemon
         hilo = threading.Thread(target=ns_loop)

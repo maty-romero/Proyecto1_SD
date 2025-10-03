@@ -286,24 +286,7 @@ class ControladorDB:
         )
         return partida_data.get("clientes_Conectados", []) if partida_data else []
 
-    # def obtener_respuestas_ronda_actual(self):
-    #     """Obtiene las respuestas de la ronda actual desde BD para restauración"""
-    #     try:
-    #         partida_data = self.partida.find_one(
-    #             {"codigo": self.codigo_partida},
-    #             {"_id": 0, "nro_ronda": 1, "respuestas": 1}
-    #         )
-            
-    #         if partida_data and partida_data.get("respuestas"):
-    #             self.registroDatos.append(f"[ControladorDB] Respuestas de ronda {partida_data.get('nro_ronda')} obtenidas desde BD")
-    #             return partida_data["respuestas"]
-    #         else:
-    #             self.registroDatos.append("[ControladorDB] No hay respuestas guardadas en BD")
-    #             return {}
-                
-    #     except Exception as e:
-    #         self.registroDatos.append(f"[ControladorDB] Error obteniendo respuestas desde BD: {e}")
-    #         return {}
+  
 
     def get_controlador(self):
         """Devuelve la instancia del controlador (para acceso desde dispatcher)"""
@@ -353,22 +336,6 @@ class ControladorDB:
         except Exception as e:
             print(f"Error obteniendo clientes conectados: {e}")
             return []
-
-    # def existe_partida_previa(self) -> bool:
-    #     """
-    #     Verifica si la colección 'Partida' ya existe en la base de datos.
-    #     Devuelve True si existe (ya hubo partidas previas), False en caso contrario.
-    #     """
-    #     if self.db is None:
-    #         self.registroDatos.append("[ControladorDB] No hay conexión activa a la base de datos")
-    #         return False
-
-    #     existe = "Partida" in self.db.list_collection_names()
-    #     if existe:
-    #         self.registroDatos.append("[ControladorDB] Ya existe colección 'Partida'")
-    #     else:
-    #         self.registroDatos.append("[ControladorDB] No existe colección 'Partida'")
-    #     return existe
 
     def existe_partida_previa(self) -> bool:
         """

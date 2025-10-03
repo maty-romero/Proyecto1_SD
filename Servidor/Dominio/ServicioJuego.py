@@ -346,79 +346,6 @@ class ServicioJuego:
         "recolectar_votos")
         self.procesar_votos_y_asignar_puntaje(votos)
 
-
-    # def procesar_votos_y_asignar_puntaje(self, votos):
-    #     from collections import defaultdict
-
-    #     respuestas_clientes = self.Partida.ronda_actual.get_respuestas_ronda()
-    #     conteo_respuestas = defaultdict(lambda: defaultdict(int))
-    #     validez = defaultdict(dict)
-
-    #     # --- Primera pasada: validar respuestas y contar ocurrencias ---
-    #     for jugador, info in respuestas_clientes.items():
-    #         respuestas = info.get("respuestas", {})
-    #         if not respuestas:
-    #             self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
-    #             continue
-
-    #         for categoria, respuesta in respuestas.items():
-    #             true_count = false_count = 0
-    #             for ronda, votos_jugadores in votos.items():
-    #                 if jugador in votos_jugadores and categoria in votos_jugadores[jugador]:
-    #                     if votos_jugadores[jugador][categoria]:
-    #                         true_count += 1      
-    #                     else:
-    #                         false_count += 1
-
-    #             es_valida = (true_count > false_count)
-    #             validez[jugador][categoria] = es_valida
-
-    #             # Solo cuenta la respuesta si es válida y no vacía
-    #             if respuesta and es_valida:
-    #                 conteo_respuestas[categoria][respuesta] += 1
-
-    #             self.logger.debug(
-    #                 f"[VALIDACIÓN] {jugador} - {categoria}: '{respuesta}' "
-    #                 f"T:{true_count} F:{false_count} válida:{es_valida}"
-    #             )
-
-    #     # --- Segunda pasada: asignar puntajes ---
-    #     puntajes = {}
-    #     for jugador, info in respuestas_clientes.items():
-    #         puntajes[jugador] = {}
-    #         respuestas = info.get("respuestas", {})
-    #         if not respuestas:
-    #             self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
-    #             continue
-
-    #         for categoria, respuesta in respuestas.items():
-    #             es_valida = validez[jugador].get(categoria, False)
-    #             if not respuesta or not es_valida:
-    #                 puntaje = 0
-    #             else:
-    #                 repeticiones = conteo_respuestas[categoria][respuesta]
-    #                 puntaje = 10 if repeticiones == 1 else 5
-
-    #             puntajes[jugador][categoria] = puntaje
-    #             self.logger.debug(
-    #                 f"[PUNTAJE] {jugador} - {categoria}: '{respuesta}' "
-    #                 f"válida:{es_valida}, repeticiones:{conteo_respuestas[categoria][respuesta]} "
-    #                 f"=> {puntaje} puntos"
-    #             )
-
-    #     # --- Totales y asignación ---
-    #     totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
-
-    #     for jugador in self.Partida.jugadores:
-    #         total = totales.get(jugador.nickname, 0)  # evita KeyError
-    #         jugador.sumar_puntaje(total)
-    #         self.logger.info(f"El puntaje del jugador {jugador.nickname} es {total}")
-
-    #     # Guardar puntajes actualizados en BD
-    #     self.sincronizar_puntajes_con_bd()
-    #     self.evaluar_ultima_ronda()
-
-
     def procesar_votos_y_asignar_puntaje(self, votos_todos_clientes):
         """
         votos_todos_clientes = {
@@ -574,23 +501,6 @@ class ServicioJuego:
             msg="Hay lugar disponible, puede unirse."
         )
 
-        """
-        if not self.Partida:
-
-        else:#si existe partida es porque se inicio un juego
-        #elif nickname in self.Partida.jugadores    # se procede a verificar si existe jugador
-            #return SerializeHelper.respuesta(
-            #     exito=True,
-            #     msg="Hay partida disponible pero ya habias entrado, puedes unirte de nuevo"
-            # )
-            #aca iria el self
-            #En caso de implementar, comentar el siguiente return
-
-            return SerializeHelper.respuesta(
-                exito=False,
-                msg="Ya hay una partida en curso, no puede unirse"
-            )
-        """
     def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
 
@@ -735,11 +645,7 @@ class ServicioJuego:
                 "uri": str(cliente_confirmado.uri_cliente_conectado),
                 "puntaje_total": 0  # Inicializar puntaje en 0
             }
-
-            """ if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
-                self.logger.info(f"[DB] Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
-            else: 
-                self.logger.warning(f"[DB] El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")   """       
+      
             
             new_cliente_conectado = self.dispacher.manejar_llamada("db","agregar_jugador", cliente_conectado)
             if new_cliente_conectado > 0: #agrego el jugador y devuelvo un log confirmando

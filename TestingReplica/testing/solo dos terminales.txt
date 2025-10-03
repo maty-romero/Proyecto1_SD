@@ -1,2 +1,0 @@
-
-start "Nodo 1" cmd /k "python main.py 1 10001 1:10001,2:10002,3:10003 False & echo Presiona una tecla para cerrar... &"

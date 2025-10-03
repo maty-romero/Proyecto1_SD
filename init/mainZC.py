@@ -39,7 +39,7 @@ zc = Zeroconf()
 mi_servicio = ServiceInfo(
     "_nodo._udp.local.",
     f"nodo-{id_nodo}._nodo._udp.local.",
-    addresses=[socket.inet_aton("127.0.0.1")],
+    addresses=[socket.inet_aton(ip_nodo)],
     port=puerto_nodo,
     properties={"id": str(id_nodo)}
 )

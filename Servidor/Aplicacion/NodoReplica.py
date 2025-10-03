@@ -275,6 +275,7 @@ class NodoReplica(Nodo):
             name="InicializacionJuegoRestaurado"
         )
         hilo_inicializacion.start()
+        self.registrar_en_NS()
 
     def registrar_en_NS(self):
         #Termino la inicializacion de la partida, y pasa a ser registrada
@@ -303,8 +304,6 @@ class NodoReplica(Nodo):
         try:
             self.iniciar_objetos()
             self.manejar_estado_partida()
-            self.registrar_en_NS()
-            
         except Exception as e:
             import traceback
             self.logger.error(f"Error inicializando servicios Pyro5: {e}")
