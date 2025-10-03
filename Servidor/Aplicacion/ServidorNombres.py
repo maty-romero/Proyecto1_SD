@@ -1,99 +1,90 @@
 import Pyro5.api
-import subprocess #consultar que tan factible es, puede tambien crearse un .bat
+import subprocess
 import sys
 import time
+import threading
 from Pyro5 import errors
 from builtins import ConnectionRefusedError
-import threading
-
 import Pyro5.nameserver
 
 from Servidor.Aplicacion.Nodo import Nodo
 
-"""FALTA INCORPORAR IMPLEMENTACION SINGLETON A LA CLASE"""
+
 class ServidorNombres(Nodo):
-    def __init__(self, id,nombre="NameServer",activo=False):
-        super().__init__(id,nombre,activo)
-        self.ns_proceso = None  # Guardamos el proceso
+    """Servidor de Nombres basado en Pyro5, con soporte para ejecución en hilo o subproceso."""
 
+    def __init__(self, id, nombre="NameServer", activo=False):
+        super().__init__(id, nombre, activo)
+        self.ns_proceso = None  # Guardamos el proceso externo si se usa subproceso
 
-#Evaluar de llevarlo a utils, o sacarlo de aca
+    # ------------------------------------------------------------------
     @staticmethod
-    def verificar_nameserver():
-        """Verifica si hay algun Name Server en red local"""
+    def verificar_nameserver(timeout: int = 2):
+        """Intenta localizar un NameServer disponible en la red local."""
         try:
             ns = Pyro5.api.locate_ns()
             objetos = ns.list()
-            print("Contenido del NameServer:")
-            print(objetos)
+            print("[NameServer] Disponible. Objetos registrados:", flush=True)
+            for nombre, uri in objetos.items():
+                print(f" - {nombre}: {uri}", flush=True)
             return ns
-        except (errors.NamingError, errors.CommunicationError, ConnectionRefusedError) as e:
-            print(f"No se pudo conectar al servidor de nombres: {e}")
-            return False
+        except (errors.NamingError, errors.CommunicationError, ConnectionRefusedError):
+            return None
 
-    def iniciar_nameserver_subproceso(self):
-        """Inicia el NameServer en un subproceso si no está disponible."""
+    # ------------------------------------------------------------------
+    def iniciar_nameserver_subproceso(self, timeout: int = 5):
+        """Inicia el NameServer como un subproceso externo."""
         if self.verificar_nameserver():
-            print("El servidor de nombres ya está ejecutándose")
+            print("  El NameServer ya está en ejecución", flush=True)
             return True
 
-        print("Iniciando el servidor de nombres...")
+        print("[NameServer] Iniciando en subproceso...", flush=True)
         try:
             self.ns_proceso = subprocess.Popen(
                 [sys.executable, "-m", "Pyro5.nameserver"],
-                creationflags=subprocess.CREATE_NEW_CONSOLE
+                creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == "win32" else 0
             )
 
-            # Espera activa hasta que el NameServer esté disponible (timeout 10s)
-            timeout = 10
             for _ in range(timeout):
                 if self.verificar_nameserver():
-                    print("NameServer iniciado correctamente")
+                    print(" NameServer iniciado correctamente (subproceso)", flush=True)
                     return True
                 time.sleep(1)
 
-            print("Timeout esperando al NameServer.")
+            print(" Timeout esperando al NameServer.", flush=True)
             return False
 
         except Exception as e:
-            print(f"Error al iniciar el servidor de nombres: {e}")
+            print(f" Error al iniciar el NameServer en subproceso: {e}", flush=True)
             return False
 
-
+    # ------------------------------------------------------------------
     def detener_nameserver(self):
-        """Finaliza el proceso del NameServer si fue lanzado por este nodo."""
+        """Detiene el NameServer si fue lanzado por este proceso."""
         if self.ns_proceso and self.ns_proceso.poll() is None:
-            print("Deteniendo servidor de nombres...")
+            print(" Deteniendo NameServer...", flush=True)
             self.ns_proceso.terminate()
             self.ns_proceso.wait()
-            print("SE HA DETENIDO --> Servidor de nombres.")
+            print(" NameServer detenido.", flush=True)
 
+    # ------------------------------------------------------------------
+    def iniciar_nameserver_hilo(self, host_ip: str, timeout: int = 5):
+        """Inicia el NameServer en un hilo daemon y espera hasta que esté disponible."""
 
-    def iniciar_nameserver_hilo(self, host_ip: str, timeout: int = 10):
-        """Inicia el servidor de nombres en un hilo daemon y espera hasta que esté disponible."""
-        
         def ns_loop():
-            print(f"[Servidor de Nombres] Iniciando en {host_ip}...")
+            print(f"[NameServer] Iniciando en {host_ip}...", flush=True)
             Pyro5.nameserver.start_ns_loop(host=host_ip)
-            print("[Servidor de Nombres] Detenido.")
 
-        # Iniciar el hilo daemon
-        hilo = threading.Thread(target=ns_loop)
-        hilo.daemon = True  # así el hilo mantiene vivo el NameServer
+        # Arrancar en hilo separado
+        hilo = threading.Thread(target=ns_loop, daemon=True)
         hilo.start()
 
-        # Espera activa hasta que el NameServer esté disponible
-        # for _ in range(timeout):
-        #     if self.verificar_nameserver():
-        #         print("[Servidor de Nombres] Iniciado correctamente")
-        #         #return True
-        #     time.sleep(1)
+        # Esperar a que esté disponible
+        for _ in range(timeout):
+            if self.verificar_nameserver():
+                print(" NameServer iniciado correctamente (hilo)", flush=True)
+                return True
+            time.sleep(1)
 
-        print(f"[Servidor de Nombres] Timeout de {timeout}s esperando al NameServer.")
-
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[Servidor de Nombres] Detenido manualmente.")
+        print(" Timeout esperando al NameServer (hilo).", flush=True)
         return False

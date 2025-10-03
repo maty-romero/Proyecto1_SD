@@ -22,23 +22,3 @@ class ServicioCliente:
 
     def obtener_votos_cliente(self) -> dict:
         return self.gestor.enviar_votos_jugador()
-        
-    """
-
-        def recibir_info_sala(self, info: str):
-            # Limpiar la consola / GUI
-            try:
-                self.gui.clear()
-            except Exception:
-                pass
-            #self.gui.show_message("**[recibir_info_sala]**")
-            #self.gui.show_message(f"Server mandó mensaje!\n📨 Mensaje: {info}")
-
-            # Delegar lógica al gestor (no hacer trabajo pesado aquí)
-            # Ejecutamos en hilo para no bloquear el hilo del daemon de Pyro
-            threading.Thread(target=self.gestor.on_info, args=("sala", info), daemon=True).start()
-
-            def recibir_info_confirmar_jugador(self, info: str):
-                threading.Thread(target=self.gestor.on_info, args=("sala_confirmacion", info), daemon=True).start()
-
-        """

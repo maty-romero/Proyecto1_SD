@@ -35,30 +35,6 @@ class ControladorVotaciones:
     def mostrar_info_votaciones(self, respuestas_clientes):
         self.signals.actualizar_vista_signal.emit(respuestas_clientes)
 
-    # def _actualizar_vista_votaciones(self, respuestas_clientes: dict):
-    #     letra = respuestas_clientes.get('letra_ronda', 'A')
-    #     nro_ronda = respuestas_clientes.get('nro_ronda', 1)
-    #     total_rondas = respuestas_clientes.get('total_rondas', 3)
-    
-    #     # Actualiza la cabecera de la vista
-    #     self.vista.set_ronda_y_letra(nro_ronda, total_rondas, letra)
-
-    #     # Transforma las respuestas al formato esperado por la vista
-    #     respuestas_por_categoria = {}
-    #     # 'NICKNAME' es la clave del diccionario
-    #     for nickname, info in respuestas_clientes['respuestas_clientes'].items():
-
-    #         if not info.get("respuestas", {}):   # se evalúa True si está vacío
-    #             self.logger.warning(f"No hay respuestas registradas para jugador {nickname}")
-    #             continue  # saltar al siguiente jugador
-
-    #         for categoria, respuesta in info['respuestas'].items():
-    #             clave = f"{categoria} con {letra}"
-    #             if clave not in respuestas_por_categoria:
-    #                 respuestas_por_categoria[clave] = []
-    #             respuestas_por_categoria[clave].append((nickname, respuesta))
-    #     self.vista.agregar_respuestas_para_votar(respuestas_por_categoria)
-
     def _actualizar_vista_votaciones(self, respuestas_clientes: dict):
         letra = respuestas_clientes.get('letra_ronda', 'A')
         nro_ronda = respuestas_clientes.get('nro_ronda', 1)

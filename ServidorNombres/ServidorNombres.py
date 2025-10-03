@@ -24,39 +24,11 @@ class ServidorNombres(Nodo):
         try:
             ns = Pyro5.api.locate_ns()
             objetos = ns.list()
-            print("Contenido del NameServer:")
-            print(objetos)
+            #print("Contenido del NameServer:")
+            #print(objetos)
             return ns
         except (errors.NamingError, errors.CommunicationError, ConnectionRefusedError) as e:
             print(f"No se pudo conectar al servidor de nombres: {e}")
-            return False
-
-    def iniciar_nameserver_subproceso(self):
-        """Inicia el NameServer en un subproceso si no está disponible."""
-        if self.verificar_nameserver():
-            print("El servidor de nombres ya está ejecutándose")
-            return True
-
-        print("Iniciando el servidor de nombres...")
-        try:
-            self.ns_proceso = subprocess.Popen(
-                [sys.executable, "-m", "Pyro5.nameserver"],
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-
-            # Espera activa hasta que el NameServer esté disponible (timeout 10s)
-            timeout = 10
-            for _ in range(timeout):
-                if self.verificar_nameserver():
-                    print("NameServer iniciado correctamente")
-                    return True
-                time.sleep(1)
-
-            print("Timeout esperando al NameServer.")
-            return False
-
-        except Exception as e:
-            print(f"Error al iniciar el servidor de nombres: {e}")
             return False
 
 
@@ -69,7 +41,7 @@ class ServidorNombres(Nodo):
             print("SE HA DETENIDO --> Servidor de nombres.")
 
 
-    def iniciar_nameserver_hilo(self, host_ip: str, timeout: int = 10):
+    def iniciar_nameserver_hilo(self, host_ip: str, timeout: int = 5):
         """Inicia el servidor de nombres en un hilo daemon y espera hasta que esté disponible."""
         
         def ns_loop():
@@ -89,11 +61,7 @@ class ServidorNombres(Nodo):
         #         #return True
         #     time.sleep(1)
 
-        print(f"[Servidor de Nombres] Timeout de {timeout}s esperando al NameServer.")
+        #print(f"[Servidor de Nombres] Timeout de {timeout}s esperando al NameServer.")
 
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[Servidor de Nombres] Detenido manualmente.")
+        
         return False

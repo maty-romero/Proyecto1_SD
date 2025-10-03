@@ -13,39 +13,6 @@ from Utils.ComunicationHelper import ComunicationHelper
 from Utils.ConsoleLogger import ConsoleLogger
 from Utils.SerializeHelper import SerializeHelper
 
-"""Para el uso en docker, un compose de la siguiente forma:
-
-    services:
-  nameserver:
-    image: python:3.12
-    container_name: pyro_ns
-    networks:
-      - pyro_net
-
-  servidor:
-    build: ./servidor
-    depends_on:
-      - nameserver
-    networks:
-      - pyro_net
-
-  cliente:
-    build: ./cliente
-    depends_on:
-      - servidor
-    networks:
-      - pyro_net
-
-networks:
-  pyro_net:
-    driver: bridge
-    
-    Permite lo siguiente
-
-    ns = Pyro5.api.locate_ns(host="nameserver", port=9090)
-
-"""
-
 #COLOCAR LA IP DEL NS
 IP_NS = ComunicationHelper.obtener_ip_local()
 
@@ -336,38 +303,6 @@ class GestorCliente:
 
         return uri
 
-
-    """
-    def inicializar_Deamon_Cliente(self):
-        ip_cliente = ComunicationHelper.obtener_ip_local()
-        objeto_cliente = ServicioCliente(self)  # Se crea objeto remoto y se pasa el gestor (self)
-
-        # nom_logico ya definido con prefijo "jugador.<nickname>"
-        nombre_logico: str= self.Jugador_cliente.get_nombre_logico()
-
-        def daemon_loop():
-            # Crear y guardar el daemon para poder apagarlo despues
-            self._daemon = Pyro5.api.Daemon(host=ip_cliente)
-            try:
-                #ns = Pyro5.api.locate_ns()
-                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
-                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
-                self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
-            except Exception as e:
-                self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
-                # aun así arrancamos el requestLoop para aceptar conexiones directas si corresponde
-
-            self._daemon.requestLoop() # loop de requests (bloqueante)
-
-        # arrancar daemon en hilo de fondo
-        self._daemon_thread = threading.Thread(target=daemon_loop, daemon=True)
-        self._daemon_thread.start()
-
-        
-        # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
-        #time.sleep(2)
-    """
-
     def stop_daemon_cliente(self):
         # apagar daemon y limpiar registro en NS
         if self._daemon:
@@ -515,30 +450,4 @@ class GestorCliente:
             except Exception as e2:
                 self.logger.error(f"Fallo definitivo reconectando proxy Pyro5: {e2}")
 
-
-"""
-    # --- métodos que ServicioCliente llamará (callbacks locales) ---
-    def on_info(self, tipo: str, info: str):
-        # llamado por ServicioCliente cuando llega un evento
-        # proteger estado con lock
-        with self._state_lock:
-            # podés guardar historial, mostrar en GUI, etc.
-            self._last_response = info
-            #self._last_response = f"{tipo}:{info}"
-        # ejemplo: actualizar GUI (si la GUI necesita operar en hilo principal, coordiná eso)
-        try:
-            self.gui.show_message(f"[Gestor Cliente] ({tipo}) {info}")
-        except Exception:
-            pass
-
-    def provide_response(self) -> str:
-        with self._state_lock:
-            return self._last_response or ""
-
-    def jugar_nueva_ronda(self):
-        # instanciar objeto de RondaCliente
-        # al final obtener diccionario para mandar a servidor -> uso de RondaCliente.getRespuestasJugador
-        pass
-
-"""
 

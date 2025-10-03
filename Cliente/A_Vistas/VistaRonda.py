@@ -154,9 +154,6 @@ class VistaRonda(QWidget):
     def set_numero_ronda(self, ronda, totalRondas):
         self.nroronda_label.setText(f"{ronda}/{totalRondas}")
 
-    # def setLetraAleatoria(self, letra):
-    #     self.letra_label.setText(letra)
-    
     def setLetraAleatoria(self, letra):
             self.letra_label.setText(letra)
             self.agregar_validadores(letra)

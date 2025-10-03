@@ -107,11 +107,3 @@ if __name__ == "__main__":
     #     gestor.confirmar_jugador_partida(gestor.Jugador_cliente.get_nickname())
     
     
-    
-    """
-    existe_partida = gestor.buscar_partida()
-    if (existe_partida):
-        gestor.ingresar_nickname_valido()
-        gestor.unirse_a_sala()
-        gestor.confirmar_jugador_partida()
-    """
