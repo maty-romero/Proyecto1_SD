@@ -228,7 +228,7 @@ class ControladorDB:
     # Nuevo actualizarRespuestasRonda
     @trigger_broadcast
     def reemplazar_respuestas_ronda(self, nroRonda, respuestas_clientes: dict):
-        """
+        """ 
         Construye un dict con todas las respuestas por nickname (normalizando
         las claves internas de categoría) y hace $set de 'respuestas' completo.
         """
@@ -250,6 +250,7 @@ class ControladorDB:
             {"codigo": self.codigo_partida, "nro_ronda": nroRonda},
             {"$set": {"respuestas": new_respuestas}}
         )
+       
         return result.modified_count
 
 
@@ -402,6 +403,7 @@ class ControladorDB:
             return False
 
     # ---------------- Métodos para Timer de Votación ----------------
+    @trigger_broadcast
     def actualizar_timer_votacion(self, tiempo_restante: int):
         """Actualiza el tiempo restante del timer de votación en BD"""
         try:
@@ -435,7 +437,7 @@ class ControladorDB:
         except Exception as e:
             self.registroDatos.append(f"[ControladorDB] Error obteniendo timer votación: {e}")
             return 0
-
+    @trigger_broadcast
     def limpiar_timer_votacion(self):
         """Elimina el timer de votación de BD (cuando termina o se cancela)"""
         try:

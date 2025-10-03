@@ -268,6 +268,7 @@ class ServicioJuego:
         # Cambiar estado y guardar
         info_completa_votacion = self.preparar_datos_votacion(respuestas_clientes)
         
+        #self.logger.error(f"INFO COMPLETA DE VOTACION:{info_completa_votacion}")
         # Enviar datos para votación
         self.notificar_datos_votacion_a_clientes(info_completa_votacion)
 

@@ -71,7 +71,11 @@ class NodoReplica(Nodo):
             return    
          # Obtener datos de MongoDB
         datos = self.ServDB.obtener_datos_partida_completos()
-        
+        print(f"""#==================================================================================================#
+        RESPUESTAS DE RONDA POR BROADCAST:
+        {datos}
+        #==================================================================================================#""")
+
         # Convertir ObjectId a string si es necesario
         if isinstance(datos, list):
             for doc in datos:
