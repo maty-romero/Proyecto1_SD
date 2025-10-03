@@ -1,29 +1,39 @@
-# Proyecto1_SD - TutiFruti
+# Proyecto1 Comunicacion Directa - TutiFruti
 
-Integrantes
-- Jeremias
-- Fiorella
-- Dayana
-- Matias
-- Elias
+## Integrantes
+- Jeremias Regina
+- Fiorella Valdez
+- Dayana Laime
+- Matias Romero
+- Elias Magallanes
 
-Instalación y ejecución
+## Instalación y ejecución
 
 Requisitos:
 - Windows 10/11
 - Python 3.10+ instalado
 
-Instalación
+## Instalación
 1. Clonar o descargar este repositorio.
 2. Abrir PowerShell en la carpeta del proyecto y ejecutar:
 
-$ pip install -r servidor/requirements.txt
-$ pip install -r cliente/requirements.txt
+### Dependencias 
+Estando en el directorio del proyecto ejecute los siguientes comandos: 
 
-Ejecución
+$ pip install -r Servidor/requirements.txt
+$ pip install -r Sliente/requirements.txt
 
-Para iniciar el servidor, ejecutar: 
-.\start_servidor.bat
+## Ejecucion
+Ejecución - Debera ejecutar los archivos .bat a continuacion: 
 
-Para iniciar el cliente, ejecutar (en otra ventana):
-.\start_cliente.bat
+Para iniciar el servidor de nombres (NS), ejecute: 
+/init/runNameServer.bat 
+
+Para iniciar una sola replica, ejecute: 
+/init/runReplicaSola.bat  
+
+O bien puede ejecutar 5 replicas ejecutando: 
+/init/run5Replicas.bat 
+
+Para iniciar el cliente, ejecutar:
+/init/runCliente.bat
