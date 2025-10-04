@@ -26,7 +26,6 @@ class ControladorNickName:
 
     def ingresarPartida(self):
         """Verifica y registra el nickname, luego navega a la sala."""
-        # existe_partida = self.gestor_cliente.buscar_partida("192.168.1.32",9090)
         existe_partida = self.gestor_cliente.buscar_partida()
         if not existe_partida:
             # Opcional: mostrar mensaje si no hay partida

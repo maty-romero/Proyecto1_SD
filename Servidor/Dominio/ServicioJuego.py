@@ -222,8 +222,6 @@ class ServicioJuego:
     def iniciar_partida(self):
         """"Se inicializa la ronda"""
         self.cambiar_estado_partida(EstadoJuego.RONDA_EN_CURSO)
-        #self.Partida.iniciar_nueva_ronda()
-        #self.sincronizar_ronda_con_bd()
         #Si ya tenemos jugadores en partida, podemos guardar el true o false de la confirmacion ahi mismo. Facilita recuperacion de bd
         jugadores: list[Jugador] = [Jugador(nick) for nick in self.Jugadores.keys()]
         self.Partida.cargar_jugadores_partida(jugadores)
@@ -268,19 +266,9 @@ class ServicioJuego:
         # Cambiar estado y guardar
         info_completa_votacion = self.preparar_datos_votacion(respuestas_clientes)
         
-        #self.logger.error(f"INFO COMPLETA DE VOTACION:{info_completa_votacion}")
-        # Enviar datos para votación
         self.notificar_datos_votacion_a_clientes(info_completa_votacion)
 
-        # Broadcast a replcias para actualizacion - VER
-        """
-        Actualizacion a replicas 
-        json = SerializeHelper.serializar(exito=True, msg="info_ronda", datos=info_completa_votacion)
-        self.dispacher.manejar_llamada("nodo_ppal", "broadcast_a_nodos", json)
-        """
 
-        #Se ejecuta el timer en un hilo separado para no bloquear la llamada remota del cliente que hace STOP
-        # Timer de 60 segundos por defecto
         hilo_timer = threading.Thread(target=self.timer_votacion, args=(30,), daemon=True)
         hilo_timer.start()
 
@@ -347,78 +335,6 @@ class ServicioJuego:
         self.procesar_votos_y_asignar_puntaje(votos)
 
 
-    # def procesar_votos_y_asignar_puntaje(self, votos):
-    #     from collections import defaultdict
-
-    #     respuestas_clientes = self.Partida.ronda_actual.get_respuestas_ronda()
-    #     conteo_respuestas = defaultdict(lambda: defaultdict(int))
-    #     validez = defaultdict(dict)
-
-    #     # --- Primera pasada: validar respuestas y contar ocurrencias ---
-    #     for jugador, info in respuestas_clientes.items():
-    #         respuestas = info.get("respuestas", {})
-    #         if not respuestas:
-    #             self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
-    #             continue
-
-    #         for categoria, respuesta in respuestas.items():
-    #             true_count = false_count = 0
-    #             for ronda, votos_jugadores in votos.items():
-    #                 if jugador in votos_jugadores and categoria in votos_jugadores[jugador]:
-    #                     if votos_jugadores[jugador][categoria]:
-    #                         true_count += 1      
-    #                     else:
-    #                         false_count += 1
-
-    #             es_valida = (true_count > false_count)
-    #             validez[jugador][categoria] = es_valida
-
-    #             # Solo cuenta la respuesta si es válida y no vacía
-    #             if respuesta and es_valida:
-    #                 conteo_respuestas[categoria][respuesta] += 1
-
-    #             self.logger.debug(
-    #                 f"[VALIDACIÓN] {jugador} - {categoria}: '{respuesta}' "
-    #                 f"T:{true_count} F:{false_count} válida:{es_valida}"
-    #             )
-
-    #     # --- Segunda pasada: asignar puntajes ---
-    #     puntajes = {}
-    #     for jugador, info in respuestas_clientes.items():
-    #         puntajes[jugador] = {}
-    #         respuestas = info.get("respuestas", {})
-    #         if not respuestas:
-    #             self.logger.warning(f"No hay respuestas registradas para jugador {jugador}")
-    #             continue
-
-    #         for categoria, respuesta in respuestas.items():
-    #             es_valida = validez[jugador].get(categoria, False)
-    #             if not respuesta or not es_valida:
-    #                 puntaje = 0
-    #             else:
-    #                 repeticiones = conteo_respuestas[categoria][respuesta]
-    #                 puntaje = 10 if repeticiones == 1 else 5
-
-    #             puntajes[jugador][categoria] = puntaje
-    #             self.logger.debug(
-    #                 f"[PUNTAJE] {jugador} - {categoria}: '{respuesta}' "
-    #                 f"válida:{es_valida}, repeticiones:{conteo_respuestas[categoria][respuesta]} "
-    #                 f"=> {puntaje} puntos"
-    #             )
-
-    #     # --- Totales y asignación ---
-    #     totales = {jugador: sum(categorias.values()) for jugador, categorias in puntajes.items()}
-
-    #     for jugador in self.Partida.jugadores:
-    #         total = totales.get(jugador.nickname, 0)  # evita KeyError
-    #         jugador.sumar_puntaje(total)
-    #         self.logger.info(f"El puntaje del jugador {jugador.nickname} es {total}")
-
-    #     # Guardar puntajes actualizados en BD
-    #     self.sincronizar_puntajes_con_bd()
-    #     self.evaluar_ultima_ronda()
-
-
     def procesar_votos_y_asignar_puntaje(self, votos_todos_clientes):
         """
         votos_todos_clientes = {
@@ -431,23 +347,17 @@ class ServicioJuego:
         """
         from collections import defaultdict
 
-        self.logger.warning("Llegué a procesar_votos_y_asignar_puntaje, VOY A PEDIR LSO VOTOS --------------- owo")
         respuestas_clientes = self.Partida.ronda_actual.get_respuestas_ronda()
         conteo_respuestas = defaultdict(lambda: defaultdict(int))
         validez = defaultdict(dict)
 
-        # ✅ REORGANIZAR VOTOS: de [votante][votado][categoria] a [votado][categoria][votante]
         votos_reorganizados = defaultdict(lambda: defaultdict(dict))
-        self.logger.warning("Voy a reorganizar los votos --------------- owo")
         
         for votante, votos_del_votante in votos_todos_clientes.items():
             for jugador_votado, categorias_voto in votos_del_votante.items():
                 for categoria, es_valida in categorias_voto.items():
                     votos_reorganizados[jugador_votado][categoria][votante] = es_valida
-        
-        self.logger.info(f"VOTOS REORGANIZADOS: {dict(votos_reorganizados)}")
 
-        # --- Primera pasada: validar respuestas y contar ocurrencias ---
         for jugador, info in respuestas_clientes.items():
             respuestas = info.get("respuestas", {})
             if not respuestas:
@@ -457,7 +367,7 @@ class ServicioJuego:
             for categoria, respuesta in respuestas.items():
                 true_count = false_count = 0
                 
-                # ✅ ACCESO CORRECTO: votos_reorganizados[jugador][categoria]
+
                 if jugador in votos_reorganizados and categoria in votos_reorganizados[jugador]:
                     votos_categoria = votos_reorganizados[jugador][categoria]
                     
@@ -475,12 +385,6 @@ class ServicioJuego:
                 if respuesta and es_valida:
                     conteo_respuestas[categoria][respuesta] += 1
 
-                self.logger.info(
-                    f"[VALIDACIÓN] {jugador} - {categoria}: '{respuesta}' "
-                    f"T:{true_count} F:{false_count} válida:{es_valida}"
-                )
-
-        self.logger.warning("Segunda pasada del procesar_votos")
         # --- Segunda pasada: asignar puntajes ---
         respuestas_duplicadas = set()
         for categoria, respuesta_counts in conteo_respuestas.items():
@@ -499,11 +403,9 @@ class ServicioJuego:
                     if (categoria, respuesta) not in respuestas_duplicadas:
                         # Respuesta válida y única: 10 puntos
                         puntaje += 10
-                        self.logger.info(f"[PUNTAJE] {jugador_nickname} - {categoria}: '{respuesta}' → +10pts (única)")
                     else:
                         # Respuesta válida pero repetida: 5 puntos
                         puntaje += 5
-                        self.logger.info(f"[PUNTAJE] {jugador_nickname} - {categoria}: '{respuesta}' → +5pts (repetida)")
                 else:
                     # Respuesta inválida o vacía: 0 puntos
                     self.logger.info(f"[PUNTAJE] {jugador_nickname} - {categoria}: '{respuesta}' → 0pts (inválida/vacía)")
@@ -514,9 +416,6 @@ class ServicioJuego:
                 self.logger.info(f"[PUNTAJE FINAL] {jugador_nickname}: +{puntaje} puntos (Total: {jugador_obj.get_puntaje()})")
             else:
                 self.logger.warning(f"[ERROR] No se encontró el objeto Jugador para {jugador_nickname}")
-
-        self.logger.warning("TERMINÉ DE CALCULAR CREO xd")
-
         # Guardar puntajes actualizados en BD
         self.sincronizar_puntajes_con_bd()
         self.evaluar_ultima_ronda()
@@ -527,20 +426,6 @@ class ServicioJuego:
         self.cambiar_estado_partida(EstadoJuego.MOSTRANDO_RESULTADOS_FINALES)
         self.notificar_resultados_finales_a_clientes()
 
-        #------------se resetean los datos de la partida------------------------------------------------#
-        # self.Partida=self.Partida.crear_nueva_partida()
-        # for nickname in self.Jugadores:
-        #     self.Jugadores[nickname]= False 
-        # self.logger.warning("La partida finalizo y se borro su instancia de servicio de juego, Inicie una nueva partida")
-
-
-
-        #llegada a esta instancia se limpia la bd, ya no se necesita persistencia de datos
-        # self.dispacher.manejar_llamada(
-        #     "db",  # nombre_servicio
-        #     "limpiar_BD"#,  # nombre_metodo
-        #         #json #args
-        # )
 
     def recibir_cerrar_sala(self):
         with self.lock_confirmacion:
@@ -574,23 +459,6 @@ class ServicioJuego:
             msg="Hay lugar disponible, puede unirse."
         )
 
-        """
-        if not self.Partida:
-
-        else:#si existe partida es porque se inicio un juego
-        #elif nickname in self.Partida.jugadores    # se procede a verificar si existe jugador
-            #return SerializeHelper.respuesta(
-            #     exito=True,
-            #     msg="Hay partida disponible pero ya habias entrado, puedes unirte de nuevo"
-            # )
-            #aca iria el self
-            #En caso de implementar, comentar el siguiente return
-
-            return SerializeHelper.respuesta(
-                exito=False,
-                msg="Ya hay una partida en curso, no puede unirse"
-            )
-        """
     def CheckNickNameIsUnique(self, nickname: str):
         is_not_string = not isinstance(nickname, str)
 
@@ -720,8 +588,6 @@ class ServicioJuego:
             self.Jugadores[nickname] = True
             self.logger.info(f"[confirmar_jugador] Jugador {nickname} confirmado")
             #---------------------------------------------------------------------------------------------------------------
-            #ACA TENGO QUE AGREGAR EL NUEVO CLIENTE A LA BD?
-            #Acá traigo el cliente confirmado para poder obtener sus datos de conexión
             cliente_confirmado: ClienteConectado = self.dispacher.manejar_llamada(
             "comunicacion", # nombre_servicio
             "getDatosCliente", # nombre_metodo
@@ -735,20 +601,12 @@ class ServicioJuego:
                 "uri": str(cliente_confirmado.uri_cliente_conectado),
                 "puntaje_total": 0  # Inicializar puntaje en 0
             }
-
-            """ if self.db.agregar_jugador(cliente_conectado) > 0: #agrego el jugador y devuelvo un log confirmando
-                self.logger.info(f"[DB] Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
-            else: 
-                self.logger.warning(f"[DB] El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")   """       
+  
             
             new_cliente_conectado = self.dispacher.manejar_llamada("db","agregar_jugador", cliente_conectado)
             if new_cliente_conectado > 0: #agrego el jugador y devuelvo un log confirmando
                 self.logger.info(f"[DB] Se agrego al jugador {cliente_conectado['nickname']} a la lista de clientes_conectados")
-                """
-                Actualizacion a replicas 
-                json = SerializeHelper.serializar(exito=True, msg="confirmar_jugador", datos=cliente_conectado)
-                self.dispacher.manejar_llamada("nodo_ppal", "broadcast_a_nodos", json)
-                """
+
             else: 
                 self.logger.warning(f"El jugador {cliente_conectado['nickname']} no ha sido cargado en la DB")            
             #---------------------------------------------------------------------------------------------------------------
@@ -778,8 +636,7 @@ class ServicioJuego:
         #Si existe la partida, elimina el jugador
         #Esta logica puede modificarse para aceptar reconexion si se implementa la linea 339 en solicitar_acceso
         if self.Partida:
-            #self.Partida.eliminar_jugador_partida(nickname)
-            # Verificar si el jugador existe antes de eliminarlo
+
             if nickname in self.Jugadores:
                 self.Jugadores.pop(nickname) #si se permite reconexion, esta linea se borra, pero
                 self.logger.info(f"Jugador {nickname} eliminado de la partida")

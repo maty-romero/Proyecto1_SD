@@ -53,7 +53,7 @@ zc.register_service(mi_servicio)
 # Buscar otros servicios
 ServiceBrowser(zc, "_nodo._udp.local.", Listener())
 
-# ESPERAR 8 SEGUNDOS para recibir lista actualizada
+# ESPERAR 3 SEGUNDOS para recibir lista actualizada
 print(f"[Main] Esperando 3 segundos para descubrir otros nodos...")
 time.sleep(3)
 
@@ -74,7 +74,7 @@ es_coordinador = (id_nodo == max_id)
 print(f"[Main] El nodo [{id_nodo}] es coordinador: {es_coordinador}")
 print(f"[Main] Iniciando aplicación...")
 
-# AHORA SÍ SE INICIA EL CÓDIGO
+
 app = NodoReplica(id=id_nodo, host=ip_nodo, puerto=puerto_nodo, lista_nodos=lista_nodos, nombre=f"n{id_nodo}", esCoordinador=es_coordinador)
 app.iniciar()
 

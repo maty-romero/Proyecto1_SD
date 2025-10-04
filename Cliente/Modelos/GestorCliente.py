@@ -86,8 +86,7 @@ class GestorCliente:
     def get_proxy_partida_singleton(self):
         if self.proxy_partida is None:
             try:
-                #with Pyro5.api.locate_ns() as ns:
-                #with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
+
                 ns = Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS)
                 uri = ns.lookup(self.nombre_logico_server)
                 self.proxy_partida = Pyro5.api.Proxy(uri)
@@ -101,21 +100,6 @@ class GestorCliente:
         # Reclamar propiedad del proxy en el hilo actual
         self.proxy_partida._pyroClaimOwnership()
         return self.proxy_partida
-
-    """NUEVO METODO PARA CONEXION A REMOTO EN MISMA RED LOCAL - Puede cambiarse para usar los valores globales"""
-    # def get_proxy_partida_singleton(self):
-    #     if self.proxy_partida is None:
-    #         try:
-    #             # Conexión al NameServer remoto usando IP y puerto
-    #             with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
-    #                 uri = ns.lookup(self.nombre_logico_server)
-    #                 self.proxy_partida = Pyro5.api.Proxy(uri)
-    #         except Pyro5.errors.NamingError:
-    #             print(f"Error: No se pudo encontrar el objeto '{self.nombre_logico_server}' en {self.hostNS}:{self.puertoNS}")
-    #             raise
-    #     # Reclamar propiedad del proxy en el hilo actual si es necesario
-    #     self.proxy_partida._pyroClaimOwnership()
-    #     return self.proxy_partida
 
     def buscar_partida(self):
         try:
@@ -182,13 +166,7 @@ class GestorCliente:
             self.logger.warning("se inicia sesion de socket en hilo")
             self.iniciar_sesion_socket_en_hilo(puerto_libre)
             self.logger.warning("se termino de iniciar sesion de socket en hilo")
-        # ******** SIMULACION MULTIPLES CLIENTES EN UNA MAQUINA
-        """
-        --> comentar: self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
-        """
 
-        #self.iniciar_sesion_socket_en_hilo(5555)  # puerto fijo para todos los clientes?
-        # espera a que sesion socket este listo
         self.Jugador_cliente.sesion_socket.socket_listo_event.wait(timeout=5)
         self.logger.info("Sesion Socket iniciada, esperando que alguien se conecte...")
         self.logger.info(f"Jugador '{self.Jugador_cliente.get_nickname()}' uniendose a la sala...")
@@ -209,7 +187,7 @@ class GestorCliente:
 
     def iniciar_sesion_socket_en_hilo(self, puerto: int):
         try:
-            #def __init__(self, host: str, puerto: int, callback_mensaje, nombre_logico: str, es_servidor=False):
+
             self.Jugador_cliente.sesion_socket = ManejadorSocket(
                 host=ComunicationHelper.obtener_ip_local(),
                 puerto=puerto,
@@ -228,7 +206,6 @@ class GestorCliente:
         except Exception as e:
             self.logger.error(f"[iniciar_sesion_socket_en_hilo] Ex: {e}")
 
-        #self.jugador_cliente.sesion_socket.iniciar()
 
     # Funcion CallBack para Socket
     def _procesar_mensaje_socket(self, mensaje):
@@ -283,13 +260,13 @@ class GestorCliente:
                 self.controlador_navegacion.mostrar('cerrar_sala')
             elif msg == "SERVIDOR_DESCONECTADO":
                 motivo = datos.get("motivo", "Motivo desconocido")
-                self.logger.warning(f"🔴 SERVIDOR DESCONECTADO ({motivo}) - Mostrando vista de reconexión")
+                self.logger.warning(f" SERVIDOR DESCONECTADO ({motivo}) - Mostrando vista de reconexión")
                 self._manejar_desconexion_servidor()
             elif msg == "servidor_recuperado":
-                self.logger.info("✅ SERVIDOR RECUPERADO - Ocultando vista de reconexión")
+                self.logger.info(" SERVIDOR RECUPERADO - Ocultando vista de reconexión")
                 self._manejar_servidor_recuperado(datos if 'datos' in locals() else None)
             elif msg == "CONEXION_RESTAURADA":
-                self.logger.info("🔄 CONEXIÓN RESTAURADA - Cliente detectó reconexión")
+                self.logger.info(" CONEXIÓN RESTAURADA - Cliente detectó reconexión")
                 # Nota: La notificación oficial vendrá del servidor
             else:
                 self.logger.warning(f"[Socket] Otro Mensaje: {msg}")
@@ -336,37 +313,6 @@ class GestorCliente:
 
         return uri
 
-
-    """
-    def inicializar_Deamon_Cliente(self):
-        ip_cliente = ComunicationHelper.obtener_ip_local()
-        objeto_cliente = ServicioCliente(self)  # Se crea objeto remoto y se pasa el gestor (self)
-
-        # nom_logico ya definido con prefijo "jugador.<nickname>"
-        nombre_logico: str= self.Jugador_cliente.get_nombre_logico()
-
-        def daemon_loop():
-            # Crear y guardar el daemon para poder apagarlo despues
-            self._daemon = Pyro5.api.Daemon(host=ip_cliente)
-            try:
-                #ns = Pyro5.api.locate_ns()
-                ns = Pyro5.api.locate_ns(self.hostNS, self.puertoNS)
-                uri = ComunicationHelper.registrar_objeto_en_ns(objeto_cliente, nombre_logico, self._daemon, ns)
-                self.logger.info(f"[Deamon] Objeto CLIENTE '{self.Jugador_cliente.get_nickname()}' disponible en URI: {uri}")
-            except Exception as e:
-                self.logger.error(f"No se pudo registrar el objeto cliente en NS: {e}")
-                # aun así arrancamos el requestLoop para aceptar conexiones directas si corresponde
-
-            self._daemon.requestLoop() # loop de requests (bloqueante)
-
-        # arrancar daemon en hilo de fondo
-        self._daemon_thread = threading.Thread(target=daemon_loop, daemon=True)
-        self._daemon_thread.start()
-
-        
-        # pequeña espera (mejor: sincronizar con evento; sleep está bien para prototipo)
-        #time.sleep(2)
-    """
 
     def stop_daemon_cliente(self):
         # apagar daemon y limpiar registro en NS
@@ -418,8 +364,7 @@ class GestorCliente:
     
     """Modificar para que busque a remoto con ip y port"""
     def enviar_stop(self):
-        #proxy = Pyro5.api.Proxy(f"PYRONAME:{self.nombre_logico_server}")
-        #proxy.recibir_stop()
+
         try:
             #with Pyro5.api.locate_ns() as ns:
             with Pyro5.api.locate_ns(host=self.hostNS, port=self.puertoNS) as ns:
@@ -514,31 +459,4 @@ class GestorCliente:
                 self.logger.info("✅ Proxy Pyro5 reconectado en segundo intento")
             except Exception as e2:
                 self.logger.error(f"Fallo definitivo reconectando proxy Pyro5: {e2}")
-
-
-"""
-    # --- métodos que ServicioCliente llamará (callbacks locales) ---
-    def on_info(self, tipo: str, info: str):
-        # llamado por ServicioCliente cuando llega un evento
-        # proteger estado con lock
-        with self._state_lock:
-            # podés guardar historial, mostrar en GUI, etc.
-            self._last_response = info
-            #self._last_response = f"{tipo}:{info}"
-        # ejemplo: actualizar GUI (si la GUI necesita operar en hilo principal, coordiná eso)
-        try:
-            self.gui.show_message(f"[Gestor Cliente] ({tipo}) {info}")
-        except Exception:
-            pass
-
-    def provide_response(self) -> str:
-        with self._state_lock:
-            return self._last_response or ""
-
-    def jugar_nueva_ronda(self):
-        # instanciar objeto de RondaCliente
-        # al final obtener diccionario para mandar a servidor -> uso de RondaCliente.getRespuestasJugador
-        pass
-
-"""
 

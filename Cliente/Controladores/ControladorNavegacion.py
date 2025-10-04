@@ -99,10 +99,3 @@ class ControladorNavegacion(QObject):
         # Llama al método del controlador de ronda
         return self.controlador_ronda.obtener_respuestas()
     
-
-    """
-    def mostrar_mensaje_transitorio_temporal(self, texto: str, siguiente_vista: str, duracion_ms=3000):
-        self.mostrar_mensaje_transitorio(texto)
-        QtCore.QTimer.singleShot(duracion_ms, lambda: self.mostrar(siguiente_vista))
-
-    """

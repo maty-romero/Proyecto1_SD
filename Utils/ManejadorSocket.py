@@ -171,11 +171,9 @@ class ManejadorSocket:
                         self.conexiones.remove(c)
                         continue
                     try:
-                        self.logger.warning(f"conexiones antes de hacer sendall: {self.conexiones}")
                         import traceback
                         traceback.print_exc()
                         c.sendall(data)
-                        self.logger.warning(f"conexiones luego de hacer sendall: {self.conexiones}")
                     except Exception as e:
                         self.logger.warning(f"Conexión rota, motivo: {e}")
                         #falta un self.conexiones[c].cerrar() o socket close
@@ -237,7 +235,7 @@ class ManejadorSocket:
                     time.sleep(0.5)
                 # Si recuperamos conexiones, notificar reconexión
                 if self.conexiones and self.callback_mensaje and self.tipo_nodo == "SesionCliente":
-                    self.logger.info("✅ Conexiones restauradas - notificando reconexión")
+                    self.logger.info(" Conexiones restauradas - notificando reconexión")
                     mensaje_restauracion = SerializeHelper.serializar(True, "CONEXION_RESTAURADA", {"mensaje": "Conexión de socket restaurada"}).decode()
                     self.callback_mensaje(mensaje_restauracion)
             time.sleep(2)

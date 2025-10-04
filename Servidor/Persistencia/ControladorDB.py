@@ -1,15 +1,5 @@
 """
--Tienen que garantizarse puntos de guardado concretos, y completos.
-    Por ej., en una conexion socket, solo se guardaran en esta los datos al llegar TODOS, sin faltantes.
--ver si guardar "jugadores"
--Opcional: Que python levante la aplicacion de MongoDB si no esta andando (ver subprocess)
-    def mongo_responding(uri=MONGO_URI, timeout_s=2):   
-    def start_systemd(service_name=SYSTEMD_SERVICE):
-    def start_mongod_binary(dbpath=DBPATH, logpath=LOGPATH, port=27017, replset=None):
-    def wait_for_mongo(timeout=WAIT_TIMEOUT, uri=MONGO_URI):
-    def init_collections(uri=MONGO_URI):
-    def ensure_mongo_up_and_ready():
-    
+ 
 Esqueleto bd:
 PARTIDA:
 {
@@ -25,13 +15,7 @@ PARTIDA:
             { "jugador": "Luis", "Animal": "Murciélago", "Ciudad": "Montevideo", "Color": "Magenta" }
         ]
 }   
-
--PATRONES OPCIONALES:
-    repository pattern -> https://www.mongodb.com/developer/how-to/implement-repository-pattern-python-mongodb/
-        Abstrae la lógica de acceso a datos, facilitando migracion de base de datos.
-    singleton pattern -> https://refactoring.guru/es/design-patterns/singleton/python/example
-        Asegura que una clase tenga una única instancia y proporciona un punto de acceso global a ella.
-        Útil para controladores de base de datos, ya que evita múltiples conexiones.    
+ 
 """
 
 
@@ -103,23 +87,6 @@ class ControladorDB:
             self.conexiondb = None
             self.db = None
 
-    # def crear_partida(self, datos_partida):
-    #     """Crea o reemplaza la partida con el código de self.codigo_partida"""
-    #     datos_partida["codigo"] = self.codigo_partida
-    #     resultado = self.partida.replace_one(
-    #         {"codigo": self.codigo_partida},
-    #         datos_partida,
-    #         upsert=True
-    #     )
-    #     return resultado.upserted_id
-
-# #Prueba para crear partidas desde el ultimo codigo de partida
-#     def crear_partida_prueba(self, datos_partida): 
-#         #Busco ultimo codigo de partida, para crear una nueva a partir de esa
-#         ultimo_codigo = self.getUltimoCodPartida()
-#         self.codigo_partida = ultimo_codigo + 1 #Incremento a un nuevo codigo de partida para la nueva partida
-#         datos_partida['codigo'] = self.codigo_partida
-#         return self.partida.insert_one(datos_partida)
 
     def obtener_partida(self):
         """Obtiene el documento de la partida actual"""
@@ -133,18 +100,7 @@ class ControladorDB:
             {"$set": datos}
         ).modified_count
 
-    """El uso de esta es reemplazado por Iniciar()"""
-    # @trigger_broadcast
-    # def eliminar_partida(self):
-    #     """Elimina la partida actual y la colección"""
-    #     # Primero eliminar el/los documento(s)
-    #     deleted_count = self.partida.delete_one({"codigo": self.codigo_partida}).deleted_count
-        
-    #     # Luego eliminar la colección completa
-    #     self.partida.drop()
-        
-    #     self.registroDatos.append(f"[ControladorDB] Partida eliminada ({deleted_count} documentos). Colección eliminada.")
-    #     return deleted_count
+
     def desconectar(self):
         if self.conexiondb:
             self.conexiondb.close()
@@ -286,25 +242,6 @@ class ControladorDB:
         )
         return partida_data.get("clientes_Conectados", []) if partida_data else []
 
-    # def obtener_respuestas_ronda_actual(self):
-    #     """Obtiene las respuestas de la ronda actual desde BD para restauración"""
-    #     try:
-    #         partida_data = self.partida.find_one(
-    #             {"codigo": self.codigo_partida},
-    #             {"_id": 0, "nro_ronda": 1, "respuestas": 1}
-    #         )
-            
-    #         if partida_data and partida_data.get("respuestas"):
-    #             self.registroDatos.append(f"[ControladorDB] Respuestas de ronda {partida_data.get('nro_ronda')} obtenidas desde BD")
-    #             return partida_data["respuestas"]
-    #         else:
-    #             self.registroDatos.append("[ControladorDB] No hay respuestas guardadas en BD")
-    #             return {}
-                
-    #     except Exception as e:
-    #         self.registroDatos.append(f"[ControladorDB] Error obteniendo respuestas desde BD: {e}")
-    #         return {}
-
     def get_controlador(self):
         """Devuelve la instancia del controlador (para acceso desde dispatcher)"""
         return self
@@ -354,21 +291,6 @@ class ControladorDB:
             print(f"Error obteniendo clientes conectados: {e}")
             return []
 
-    # def existe_partida_previa(self) -> bool:
-    #     """
-    #     Verifica si la colección 'Partida' ya existe en la base de datos.
-    #     Devuelve True si existe (ya hubo partidas previas), False en caso contrario.
-    #     """
-    #     if self.db is None:
-    #         self.registroDatos.append("[ControladorDB] No hay conexión activa a la base de datos")
-    #         return False
-
-    #     existe = "Partida" in self.db.list_collection_names()
-    #     if existe:
-    #         self.registroDatos.append("[ControladorDB] Ya existe colección 'Partida'")
-    #     else:
-    #         self.registroDatos.append("[ControladorDB] No existe colección 'Partida'")
-    #     return existe
 
     def existe_partida_previa(self) -> bool:
         """

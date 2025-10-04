@@ -101,15 +101,15 @@ class ServicioComunicacion:
             if cliente.socket.conexiones and len(cliente.socket.conexiones) > 0:
                 cliente.conectado = True
                 cliente.timestamp = datetime.now(UTC)
-                self.logger.info(f"✅ Reconexión exitosa con {cliente.nickname}")
+                self.logger.info(f"Reconexión exitosa con {cliente.nickname}")
                 self._enviar_notificacion_recuperacion(cliente)
                 return True
             else:
-                self.logger.warning(f"❌ No se pudo establecer conexión con {cliente.nickname}")
+                self.logger.warning(f" No se pudo establecer conexión con {cliente.nickname}")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"❌ Error intentando reconectar con {cliente.nickname}: {e}")
+            self.logger.error(f" Error intentando reconectar con {cliente.nickname}: {e}")
             return False
             
     def _enviar_notificacion_recuperacion(self, cliente: ClienteConectado):
@@ -134,27 +134,6 @@ class ServicioComunicacion:
             
         except Exception as e:
             self.logger.error(f"Error eliminando cliente persistido {nickname}: {e}")
-
-    # def restaurar_clientes_persistidos(self):
-    #     """Restaura clientes confirmados desde BD tras caída del servidor (llamado después del Bully)"""
-    #     try:
-    #         # CRÍTICO: Primero restaurar el estado del juego desde BD
-    #         self.logger.info("Restaurando estado del juego desde BD...")
-    #         try:
-    #             self.dispatcher.manejar_llamada("juego", "inicializar_con_restauracion")
-    #             self.logger.info("✅ Estado del juego restaurado desde BD")
-    #         except Exception as e:
-    #             self.logger.error(f"Error restaurando estado del juego: {e}")
-            
-    #         # Luego restaurar clientes que fueron confirmados (guardados por ServicioJuego)
-    #         clientes_restaurados = self._restaurar_clientes_desde_bd()
-            
-    #         if clientes_restaurados > 0:
-    #             self.logger.info(f"✅ Total de clientes restaurados desde BD: {clientes_restaurados}")
-    #         # No imprimir mensaje cuando no hay clientes - ya lo hace _restaurar_clientes_desde_bd()
-            
-    #     except Exception as e:
-    #         self.logger.error(f"Error en proceso de restauración: {e}")
 
 
     def restaurar_clientes_desde_bd(self) -> int:
@@ -207,14 +186,14 @@ class ServicioComunicacion:
                         resultado = future.result()
                         nickname = cliente_bd.get('nickname', 'unknown')
                         if resultado:
-                            self.logger.info(f"✅ Restauración de {nickname} completada exitosamente")
+                            self.logger.info(f" Restauración de {nickname} completada exitosamente")
                         else:
-                            self.logger.warning(f"❌ Falló restauración de {nickname}")
+                            self.logger.warning(f" Falló restauración de {nickname}")
                     except Exception as e:
                         nickname = cliente_bd.get('nickname', 'unknown')
-                        self.logger.error(f"❌ Error en hilo de restauración de {nickname}: {e}")
+                        self.logger.error(f" Error en hilo de restauración de {nickname}: {e}")
             
-            self.logger.info(f"✅ Restauración paralela completada: {clientes_restaurados}/{len(clientes_bd)} clientes")
+            self.logger.info(f" Restauración paralela completada: {clientes_restaurados}/{len(clientes_bd)} clientes")
             return clientes_restaurados
             
         except Exception as e:
@@ -257,14 +236,14 @@ class ServicioComunicacion:
                 else:
                     self.clientes.append(cliente)
                     
-                self.logger.info(f"✅ Cliente {nickname} restaurado desde BD exitosamente")
+                self.logger.info(f" Cliente {nickname} restaurado desde BD exitosamente")
                 
                 # Notificar al cliente que el servidor se recuperó
                 self._notificar_servidor_recuperado(cliente)
                 
                 return True
             else:
-                self.logger.warning(f"❌ No se pudo restaurar cliente {nickname} desde BD - No responde")
+                self.logger.warning(f" No se pudo restaurar cliente {nickname} desde BD - No responde")
                 return False
                 
         except Exception as e:
@@ -310,50 +289,6 @@ class ServicioComunicacion:
 
     def obtener_nodos_cluster(self):
         return self.nodos_cluster
-
-
-    """AGREGAR EXCEPCION POR SI CLIENTE DENIEGA CONEXION / NO EXISTE"""
-
-    #No funciona
-    # def respuestas_memoria_clientes_ronda(self):
-    #     respuestas: dict = {}
-    #     for cliente in self.clientes:
-    #         try:
-    #             proxy = cliente.get_proxy_cliente()
-    #             proxy._pyroClaimOwnership()
-    #             resp = proxy.obtener_respuesta_memoria()
-    #             respuestas[cliente.nickname] = resp
-    #         except Pyro5.errors.CommunicationError as e:
-    #             self.logger.warning(f"No se pudo obtener respuesta de {cliente.nickname}: {e}")
-    #             # opcional: asignar None o valor por defecto
-    #             respuestas[cliente.nickname] = None
-    #     return respuestas
-
-
-    # def enviar_datos_para_votacion(self, respuestas_de_clientes):
-    #     for cliente in self.clientes:
-    #         try:
-    #             proxy = cliente.get_proxy_cliente()
-    #             proxy._pyroClaimOwnership()
-    #             print(f"Enviando datos a: {cliente.nickname}")
-    #             proxy.actualizar_vista_votacion(respuestas_de_clientes)
-    #         except Pyro5.errors.CommunicationError as e:
-    #             self.logger.warning(f"No se pudo enviar datos a {cliente.nickname}: {e}")
-    #             continue  # sigue con el siguiente cliente
-
-
-    # def recolectar_votos(self):
-    #     votos_clientes: dict = {}
-    #     for i, cliente in enumerate(self.clientes):
-    #         try:
-    #             proxy = cliente.get_proxy_cliente()
-    #             proxy._pyroClaimOwnership()
-    #             votos = proxy.obtener_votos_cliente()
-    #             votos_clientes[i] = votos
-    #         except Pyro5.errors.CommunicationError as e:
-    #             self.logger.warning(f"No se pudo obtener votos de {cliente.nickname}: {e}")
-    #             votos_clientes[i] = None
-    #     return votos_clientes   
 
 
     def respuestas_memoria_clientes_ronda(self):

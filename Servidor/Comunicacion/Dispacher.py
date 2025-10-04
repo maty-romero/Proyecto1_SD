@@ -1,11 +1,6 @@
 class Dispatcher:
     def __init__(self):
         self.servicios = {}
-        # Registrado en Nodo Servidor
-        #self.Dispatcher.registrar_servicio("comunicacion", self.ServComms)
-        #self.Dispatcher.registrar_servicio("juego", self.ServJuego)
-        #self.Dispatcher.registrar_servicio("db", self.ServDB)
-
     def registrar_servicio(self, nombre, servicio):
         self.servicios[nombre] = servicio
 

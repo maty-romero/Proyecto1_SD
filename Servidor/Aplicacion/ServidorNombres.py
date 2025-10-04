@@ -81,14 +81,7 @@ class ServidorNombres(Nodo):
         hilo = threading.Thread(target=ns_loop)
         hilo.daemon = True  # así el hilo mantiene vivo el NameServer
         hilo.start()
-
-        # Espera activa hasta que el NameServer esté disponible
-        # for _ in range(timeout):
-        #     if self.verificar_nameserver():
-        #         print("[Servidor de Nombres] Iniciado correctamente")
-        #         #return True
-        #     time.sleep(1)
-
+        
         print(f"[Servidor de Nombres] Timeout de {timeout}s esperando al NameServer.")
 
         try:

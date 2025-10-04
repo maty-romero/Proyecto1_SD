@@ -36,13 +36,6 @@ class Ronda:
             raise ValueError("No quedan letras disponibles")
         return random.choice(disponibles)
 
-    # def info_ronda(self): #se usa en Partida
-        info = {
-            "categorias": self.categorias,
-            "nro_ronda_actual":self.nro_ronda,
-            "letra_ronda": self.letra_ronda,
-        }
-        return info
 
     @staticmethod
     def reconstruir_datos_ronda(datos_ronda: dict, jugadores: list, letras_jugadas: list):

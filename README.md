@@ -1,11 +1,11 @@
 # Proyecto1 Comunicacion Directa - TutiFruti
 
 ## Integrantes
+- Matias Romero
+- Elias Magallanes
 - Jeremias Regina
 - Fiorella Valdez
 - Dayana Laime
-- Matias Romero
-- Elias Magallanes
 
 ## Instalación y ejecución
 
@@ -22,7 +22,7 @@ Estando en el directorio del proyecto ejecute los siguientes comandos:
 
 $ pip install -r Servidor/requirements.txt
 
-$ pip install -r Sliente/requirements.txt
+$ pip install -r Cliente/requirements.txt
 
 ## Ejecucion
 Ejecución - Debera ejecutar los archivos .bat a continuacion: 
@@ -38,3 +38,8 @@ O bien puede ejecutar 5 replicas ejecutando:
 
 Para iniciar el cliente, ejecutar:
 /init/runCliente.bat
+
+- Iniciar en orden los archivos .bat -> runNameServer -> run5Replicas
+- De elegir utilizar distintas terminales, verificar ip privada en la red, y bajar firewall, 
+    y ejecutar en simultaneo en las terminales el .bat runReplicaSola
+- Ejecutar el runCliente para todos los clientes que quieran jugar 

@@ -92,26 +92,8 @@ if __name__ == "__main__":
 
     gestor.set_controlador_navegacion(controlador_navegacion)
 
-    # Mostrar vista inicial
+
     controlador_navegacion.mostrar("nickname")
-    #controlador_navegacion.mostrar("mensaje") # Para Probar vistaVotaciones
-    #controlador_navegacion.mostrar("resultados") # Para Probar vistaVotaciones
+
 
     sys.exit(app.exec())
-
-    # existe_partida = gestor.buscar_partida()
-    # if (existe_partida):
-    #     # gestor.ingresar_nickname_valido() ##Este método se invoca en el ControladorNickname, pasandole por parámetro el nombre formateado
-    #     gestor.logger.info("FINALIZO EL UNIRSE A SALA")
-    #     gestor.logger.info(gestor.Jugador_cliente)
-    #     gestor.confirmar_jugador_partida(gestor.Jugador_cliente.get_nickname())
-    
-    
-    
-    """
-    existe_partida = gestor.buscar_partida()
-    if (existe_partida):
-        gestor.ingresar_nickname_valido()
-        gestor.unirse_a_sala()
-        gestor.confirmar_jugador_partida()
-    """
